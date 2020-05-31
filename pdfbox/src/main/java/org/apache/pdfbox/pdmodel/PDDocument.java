@@ -16,35 +16,10 @@
  */
 package org.apache.pdfbox.pdmodel;
 
-import java.awt.Point;
-import java.awt.image.DataBuffer;
-import java.awt.image.Raster;
-import java.awt.image.WritableRaster;
-import java.io.BufferedOutputStream;
-import java.io.Closeable;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.fontbox.ttf.TrueTypeFont;
-import org.apache.pdfbox.cos.COSArray;
-import org.apache.pdfbox.cos.COSBase;
-import org.apache.pdfbox.cos.COSDictionary;
-import org.apache.pdfbox.cos.COSDocument;
-import org.apache.pdfbox.cos.COSInteger;
-import org.apache.pdfbox.cos.COSName;
-import org.apache.pdfbox.cos.COSObject;
-import org.apache.pdfbox.cos.COSUpdateInfo;
+import org.apache.pdfbox.cos.*;
 import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.io.MemoryUsageSetting;
 import org.apache.pdfbox.io.RandomAccessRead;
@@ -53,25 +28,20 @@ import org.apache.pdfbox.pdfwriter.COSWriter;
 import org.apache.pdfbox.pdmodel.common.COSArrayList;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.common.PDStream;
-import org.apache.pdfbox.pdmodel.encryption.AccessPermission;
-import org.apache.pdfbox.pdmodel.encryption.PDEncryption;
-import org.apache.pdfbox.pdmodel.encryption.ProtectionPolicy;
-import org.apache.pdfbox.pdmodel.encryption.SecurityHandler;
-import org.apache.pdfbox.pdmodel.encryption.SecurityHandlerFactory;
+import org.apache.pdfbox.pdmodel.encryption.*;
 import org.apache.pdfbox.pdmodel.font.PDFont;
-import org.apache.pdfbox.pdmodel.graphics.color.PDDeviceRGB;
 import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotation;
 import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationWidget;
 import org.apache.pdfbox.pdmodel.interactive.annotation.PDAppearanceDictionary;
 import org.apache.pdfbox.pdmodel.interactive.annotation.PDAppearanceStream;
-import org.apache.pdfbox.pdmodel.interactive.digitalsignature.ExternalSigningSupport;
-import org.apache.pdfbox.pdmodel.interactive.digitalsignature.PDSignature;
-import org.apache.pdfbox.pdmodel.interactive.digitalsignature.SignatureInterface;
-import org.apache.pdfbox.pdmodel.interactive.digitalsignature.SignatureOptions;
-import org.apache.pdfbox.pdmodel.interactive.digitalsignature.SigningSupport;
+import org.apache.pdfbox.pdmodel.interactive.digitalsignature.*;
 import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
 import org.apache.pdfbox.pdmodel.interactive.form.PDField;
 import org.apache.pdfbox.pdmodel.interactive.form.PDSignatureField;
+
+import java.io.*;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * This is the in-memory representation of the PDF document.
@@ -93,22 +63,6 @@ public class PDDocument implements Closeable
 
     private static final Log LOG = LogFactory.getLog(PDDocument.class);
 
-    /**
-     * avoid concurrency issues with PDDeviceRGB
-     */
-    static
-    {
-    	try
-        {
-            WritableRaster raster = Raster.createBandedRaster(DataBuffer.TYPE_BYTE, 1, 1, 3, new Point(0, 0));
-            PDDeviceRGB.INSTANCE.toRGBImage(raster);
-        }
-        catch (IOException ex)
-        {
-            LOG.debug("voodoo error", ex);
-        }
-    }
-    
     private final COSDocument document;
 
     // cached values
@@ -167,7 +121,7 @@ public class PDDocument implements Closeable
      */
     public PDDocument(MemoryUsageSetting memUsageSetting)
     {
-        ScratchFile scratchFile = null;
+        ScratchFile scratchFile;
         try
         {
             scratchFile = new ScratchFile(memUsageSetting);
@@ -512,8 +466,6 @@ public class PDDocument implements Closeable
     /**
      * Check if the widget already exists in the annotation list
      *
-     * @param acroFormFields the list of AcroForm fields.
-     * @param signatureField the signature field.
      * @return true if the widget already existed in the annotation list, false if not.
      */
     private boolean checkSignatureAnnotation(List<PDAnnotation> annotations, PDAnnotationWidget widget)
@@ -873,7 +825,7 @@ public class PDDocument implements Closeable
      * is closed when the PDDocument is closed to avoid memory leaks. Users don't have to call this
      * method, it is done by the appropriate PDFont classes.
      *
-     * @param ttf
+     * @param ttf the font to close.
      */
     public void registerTrueTypeFontForClosing(TrueTypeFont ttf)
     {
