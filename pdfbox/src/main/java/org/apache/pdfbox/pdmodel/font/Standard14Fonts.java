@@ -17,15 +17,11 @@
 
 package org.apache.pdfbox.pdmodel.font;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 import org.apache.fontbox.afm.AFMParser;
 import org.apache.fontbox.afm.FontMetrics;
+
+import java.io.InputStream;
+import java.util.*;
 
 /**
  * The "Standard 14" PDF fonts, also known as the "base 14" fonts.
@@ -35,103 +31,120 @@ import org.apache.fontbox.afm.FontMetrics;
  */
 final class Standard14Fonts
 {
-    private static final Set<String> STANDARD_14_NAMES = new HashSet<>(34);
-    private static final Map<String, String> STANDARD_14_MAPPING = new HashMap<>(34);
-    private static final Map<String, FontMetrics> STANDARD14_AFM_MAP =  new HashMap<>(34);
+    private static final Map<String, String> ALIASES = new HashMap<>(34);
+    private static final Map<String, FontMetrics> FONTS =  new HashMap<>(34);
     static
     {
-        try
-        {
-            addAFM("Courier-Bold");
-            addAFM("Courier-BoldOblique");
-            addAFM("Courier");
-            addAFM("Courier-Oblique");
-            addAFM("Helvetica");
-            addAFM("Helvetica-Bold");
-            addAFM("Helvetica-BoldOblique");
-            addAFM("Helvetica-Oblique");
-            addAFM("Symbol");
-            addAFM("Times-Bold");
-            addAFM("Times-BoldItalic");
-            addAFM("Times-Italic");
-            addAFM("Times-Roman");
-            addAFM("ZapfDingbats");
+        // the 14 standard fonts
+        mapName("Courier-Bold");
+        mapName("Courier-BoldOblique");
+        mapName("Courier");
+        mapName("Courier-Oblique");
+        mapName("Helvetica");
+        mapName("Helvetica-Bold");
+        mapName("Helvetica-BoldOblique");
+        mapName("Helvetica-Oblique");
+        mapName("Symbol");
+        mapName("Times-Bold");
+        mapName("Times-BoldItalic");
+        mapName("Times-Italic");
+        mapName("Times-Roman");
+        mapName("ZapfDingbats");
 
-            // alternative names from Adobe Supplement to the ISO 32000
-            addAFM("CourierCourierNew", "Courier");
-            addAFM("CourierNew", "Courier");
-            addAFM("CourierNew,Italic", "Courier-Oblique");
-            addAFM("CourierNew,Bold", "Courier-Bold");
-            addAFM("CourierNew,BoldItalic", "Courier-BoldOblique");
-            addAFM("Arial", "Helvetica");
-            addAFM("Arial,Italic", "Helvetica-Oblique");
-            addAFM("Arial,Bold", "Helvetica-Bold");
-            addAFM("Arial,BoldItalic", "Helvetica-BoldOblique");
-            addAFM("TimesNewRoman", "Times-Roman");
-            addAFM("TimesNewRoman,Italic", "Times-Italic");
-            addAFM("TimesNewRoman,Bold", "Times-Bold");
-            addAFM("TimesNewRoman,BoldItalic", "Times-BoldItalic");
+        // alternative names from Adobe Supplement to the ISO 32000
+        mapName("CourierCourierNew", "Courier");
+        mapName("CourierNew", "Courier");
+        mapName("CourierNew,Italic", "Courier-Oblique");
+        mapName("CourierNew,Bold", "Courier-Bold");
+        mapName("CourierNew,BoldItalic", "Courier-BoldOblique");
+        mapName("Arial", "Helvetica");
+        mapName("Arial,Italic", "Helvetica-Oblique");
+        mapName("Arial,Bold", "Helvetica-Bold");
+        mapName("Arial,BoldItalic", "Helvetica-BoldOblique");
+        mapName("TimesNewRoman", "Times-Roman");
+        mapName("TimesNewRoman,Italic", "Times-Italic");
+        mapName("TimesNewRoman,Bold", "Times-Bold");
+        mapName("TimesNewRoman,BoldItalic", "Times-BoldItalic");
 
-            // Acrobat treats these fonts as "standard 14" too (at least Acrobat preflight says so)
-            addAFM("Symbol,Italic", "Symbol");
-            addAFM("Symbol,Bold", "Symbol");
-            addAFM("Symbol,BoldItalic", "Symbol");
-            addAFM("Times", "Times-Roman");
-            addAFM("Times,Italic", "Times-Italic");
-            addAFM("Times,Bold", "Times-Bold");
-            addAFM("Times,BoldItalic", "Times-BoldItalic");
+        // Acrobat treats these fonts as "standard 14" too (at least Acrobat preflight says so)
+        mapName("Symbol,Italic", "Symbol");
+        mapName("Symbol,Bold", "Symbol");
+        mapName("Symbol,BoldItalic", "Symbol");
+        mapName("Times", "Times-Roman");
+        mapName("Times,Italic", "Times-Italic");
+        mapName("Times,Bold", "Times-Bold");
+        mapName("Times,BoldItalic", "Times-BoldItalic");
 
-            // PDFBOX-3457: PDF.js file bug864847.pdf
-            addAFM("ArialMT", "Helvetica");
-            addAFM("Arial-ItalicMT", "Helvetica-Oblique");
-            addAFM("Arial-BoldMT", "Helvetica-Bold");
-            addAFM("Arial-BoldItalicMT", "Helvetica-BoldOblique");
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException(e);
-        }
+        // PDFBOX-3457: PDF.js file bug864847.pdf
+        mapName("ArialMT", "Helvetica");
+        mapName("Arial-ItalicMT", "Helvetica-Oblique");
+        mapName("Arial-BoldMT", "Helvetica-Bold");
+        mapName("Arial-BoldItalicMT", "Helvetica-BoldOblique");
     }
-
+    
     private Standard14Fonts()
     {
     }
 
-    private static void addAFM(String fontName) throws IOException
+    /**
+     * Loads the metrics for the font specified by name.
+     * Metric file must exist in the pdfbox jar under /org/apache/pdfbox/resources/afm/
+     * @param fontName one of the standard 14 font names for which to lod the metrics.
+     */
+    private static void loadMetrics(String fontName)
     {
-        addAFM(fontName, fontName);
-    }
-
-    private static void addAFM(String fontName, String afmName) throws IOException
-    {
-        STANDARD_14_NAMES.add(fontName);
-        STANDARD_14_MAPPING.put(fontName, afmName);
-
-        if (STANDARD14_AFM_MAP.containsKey(afmName))
-        {
-            STANDARD14_AFM_MAP.put(fontName, STANDARD14_AFM_MAP.get(afmName));
-        }
-
-        String resourceName = "/org/apache/pdfbox/resources/afm/" + afmName + ".afm";
+        String resourceName = "/org/apache/pdfbox/resources/afm/" + fontName + ".afm";
         try (InputStream afmStream = PDType1Font.class.getResourceAsStream(resourceName))
         {
-            if (afmStream == null)
-            {
-                throw new IOException(resourceName + " not found");
-            }
             AFMParser parser = new AFMParser(afmStream);
             FontMetrics metric = parser.parse(true);
-            STANDARD14_AFM_MAP.put(fontName, metric);
+            FONTS.put(fontName, metric);
+        } catch (Exception e) {
+            throw new IllegalArgumentException(e);
         }
     }
 
     /**
-     * Returns the AFM for the given font.
-     * @param baseName base name of font
+     * Adds a standard font name to the map of known aliases, to simplify the logic of finding font metrics by name.
+     * @see #getAFM
+     * @param baseName the base name of the font; must be one of the 14 standard fonts
      */
-    public static FontMetrics getAFM(String baseName)
+    private static void mapName(String baseName)
     {
-        return STANDARD14_AFM_MAP.get(baseName);
+        ALIASES.put(baseName, baseName);
+    }
+
+    /**
+     * Adds an alias name for a standard font to the map of known aliases to the map of aliases
+     * (alias as key, standard name as value).
+     * @param alias an alias for the font
+     * @param baseName the base name of the font; must
+     */
+    private static void mapName(String alias, String baseName)
+    {
+        ALIASES.put(alias, baseName);
+    }
+
+    /**
+     * Returns the metrics for font specified by the given name.
+     * Loads the font is not already loaded.
+     * @param fontName name of font; can be one base name or an alias.
+     */
+    public static FontMetrics getAFM(String fontName) throws IllegalArgumentException
+    {
+        String baseName = ALIASES.get(fontName);
+        if (baseName == null)
+        {
+            return null;
+        }
+
+        FontMetrics fontMetrics = FONTS.get(baseName);
+        if (fontMetrics == null)
+        {
+            loadMetrics(baseName);
+        }
+
+        return FONTS.get(baseName);
     }
 
     /**
@@ -140,7 +153,7 @@ final class Standard14Fonts
      */
     public static boolean containsName(String baseName)
     {
-        return STANDARD_14_NAMES.contains(baseName);
+        return ALIASES.containsKey(baseName);
     }
 
     /**
@@ -148,7 +161,7 @@ final class Standard14Fonts
      */
     public static Set<String> getNames()
     {
-        return Collections.unmodifiableSet(STANDARD_14_NAMES);
+        return Collections.unmodifiableSet(ALIASES.keySet());
     }
 
     /**
@@ -157,6 +170,6 @@ final class Standard14Fonts
      */
     public static String getMappedFontName(String baseName)
     {
-        return STANDARD_14_MAPPING.get(baseName);
+        return ALIASES.get(baseName);
     }
 }
