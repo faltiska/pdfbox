@@ -25,9 +25,9 @@ import java.io.InputStream;
 
 import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.io.MemoryUsageSetting;
-import org.apache.pdfbox.io.RandomAccessReadBuffer;
 import org.apache.pdfbox.io.RandomAccessBufferedFile;
-import org.apache.pdfbox.io.RandomAccessReadFile;
+import org.apache.pdfbox.io.RandomAccessReadBuffer;
+import org.apache.pdfbox.io.RandomAccessReadMemoryMappedFile;
 import org.apache.pdfbox.io.RandomAccessRead;
 import org.apache.pdfbox.io.ScratchFile;
 import org.apache.pdfbox.pdfparser.FDFParser;
@@ -73,7 +73,7 @@ public class Loader
      */
     public static FDFDocument loadFDF(File file) throws IOException
     {
-        FDFParser parser = new FDFParser(new RandomAccessReadFile(file));
+        FDFParser parser = new FDFParser(new RandomAccessReadMemoryMappedFile(file));
         return parser.parse();
     }
 
