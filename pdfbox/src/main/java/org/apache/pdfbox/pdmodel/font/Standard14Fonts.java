@@ -20,6 +20,7 @@ package org.apache.pdfbox.pdmodel.font;
 import org.apache.fontbox.afm.AFMParser;
 import org.apache.fontbox.afm.FontMetrics;
 
+import java.io.BufferedInputStream;
 import java.io.InputStream;
 import java.util.*;
 
@@ -94,8 +95,9 @@ final class Standard14Fonts
     private static void loadMetrics(String fontName)
     {
         String resourceName = "/org/apache/pdfbox/resources/afm/" + fontName + ".afm";
-        try (InputStream afmStream = PDType1Font.class.getResourceAsStream(resourceName))
+        try ( InputStream afmStream = new BufferedInputStream(PDType1Font.class.getResourceAsStream(resourceName)) )
         {
+
             AFMParser parser = new AFMParser(afmStream);
             FontMetrics metric = parser.parse(true);
             FONTS.put(fontName, metric);

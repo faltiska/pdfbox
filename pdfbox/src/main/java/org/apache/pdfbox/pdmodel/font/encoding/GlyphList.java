@@ -16,13 +16,11 @@
  */
 package org.apache.pdfbox.pdmodel.font.encoding;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -50,7 +48,9 @@ public final class GlyphList
         String path = "/org/apache/pdfbox/resources/glyphlist/";
         try
         {
-            return new GlyphList(GlyphList.class.getResourceAsStream(path + filename), numberOfEntries);
+            InputStream resourceAsStream = GlyphList.class.getResourceAsStream(path + filename);
+            InputStream is = new BufferedInputStream(resourceAsStream);
+            return new GlyphList(is, numberOfEntries);
         }
         catch (IOException e)
         {

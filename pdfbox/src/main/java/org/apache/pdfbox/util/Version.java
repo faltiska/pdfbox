@@ -17,6 +17,7 @@
 
 package org.apache.pdfbox.util;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
@@ -44,12 +45,8 @@ public final class Version
      */
     public static String getVersion()
     {
-        try (InputStream is = Version.class.getResourceAsStream(PDFBOX_VERSION_PROPERTIES))
+        try (InputStream is = new BufferedInputStream(Version.class.getResourceAsStream(PDFBOX_VERSION_PROPERTIES)))
         {
-            if (is == null)
-            {
-                return null;
-            }
             Properties properties = new Properties();
             properties.load(is);
             return properties.getProperty("pdfbox.version", null);

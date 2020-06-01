@@ -16,6 +16,7 @@
  */
 package org.apache.pdfbox.pdmodel.graphics.color;
 
+import java.io.BufferedInputStream;
 import java.util.Arrays;
 
 import org.apache.pdfbox.cos.COSName;
@@ -96,12 +97,8 @@ public class PDDeviceCMYK extends PDDeviceColorSpace
 
         String name = "/org/apache/pdfbox/resources/icc/ISOcoated_v2_300_bas.icc";
 
-        try (InputStream is = PDDeviceCMYK.class.getResourceAsStream(name))
+        try (InputStream is = new BufferedInputStream(PDDeviceCMYK.class.getResourceAsStream(name)))
         {
-            if (is == null)
-            {
-                throw new IOException("Error loading resource: " + name);
-            }
             return ICC_Profile.getInstance(is);
         }
     }

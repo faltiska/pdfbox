@@ -16,10 +16,7 @@
  */
 package org.apache.fontbox.ttf;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.LineNumberReader;
+import java.io.*;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -218,21 +215,13 @@ public final class OpenTypeScript
     static
     {
         String path = "/org/apache/fontbox/unicode/Scripts.txt";
-        try (InputStream input = OpenTypeScript.class.getResourceAsStream(path))
+        try (InputStream input = new BufferedInputStream(OpenTypeScript.class.getResourceAsStream(path)))
         {
-            if (input != null)
-            {
-                parseScriptsFile(input);
-            }
-            else
-            {
-                LOG.warn("Could not find '" + path + "', mirroring char map will be empty: ");
-            }
+            parseScriptsFile(input);
         }
         catch (IOException e)
         {
-            LOG.warn("Could not parse Scripts.txt, mirroring char map will be empty: "
-                    + e.getMessage(), e);
+            LOG.warn("Could not parse Scripts.txt, mirroring char map will be empty: " + e.getMessage(), e);
         }
     }
 
