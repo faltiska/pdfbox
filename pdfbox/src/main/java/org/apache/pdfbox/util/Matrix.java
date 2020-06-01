@@ -39,7 +39,7 @@ public final class Matrix implements Cloneable
         0,0,1   //  tx ty 1     tx ty 1
     };
 
-    private float[] single;
+    float[] single;
 
     /**
      * Constructor. This produces an identity matrix.
@@ -432,9 +432,7 @@ public final class Matrix implements Cloneable
      */
     public static Matrix concatenate(Matrix a, Matrix b)
     {
-        Matrix copy = a.clone();
-        copy.concatenate(b);
-        return copy;
+        return b.multiply(a);
     }
 
     /**
