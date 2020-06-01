@@ -33,13 +33,6 @@ public abstract class COSNumber extends COSBase
     public abstract float floatValue();
 
     /**
-     * This will get the double value of this number.
-     *
-     * @return The double value of this number.
-     */
-    public abstract double doubleValue();
-
-    /**
      * This will get the integer value of this number.
      *
      * @return The integer value of this number.
@@ -64,42 +57,27 @@ public abstract class COSNumber extends COSBase
      */
     public static COSNumber get( String number ) throws IOException
     {
-        if (number.length() == 1) 
-        {
-            char digit = number.charAt(0);
-            if ('0' <= digit && digit <= '9') 
-            {
-                return COSInteger.get(digit - '0');
-            } 
-            else if (digit == '-' || digit == '.') 
-            {
-                // See https://issues.apache.org/jira/browse/PDFBOX-592
-                return COSInteger.ZERO;
-            } 
-            else 
-            {
-                throw new IOException("Not a number: " + number);
+        int length = number.length();
+        boolean isFloat = false;
+        for (int i = 0; i < length; i++) {
+            char c = number.charAt(i);
+            if (c == '.' || c == 'e' || c == 'E') {
+                isFloat = true;
+                break;
             }
-        } 
-        else if (number.indexOf('.') == -1 && (number.toLowerCase().indexOf('e') == -1)) 
-        {
+        }
+
+        if (isFloat) {
+            return new COSFloat(number);
+        } else {
             try
             {
-                if (number.charAt(0) == '+')
-                {
-                    return COSInteger.get(Long.parseLong(number.substring(1)));
-                }
                 return COSInteger.get(Long.parseLong(number));
             }
             catch( NumberFormatException e )
             {
-                // might be a huge number, see PDFBOX-3116
-                return new COSFloat(number);
+                throw new IOException("Invalid number format: '" + number + "'", e);
             }
-        } 
-        else 
-        {
-            return new COSFloat(number);
         }
     }
 }

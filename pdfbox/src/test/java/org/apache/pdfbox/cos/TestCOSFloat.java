@@ -17,16 +17,17 @@
 
 package org.apache.pdfbox.cos;
 
+import junit.framework.Test;
+import junit.framework.TestSuite;
+import org.apache.pdfbox.pdfwriter.COSWriter;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.Random;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
-
-import org.apache.pdfbox.pdfwriter.COSWriter;
+import static org.junit.Assert.assertNotEquals;
 
 /**
  * Tests {@link COSFloat}.
@@ -53,7 +54,7 @@ public class TestCOSFloat extends TestCOSNumber
      * runTests for a series of random and pseudorandom tests, or runTest to
      * test with corner values.
      */
-    abstract class BaseTester
+    abstract static class BaseTester
     {
         private int low = -100000;
         private int high = 300000;
@@ -83,14 +84,7 @@ public class TestCOSFloat extends TestCOSNumber
             for (int i = low; i < high; i += step)
             {
                 float num = i * rnd.nextFloat();
-                try
-                {
-                    runTest(num);
-                }
-                catch (AssertionError a)
-                {
-                    fail("num = " + num + ", seed = " + seed);
-                }
+                runTest(num);
             }
         }
 
@@ -114,23 +108,23 @@ public class TestCOSFloat extends TestCOSNumber
                 COSFloat test2 = new COSFloat(num);
                 COSFloat test3 = new COSFloat(num);
                 // Reflexive (x == x)
-                assertTrue(test1.equals(test1));
+                assertEquals(test1, test1);
                 // Symmetric is preserved ( x==y then y==x)
-                assertTrue(test2.equals(test3));
-                assertTrue(test1.equals(test2));
+                assertEquals(test2, test3);
+                assertEquals(test1, test2);
                 // Transitive (if x==y && y==z then x==z)
-                assertTrue(test1.equals(test2));
-                assertTrue(test2.equals(test3));
-                assertTrue(test1.equals(test3));
+                assertEquals(test1, test2);
+                assertEquals(test2, test3);
+                assertEquals(test1, test3);
 
                 float nf = Float.intBitsToFloat(Float.floatToIntBits(num) + 1);
                 COSFloat test4 = new COSFloat(nf);
-                assertFalse(test4.equals(test1));
+                assertNotEquals(test4, test1);
             }
         }.runTests();
     }
 
-    class HashCodeTester extends BaseTester
+    static class HashCodeTester extends BaseTester
     {
 
         @Override
@@ -155,7 +149,7 @@ public class TestCOSFloat extends TestCOSNumber
         new HashCodeTester().runTests();
     }
 
-    class FloatValueTester extends BaseTester
+    static class FloatValueTester extends BaseTester
     {
 
         @Override
@@ -173,27 +167,7 @@ public class TestCOSFloat extends TestCOSNumber
         new FloatValueTester().runTests();
     }
 
-    class DoubleValueTester extends BaseTester
-    {
-
-        @Override
-        void runTest(float num)
-        {
-            COSFloat testFloat = new COSFloat(num);
-            // compare the string representation instead of the numeric values 
-            // as the cast from float to double adds some more fraction digits
-            assertEquals(Float.toString(num), Double.toString(testFloat.doubleValue()));
-        }
-
-    }
-
-    @Override
-    public void testDoubleValue()
-    {
-        new DoubleValueTester().runTests();
-    }
-
-    class IntValueTester extends BaseTester
+    static class IntValueTester extends BaseTester
     {
 
         @Override
@@ -211,7 +185,7 @@ public class TestCOSFloat extends TestCOSNumber
         new IntValueTester().runTests();
     }
 
-    class LongValueTester extends BaseTester
+    static class LongValueTester extends BaseTester
     {
 
         @Override
@@ -301,8 +275,7 @@ public class TestCOSFloat extends TestCOSNumber
         writePDFTester.runTest(0.000000000000000000000000000000001f);
     }
 
-    public void testDoubleNegative() throws IOException
-    {
+    public void testDoubleNegative() throws IOException {
         // PDFBOX-4289
         COSFloat cosFloat = new COSFloat("--16.33");
         assertEquals(-16.33f, cosFloat.floatValue());
@@ -312,22 +285,9 @@ public class TestCOSFloat extends TestCOSNumber
     {
         // use a BigDecimal as intermediate state to avoid 
         // a floating point string representation of the float value
-        return removeTrailingNull(new BigDecimal(String.valueOf(value)).toPlainString()); 
+        return new BigDecimal(String.valueOf(value)).stripTrailingZeros().toPlainString();
     }
     
-    private String removeTrailingNull(String value)
-    {
-        // remove fraction digit "0" only
-        if (value.indexOf('.') > -1 && !value.endsWith(".0"))
-        {
-            while (value.endsWith("0") && !value.endsWith(".0"))
-            {
-                value = value.substring(0,value.length()-1);
-            }
-        }
-        return value;
-    }
-
     /**
      * This will get the suite of test that this class holds.
      *
