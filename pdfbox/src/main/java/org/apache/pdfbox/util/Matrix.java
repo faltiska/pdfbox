@@ -401,6 +401,11 @@ public final class Matrix implements Cloneable
         return matrix;
     }
 
+    public static void getTranslateInstance(Matrix instance, float tx, float ty) {
+        instance.single[6] = tx;
+        instance.single[7] = ty;
+    }
+
     /**
      * Convenience method to create a rotated instance.
      *
