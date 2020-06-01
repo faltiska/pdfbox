@@ -97,38 +97,6 @@ public class MatrixTest
         assertMatrixValuesEqualTo(new float[] { 5, 8, 11, 8, 14, 20, 11, 20, 29 }, retVal);
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testIllegalValueNaN1()
-    {
-        Matrix m = new Matrix();
-        m.setValue(0, 0, Float.MAX_VALUE);
-        m.multiply(m);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void testIllegalValueNaN2()
-    {
-        Matrix m = new Matrix();
-        m.setValue(0, 0, Float.NaN);
-        m.multiply(m);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void testIllegalValuePositiveInfinity()
-    {
-        Matrix m = new Matrix();
-        m.setValue(0, 0, Float.POSITIVE_INFINITY);
-        m.multiply(m);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void testIllegalValueNegativeInfinity()
-    {
-        Matrix m = new Matrix();
-        m.setValue(0, 0, Float.NEGATIVE_INFINITY);
-        m.multiply(m);
-    }
-
     /**
      * Test of PDFBOX-2872 bug
      */
