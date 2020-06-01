@@ -39,7 +39,7 @@ public final class Matrix implements Cloneable
         0,0,1   //  tx ty 1     tx ty 1
     };
 
-    private final float[] single;
+    private float[] single;
 
     /**
      * Constructor. This produces an identity matrix.
@@ -207,7 +207,8 @@ public final class Matrix implements Cloneable
      */
     public void concatenate(Matrix matrix)
     {
-        matrix.multiply(this, this);
+        Matrix result = matrix.multiply(this);
+        single = result.single;
     }
 
     /**
@@ -257,18 +258,6 @@ public final class Matrix implements Cloneable
     }
 
     /**
-     * This will take the current matrix and multiply it with a matrix that is passed in.
-     *
-     * @param b The matrix to multiply by.
-     *
-     * @return The result of the two multiplied matrices.
-     */
-    public Matrix multiply( Matrix b )
-    {
-        return this.multiply(b, new Matrix());
-    }
-
-    /**
      * This method multiplies this Matrix with the specified other Matrix, storing the product in the specified
      * result Matrix. By reusing Matrix instances like this, multiplication chains can be executed without having
      * to create many temporary Matrix objects.
@@ -277,16 +266,11 @@ public final class Matrix implements Cloneable
      * the backing float[] matrix values may be copied in order to ensure a correct product.
      *
      * @param other the second operand Matrix in the multiplication
-     * @param result the Matrix instance into which the result should be stored. If result is null, a new Matrix
-     *               instance is created.
      * @return the product of the two matrices.
      */
-    public Matrix multiply( Matrix other, Matrix result )
+    public Matrix multiply( Matrix other )
     {
-        if (result == null)
-        {
-            result = new Matrix();
-        }
+        Matrix result = new Matrix();
 
         if (other != null && other.single != null)
         {
@@ -301,21 +285,6 @@ public final class Matrix implements Cloneable
 
             // If either of these operands are the same float[] instance as the result, then
             // they need to be copied.
-
-            if (this == result)
-            {
-                final float[] thisOrigVals = new float[this.single.length];
-                System.arraycopy(this.single, 0, thisOrigVals, 0, this.single.length);
-
-                thisOperand = thisOrigVals;
-            }
-            if (other == result)
-            {
-                final float[] otherOrigVals = new float[other.single.length];
-                System.arraycopy(other.single, 0, otherOrigVals, 0, other.single.length);
-
-                otherOperand = otherOrigVals;
-            }
 
             result.single[0] = thisOperand[0] * otherOperand[0]
                              + thisOperand[1] * otherOperand[3]
