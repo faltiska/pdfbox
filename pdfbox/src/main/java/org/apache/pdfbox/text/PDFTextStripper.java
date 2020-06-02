@@ -426,12 +426,9 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
      * Start a new page. Default implementation is to do nothing. Subclasses may provide additional information.
      *
      * @param page The page we are about to process.
-     *
-     * @throws IOException If there is any error writing to the stream.
      */
     protected void startPage(PDPage page)
     {
-        // default is to do nothing
     }
 
     /**
@@ -443,7 +440,6 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
      */
     protected void endPage(PDPage page) throws IOException
     {
-        // default is to do nothing
     }
 
     private static final float END_OF_LAST_TEXT_X_RESET_VALUE = -1;
@@ -1429,15 +1425,12 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
         }
         else
         {
-            float yGap = Math.abs(position.position.getYDirAdj()
-                    - lastPosition.position.getYDirAdj());
-            float newYVal = multiplyFloat(dropThreshold, maxHeightForLine);
-            // do we need to flip this for rtl?
-            float xGap = position.position.getXDirAdj()
-                    - lastLineStartPosition.position.getXDirAdj();
-            float newXVal = multiplyFloat(indentThreshold,
-                    position.position.getWidthOfSpace());
-            float positionWidth = multiplyFloat(0.25f, position.position.getWidth());
+            float yGap = Math.abs(position.position.getYDirAdj() - lastPosition.position.getYDirAdj());
+            float newYVal = dropThreshold * maxHeightForLine;
+            // TODO do we need to flip this for rtl?
+            float xGap = position.position.getXDirAdj() - lastLineStartPosition.position.getXDirAdj();
+            float newXVal = indentThreshold *position.position.getWidthOfSpace();
+            float positionWidth = 0.25f * position.position.getWidth();
 
             if (yGap > newYVal)
             {
@@ -1491,13 +1484,6 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
         {
             position.isParagraphStart = true;
         }
-    }
-
-    private float multiplyFloat(float value1, float value2)
-    {
-        // multiply 2 floats and truncate the resulting value to 3 decimal places
-        // to avoid wrong results when comparing with another float
-        return Math.round(value1 * value2 * 1000) / 1000f;
     }
 
     /**
@@ -1661,8 +1647,7 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
      * @param line a list with the words of the given line
      * @throws IOException if something went wrong
      */
-    private void writeLine(List<WordWithTextPositions> line)
-            throws IOException
+    private void writeLine(List<WordWithTextPositions> line) throws IOException
     {
         int numberOfStrings = line.size();
         for (int i = 0; i < numberOfStrings; i++)
