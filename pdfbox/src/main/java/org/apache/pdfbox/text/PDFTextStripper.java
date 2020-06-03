@@ -156,9 +156,9 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
      *
      * Most PDFs won't have any beads, so charactersByArticle will contain a single entry.
      */
-    protected ArrayList<List<TextPosition>> charactersByArticle = new ArrayList<>();
+    protected ArrayList<List<TextPosition>> charactersByArticle;
 
-    private Map<String, TreeMap<Float, TreeSet<Float>>> characterListMapping = new HashMap<>();
+    private Map<String, TreeMap<Float, TreeSet<Float>>> characterListMapping;
 
     protected PDDocument document;
     protected Writer output;
@@ -196,14 +196,6 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
     {
         currentPageNo = 0;
         document = null;
-        if (charactersByArticle != null)
-        {
-            charactersByArticle.clear();
-        }
-        if (characterListMapping != null)
-        {
-            characterListMapping.clear();
-        }
     }
 
     /**
@@ -330,21 +322,14 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
                 fillBeadRectangles(page);
                 numberOfArticleSections += beadRectangles.size() * 2;
             }
-            int originalSize = charactersByArticle.size();
-            charactersByArticle.ensureCapacity(numberOfArticleSections);
-            int lastIndex = Math.max(numberOfArticleSections, originalSize);
-            for (int i = 0; i < lastIndex; i++)
+
+            charactersByArticle = new ArrayList<>(numberOfArticleSections);
+            for (int i = 0; i < numberOfArticleSections; i++)
             {
-                if (i < originalSize)
-                {
-                    charactersByArticle.get(i).clear();
-                }
-                else
-                {
-                    charactersByArticle.add(new ArrayList<>());
-                }
+                charactersByArticle.add(new ArrayList<>());
             }
-            characterListMapping.clear();
+            characterListMapping = new HashMap<>();
+
             super.processPage(page);
             writePage();
             endPage(page);
@@ -757,8 +742,7 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
             String textCharacter = text.getUnicode();
             float textX = text.getX();
             float textY = text.getY();
-            TreeMap<Float, TreeSet<Float>> sameTextCharacters =
-                    characterListMapping.computeIfAbsent(textCharacter, k -> new TreeMap<>());
+            TreeMap<Float, TreeSet<Float>> sameTextCharacters = characterListMapping.computeIfAbsent(textCharacter, k -> new TreeMap<>());
 
             // RDD - Here we compute the value that represents the end of the rendered
             // text. This value is used to determine whether subsequent text rendered
