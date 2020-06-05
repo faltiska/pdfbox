@@ -48,8 +48,10 @@ import org.apache.pdfbox.io.RandomAccessRead;
 public abstract class BaseParser
 {
     private static final long OBJECT_NUMBER_THRESHOLD = 10000000000L;
+    static final byte MAX_OBJECT_NUMBER_LENGTH = (byte) Long.toString(OBJECT_NUMBER_THRESHOLD).length();
 
     private static final long GENERATION_NUMBER_THRESHOLD = 65535;
+    static final byte MAX_GENERATION_NUMBER_LENGTH = (byte) Long.toString(GENERATION_NUMBER_THRESHOLD).length();
 
     static final byte MAX_LENGTH_INT = (byte) Long.toString(Integer.MAX_VALUE).length();
     static final byte MAX_LENGTH_LONG = (byte) Long.toString(Long.MAX_VALUE).length();
@@ -1238,7 +1240,9 @@ public abstract class BaseParser
      */
     protected long readObjectNumber() throws IOException
     {
-        return readLong();
+        skipSpaces();
+
+        return readStringNumber(MAX_OBJECT_NUMBER_LENGTH);
     }
 
     /**
@@ -1249,12 +1253,9 @@ public abstract class BaseParser
      */
     protected int readGenerationNumber() throws IOException
     {
-        int retval = readInt();
-        if(retval < 0 || retval > GENERATION_NUMBER_THRESHOLD)
-        {
-            throw new IOException("Generation Number '" + retval + "' has more than 5 digits");
-        }
-        return retval;
+        skipSpaces();
+
+        return (int) readStringNumber(MAX_GENERATION_NUMBER_LENGTH);
     }
     
     /**
