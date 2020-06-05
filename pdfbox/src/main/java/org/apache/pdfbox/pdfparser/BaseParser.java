@@ -51,7 +51,8 @@ public abstract class BaseParser
 
     private static final long GENERATION_NUMBER_THRESHOLD = 65535;
 
-    static final int MAX_LENGTH_LONG = Long.toString(Long.MAX_VALUE).length();
+    static final byte MAX_LENGTH_INT = (byte) Long.toString(Integer.MAX_VALUE).length();
+    static final byte MAX_LENGTH_LONG = (byte) Long.toString(Long.MAX_VALUE).length();
 
     private final CharsetDecoder utf8Decoder = StandardCharsets.UTF_8.newDecoder();
 
@@ -358,7 +359,7 @@ public abstract class BaseParser
      * @param bracesParameter the number of braces currently open.
      *
      * @return the corrected value of the brace counter
-     * @throws IOException
+     * @throws IOException if it fails to read from the {@link #source}.
      */
     private int checkForEndOfString(final int bracesParameter) throws IOException
     {
@@ -511,7 +512,7 @@ public abstract class BaseParser
                             nextc = c;
                         }
     
-                        int character = 0;
+                        int character;
                         try
                         {
                             character = Integer.parseInt( octal.toString(), 8 );
@@ -581,36 +582,31 @@ public abstract class BaseParser
             {
                 throw new IOException( "Missing closing bracket for hex string. Reached EOS." );
             }
-            else if ( ( c == ' ' ) || ( c == '\n' ) ||
-                    ( c == '\t' ) || ( c == '\r' ) ||
-                    ( c == '\b' ) || ( c == '\f' ) )
-            {
-                continue;
-            }
-            else
-            {
+            else if ((c != ' ') && (c != '\n') &&
+                     (c != '\t') && (c != '\r') &&
+                     (c != '\b') && (c != '\f')) {
                 // if invalid chars was found: discard last
                 // hex character if it is not part of a pair
                 if (sBuf.length()%2!=0)
                 {
                     sBuf.deleteCharAt(sBuf.length()-1);
                 }
-                
+
                 // read till the closing bracket was found
-                do 
+                do
                 {
                     c = source.read();
-                } 
+                }
                 while ( c != '>' && c >= 0 );
-                
+
                 // might have reached EOF while looking for the closing bracket
                 // this can happen for malformed PDFs only. Make sure that there is
                 // no endless loop.
-                if ( c < 0 ) 
+                if ( c < 0 )
                 {
                     throw new IOException( "Missing closing bracket for hex string. Reached EOS." );
                 }
-                
+
                 // exit loop
                 break;
             }
@@ -956,7 +952,7 @@ public abstract class BaseParser
     }
 
     /**
-     * Reads given pattern from {@link #seqSource}. Skipping whitespace at start and end if wanted.
+     * Reads given pattern from {@link #source}. Skipping whitespace at start and end if wanted.
      * 
      * @param expectedString pattern to be skipped
      * @param skipSpaces if set to true spaces before and after the string will be skipped
@@ -1242,12 +1238,7 @@ public abstract class BaseParser
      */
     protected long readObjectNumber() throws IOException
     {
-        long retval = readLong();
-        if (retval < 0 || retval >= OBJECT_NUMBER_THRESHOLD)
-        {
-            throw new IOException("Object Number '" + retval + "' has more than 10 digits or is negative");
-        }
-        return retval;
+        return readLong();
     }
 
     /**
@@ -1276,22 +1267,8 @@ public abstract class BaseParser
     protected int readInt() throws IOException
     {
         skipSpaces();
-        int retval = 0;
 
-        StringBuilder intBuffer = readStringNumber();
-
-        try
-        {
-            retval = Integer.parseInt( intBuffer.toString() );
-        }
-        catch( NumberFormatException e )
-        {
-            source.unread(intBuffer.toString().getBytes(StandardCharsets.ISO_8859_1));
-            throw new IOException("Error: Expected an integer type at offset " +
-                    source.getPosition() +
-                                  ", instead got '" + intBuffer + "'", e);
-        }
-        return retval;
+        return (int) readStringNumber(MAX_LENGTH_INT);
     }
     
 
@@ -1305,21 +1282,8 @@ public abstract class BaseParser
     protected long readLong() throws IOException
     {
         skipSpaces();
-        long retval = 0;
 
-        StringBuilder longBuffer = readStringNumber();
-
-        try
-        {
-            retval = Long.parseLong( longBuffer.toString() );
-        }
-        catch( NumberFormatException e )
-        {
-            source.unread(longBuffer.toString().getBytes(StandardCharsets.ISO_8859_1));
-            throw new IOException( "Error: Expected a long type at offset "
-                    + source.getPosition() + ", instead got '" + longBuffer + "'", e);
-        }
-        return retval;
+        return readStringNumber(MAX_LENGTH_LONG);
     }
 
     /**
@@ -1327,25 +1291,28 @@ public abstract class BaseParser
      * delimiters are any non digit values.
      *
      * @return the token to parse as integer or long by the calling method.
-     * @throws IOException throws by the {@link #seqSource} methods.
+     * @throws IOException if it fails to read from the {@link #source}.
      */
-    protected final StringBuilder readStringNumber() throws IOException
+    protected final long readStringNumber(byte maxLength) throws IOException
     {
         int lastByte;
-        StringBuilder buffer = new StringBuilder();
+        byte numDigits = 0;
+        long number = 0;
+
         while ((lastByte = source.read()) >= '0' && lastByte <= '9')
         {
-            buffer.append( (char)lastByte );
-            if (buffer.length() > MAX_LENGTH_LONG)
+            if (++numDigits > maxLength)
             {
-                throw new IOException("Number '" + buffer + 
-                        "' is getting too long, stop reading at offset " + source.getPosition());
+                throw new IOException("Number has too many digits: '" + numDigits + "', stopped reading at offset " + source.getPosition());
             }
+            number = number * 10 + (lastByte - '0');
         }
+
         if( lastByte != -1 )
         {
             source.unread(lastByte);
         }
-        return buffer;
+
+        return number;
     }
 }
