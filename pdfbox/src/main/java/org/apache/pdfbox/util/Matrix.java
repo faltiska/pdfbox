@@ -32,13 +32,7 @@ import org.apache.pdfbox.cos.COSBase;
  */
 public final class Matrix implements Cloneable
 {
-    static final float[] DEFAULT_SINGLE =
-    {
-        1,0,0,  //  a  b  0     sx hy 0    note: hx and hy are reversed vs. the PDF spec as we use
-        0,1,0,  //  c  d  0  =  hx sy 0          AffineTransform's definition x and y shear
-        0,0,1   //  tx ty 1     tx ty 1
-    };
-
+    public static final int SIZE = 9;
     float[] single;
 
     /**
@@ -46,8 +40,12 @@ public final class Matrix implements Cloneable
      */
     public Matrix()
     {
-        single = new float[DEFAULT_SINGLE.length];
-        System.arraycopy(DEFAULT_SINGLE, 0, single, 0, DEFAULT_SINGLE.length);
+        single = new float[]
+        {
+                1,0,0,  //  a  b  0     sx hy 0    note: hx and hy are reversed vs. the PDF spec as we use
+                0,1,0,  //  c  d  0  =  hx sy 0    AffineTransform's definition x and y shear
+                0,0,1   //  tx ty 1     tx ty 1
+        };
     }
 
     /**
@@ -57,7 +55,7 @@ public final class Matrix implements Cloneable
      */
     public Matrix(COSArray array)
     {
-        single = new float[DEFAULT_SINGLE.length];
+        single = new float[SIZE];
         single[0] = ((COSNumber)array.getObject(0)).floatValue();
         single[1] = ((COSNumber)array.getObject(1)).floatValue();
         single[3] = ((COSNumber)array.getObject(2)).floatValue();
@@ -86,7 +84,7 @@ public final class Matrix implements Cloneable
      */
     public Matrix(float a, float b, float c, float d, float e, float f)
     {
-        single = new float[DEFAULT_SINGLE.length];
+        single = new float[SIZE];
         single[0] = a;
         single[1] = b;
         single[3] = c;
@@ -102,14 +100,15 @@ public final class Matrix implements Cloneable
      */
     public Matrix(AffineTransform at)
     {
-        single = new float[DEFAULT_SINGLE.length];
-        System.arraycopy(DEFAULT_SINGLE, 0, single, 0, DEFAULT_SINGLE.length);
+        single = new float[SIZE];
+
         single[0] = (float)at.getScaleX();
         single[1] = (float)at.getShearY();
         single[3] = (float)at.getShearX();
         single[4] = (float)at.getScaleY();
         single[6] = (float)at.getTranslateX();
         single[7] = (float)at.getTranslateY();
+        single[8] = 1;
     }
 
     /**
@@ -275,8 +274,9 @@ public final class Matrix implements Cloneable
         if (other != null && other.single != null)
         {
             // the operands
-            float[] thisOperand = this.single;
-            float[] otherOperand = other.single;
+            float[] a = this.single;
+            float[] b = other.single;
+            float[] c = result.single;
 
             // We're multiplying 2 sets of floats together to produce a third, but we allow
             // any of these float[] instances to be the same objects.
@@ -286,33 +286,15 @@ public final class Matrix implements Cloneable
             // If either of these operands are the same float[] instance as the result, then
             // they need to be copied.
 
-            result.single[0] = thisOperand[0] * otherOperand[0]
-                             + thisOperand[1] * otherOperand[3]
-                             + thisOperand[2] * otherOperand[6];
-            result.single[1] = thisOperand[0] * otherOperand[1]
-                             + thisOperand[1] * otherOperand[4]
-                             + thisOperand[2] * otherOperand[7];
-            result.single[2] = thisOperand[0] * otherOperand[2]
-                             + thisOperand[1] * otherOperand[5]
-                             + thisOperand[2] * otherOperand[8];
-            result.single[3] = thisOperand[3] * otherOperand[0]
-                             + thisOperand[4] * otherOperand[3]
-                             + thisOperand[5] * otherOperand[6];
-            result.single[4] = thisOperand[3] * otherOperand[1]
-                             + thisOperand[4] * otherOperand[4]
-                             + thisOperand[5] * otherOperand[7];
-            result.single[5] = thisOperand[3] * otherOperand[2]
-                             + thisOperand[4] * otherOperand[5]
-                             + thisOperand[5] * otherOperand[8];
-            result.single[6] = thisOperand[6] * otherOperand[0]
-                             + thisOperand[7] * otherOperand[3]
-                             + thisOperand[8] * otherOperand[6];
-            result.single[7] = thisOperand[6] * otherOperand[1]
-                             + thisOperand[7] * otherOperand[4]
-                             + thisOperand[8] * otherOperand[7];
-            result.single[8] = thisOperand[6] * otherOperand[2]
-                             + thisOperand[7] * otherOperand[5]
-                             + thisOperand[8] * otherOperand[8];
+            c[0] = a[0] * b[0] + a[1] * b[3] + a[2] * b[6];
+            c[1] = a[0] * b[1] + a[1] * b[4] + a[2] * b[7];
+            c[2] = a[0] * b[2] + a[1] * b[5] + a[2] * b[8];
+            c[3] = a[3] * b[0] + a[4] * b[3] + a[5] * b[6];
+            c[4] = a[3] * b[1] + a[4] * b[4] + a[5] * b[7];
+            c[5] = a[3] * b[2] + a[4] * b[5] + a[5] * b[8];
+            c[6] = a[6] * b[0] + a[7] * b[3] + a[8] * b[6];
+            c[7] = a[6] * b[1] + a[7] * b[4] + a[8] * b[7];
+            c[8] = a[6] * b[2] + a[7] * b[5] + a[8] * b[8];
         }
 
         return result;
