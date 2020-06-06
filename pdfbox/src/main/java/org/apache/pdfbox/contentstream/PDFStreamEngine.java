@@ -739,7 +739,7 @@ public abstract class PDFStreamEngine
                 ty = 0;
             }
 
-            Matrix.getTranslateInstance(textDisplacement, tx, ty);
+            Matrix.setTranslation(textDisplacement, tx, ty);
             textMatrix.concatenate(textDisplacement);
         }
     }

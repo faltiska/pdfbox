@@ -49,6 +49,14 @@ public final class Matrix implements Cloneable
     }
 
     /**
+     * Constructor. This produces an identity matrix.
+     */
+    public Matrix(float[] src)
+    {
+        single = src;
+    }
+
+    /**
      * Creates a matrix from a 6-element (a b c d e f) COS array.
      *
      * @param array
@@ -70,6 +78,11 @@ public final class Matrix implements Cloneable
      * discussed in 8.3.3, "Common Transformations" and 8.3.4, "Transformation Matrices" of the PDF
      * specification. For simple purposes (rotate, scale, translate) it is recommended to use the
      * static methods below.
+     *
+     * Produces the following matrix:
+     * a b 0
+     * c d 0
+     * e f 1
      *
      * @see Matrix#getRotateInstance(double, float, float)
      * @see Matrix#getScaleInstance(float, float)
@@ -269,7 +282,7 @@ public final class Matrix implements Cloneable
      */
     public Matrix multiply( Matrix other )
     {
-        Matrix result = new Matrix();
+        Matrix result = new Matrix(new float[SIZE]);
 
         if (other != null && other.single != null)
         {
@@ -356,34 +369,38 @@ public final class Matrix implements Cloneable
     /**
      * Convenience method to create a scaled instance.
      *
-     * @param sx The xscale operator.
-     * @param sy The yscale operator.
+     * Produces the following matrix:
+     * x 0 0
+     * 0 y 0
+     * 0 0 1
+     *
+     * @param x The xscale operator.
+     * @param y The yscale operator.
      * @return A new matrix with just the x/y scaling
      */
-    public static Matrix getScaleInstance(float sx, float sy)
+    public static Matrix getScaleInstance(float x, float y)
     {
-        Matrix matrix = new Matrix();
-        matrix.single[0] = sx;
-        matrix.single[4] = sy;
-        return matrix;
+        return new Matrix(x, 0, 0, y, 0, 0);
     }
 
     /**
      * Convenience method to create a translating instance.
      *
-     * @param tx The x translating operator.
-     * @param ty The y translating operator.
+     * Produces the following matrix:
+     * 1 0 0
+     * 0 1 0
+     * x y 1
+     *
+     * @param x The x translating operator.
+     * @param y The y translating operator.
      * @return A new matrix with just the x/y translating.
      */
-    public static Matrix getTranslateInstance(float tx, float ty)
+    public static Matrix getTranslateInstance(float x, float y)
     {
-        Matrix matrix = new Matrix();
-        matrix.single[6] = tx;
-        matrix.single[7] = ty;
-        return matrix;
+        return new Matrix(1, 0, 0, 1, x, y);
     }
 
-    public static void getTranslateInstance(Matrix instance, float tx, float ty) {
+    public static void setTranslation(Matrix instance, float tx, float ty) {
         instance.single[6] = tx;
         instance.single[7] = ty;
     }
@@ -401,14 +418,7 @@ public final class Matrix implements Cloneable
         float cosTheta = (float)Math.cos(theta);
         float sinTheta = (float)Math.sin(theta);
 
-        Matrix matrix = new Matrix();
-        matrix.single[0] = cosTheta;
-        matrix.single[1] = sinTheta;
-        matrix.single[3] = -sinTheta;
-        matrix.single[4] = cosTheta;
-        matrix.single[6] = tx;
-        matrix.single[7] = ty;
-        return matrix;
+        return new Matrix(cosTheta, sinTheta, -sinTheta, cosTheta, tx, ty);
     }
 
     /**
@@ -429,9 +439,7 @@ public final class Matrix implements Cloneable
     @Override
     public Matrix clone()
     {
-        Matrix clone = new Matrix();
-        System.arraycopy( single, 0, clone.single, 0, 9 );
-        return clone;
+        return new Matrix(single.clone());
     }
 
     /**

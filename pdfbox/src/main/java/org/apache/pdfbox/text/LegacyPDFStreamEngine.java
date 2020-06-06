@@ -260,7 +260,7 @@ class LegacyPDFStreamEngine extends PDFStreamEngine
         float ty = displacement.getY() * fontSize;
 
         // (modified) combined displacement matrix
-        Matrix.getTranslateInstance(legacyTextDisplacement, tx, ty);
+        Matrix.setTranslation(legacyTextDisplacement, tx, ty);
 
         // (modified) text rendering matrix
         Matrix nextTextRenderingMatrix = legacyTextDisplacement.multiply(textMatrix).multiply(ctm); // text space -> device space
