@@ -59,7 +59,7 @@ public final class Matrix implements Cloneable
     /**
      * Creates a matrix from a 6-element (a b c d e f) COS array.
      *
-     * @param array
+     * @param array source array, elements must be or extend COSNumber
      */
     public Matrix(COSArray array)
     {
@@ -109,7 +109,12 @@ public final class Matrix implements Cloneable
 
     /**
      * Creates a matrix with the same elements as the given AffineTransform.
-     * @param at
+     * @param at matrix elements will be initialize with the values from this affine transformation, as follows:
+     *
+     *           scaleX shearY 0
+     *           shearX scaleY 0
+     *           transX transY 1
+     *
      */
     public Matrix(AffineTransform at)
     {
@@ -162,9 +167,9 @@ public final class Matrix implements Cloneable
     public AffineTransform createAffineTransform()
     {
         return new AffineTransform(
-            single[0], single[1],   // m00 m10 = scaleX shearY
-            single[3], single[4],   // m01 m11 = shearX scaleY
-            single[6], single[7] ); // m02 m12 = tx ty
+                single[0], single[1],   // m00 m10 = scaleX shearY
+                single[3], single[4],   // m01 m11 = shearX scaleY
+                single[6], single[7] ); // m02 m12 = tx ty
     }
 
     /**
@@ -451,7 +456,7 @@ public final class Matrix implements Cloneable
     {
         float xScale = single[0];
 
-        /**
+        /*
          * BM: if the trm is rotated, the calculation is a little more complicated
          *
          * The rotation matrix multiplied with the scaling matrix is:
@@ -494,8 +499,8 @@ public final class Matrix implements Cloneable
 
     /**
      * Returns the x-scaling element of this matrix.
-     * 
-     * @see #getScalingFactorX() 
+     *
+     * @see #getScalingFactorX()
      */
     public float getScaleX()
     {

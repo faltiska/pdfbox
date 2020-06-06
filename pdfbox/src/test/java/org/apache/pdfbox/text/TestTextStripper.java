@@ -38,6 +38,7 @@ import java.net.URISyntaxException;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
 
 import junit.framework.Test;
 import junit.framework.TestCase;
@@ -51,6 +52,7 @@ import org.apache.pdfbox.pdmodel.TestPDPageTree;
 import org.apache.pdfbox.pdmodel.interactive.documentnavigation.destination.PDPageDestination;
 import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDDocumentOutline;
 import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlineItem;
+import org.apache.pdfbox.util.Matrix;
 
 
 /**
@@ -563,7 +565,21 @@ public class TestTextStripper extends TestCase
             doTestFile(testFile, outDir, false, true);
         }
     }
-    
+
+    public void testMatrix() {
+        long start = System.currentTimeMillis();
+        Matrix c;
+        Matrix d;
+        Random rand = new Random();
+        for (int i=0; i<50000000; i++) {
+            c = new Matrix(rand.nextFloat(), rand.nextFloat(), rand.nextFloat(), rand.nextFloat(), rand.nextFloat(), rand.nextFloat());
+            d = new Matrix(rand.nextFloat(), rand.nextFloat(), rand.nextFloat(), rand.nextFloat(), rand.nextFloat(), rand.nextFloat());
+            c.concatenate(d);
+        }
+        long stop = System.currentTimeMillis();
+        System.out.println("Apache matrix multiplication took " + (stop - start) + "ms.");
+    }
+
     /**
      * Test to validate text extraction of file set.
      *
