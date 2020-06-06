@@ -566,20 +566,6 @@ public class TestTextStripper extends TestCase
         }
     }
 
-    public void testMatrix() {
-        long start = System.currentTimeMillis();
-        Matrix c;
-        Matrix d;
-        Random rand = new Random();
-        for (int i=0; i<50000000; i++) {
-            c = new Matrix(rand.nextFloat(), rand.nextFloat(), rand.nextFloat(), rand.nextFloat(), rand.nextFloat(), rand.nextFloat());
-            d = new Matrix(rand.nextFloat(), rand.nextFloat(), rand.nextFloat(), rand.nextFloat(), rand.nextFloat(), rand.nextFloat());
-            c.concatenate(d);
-        }
-        long stop = System.currentTimeMillis();
-        System.out.println("Apache matrix multiplication took " + (stop - start) + "ms.");
-    }
-
     /**
      * Test to validate text extraction of file set.
      *

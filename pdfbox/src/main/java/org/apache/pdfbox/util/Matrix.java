@@ -289,31 +289,19 @@ public final class Matrix implements Cloneable
     {
         Matrix result = new Matrix(new float[SIZE]);
 
-        if (other != null && other.single != null)
-        {
-            // the operands
-            float[] a = this.single;
-            float[] b = other.single;
-            float[] c = result.single;
+        float[] a = this.single;
+        float[] b = other.single;
+        float[] c = result.single;
 
-            // We're multiplying 2 sets of floats together to produce a third, but we allow
-            // any of these float[] instances to be the same objects.
-            // There is the possibility then to overwrite one of the operands with result values
-            // and therefore corrupt the result.
-
-            // If either of these operands are the same float[] instance as the result, then
-            // they need to be copied.
-
-            c[0] = a[0] * b[0] + a[1] * b[3] + a[2] * b[6];
-            c[1] = a[0] * b[1] + a[1] * b[4] + a[2] * b[7];
-            c[2] = a[0] * b[2] + a[1] * b[5] + a[2] * b[8];
-            c[3] = a[3] * b[0] + a[4] * b[3] + a[5] * b[6];
-            c[4] = a[3] * b[1] + a[4] * b[4] + a[5] * b[7];
-            c[5] = a[3] * b[2] + a[4] * b[5] + a[5] * b[8];
-            c[6] = a[6] * b[0] + a[7] * b[3] + a[8] * b[6];
-            c[7] = a[6] * b[1] + a[7] * b[4] + a[8] * b[7];
-            c[8] = a[6] * b[2] + a[7] * b[5] + a[8] * b[8];
-        }
+        c[0] = a[0] * b[0] + a[1] * b[3] + a[2] * b[6];
+        c[1] = a[0] * b[1] + a[1] * b[4] + a[2] * b[7];
+        c[2] = a[0] * b[2] + a[1] * b[5] + a[2] * b[8];
+        c[3] = a[3] * b[0] + a[4] * b[3] + a[5] * b[6];
+        c[4] = a[3] * b[1] + a[4] * b[4] + a[5] * b[7];
+        c[5] = a[3] * b[2] + a[4] * b[5] + a[5] * b[8];
+        c[6] = a[6] * b[0] + a[7] * b[3] + a[8] * b[6];
+        c[7] = a[6] * b[1] + a[7] * b[4] + a[8] * b[7];
+        c[8] = a[6] * b[2] + a[7] * b[5] + a[8] * b[8];
 
         return result;
     }
@@ -473,10 +461,9 @@ public final class Matrix implements Cloneable
          * sqrt(x2) =
          * abs(x)
          */
-        if( !(Float.compare(single[1], 0.0f) == 0 && Float.compare(single[3], 0.0f) ==0) )
+        if( !(Float.compare(single[1], 0.0f) == 0 && Float.compare(single[3], 0.0f) == 0) )
         {
-            xScale = (float)Math.sqrt(Math.pow(single[0], 2)+
-                                      Math.pow(single[1], 2));
+            xScale = (float)Math.sqrt(Math.pow(single[0], 2) + Math.pow(single[1], 2));
         }
         return xScale;
     }

@@ -127,4 +127,19 @@ public class MatrixTest
     {
         assertArrayEquals(new float[] { 1, 0, 0, 0, 1, 0, 0, 0, 1 }, m.single, 0);
     }
+
+    @Test
+    public void testMultiplicationPerformance() {
+        long start = System.currentTimeMillis();
+        Matrix c;
+        Matrix d;
+        for (int i=0; i<300000000; i++) {
+            c = new Matrix(15, 3, 235, 55, 422, 1);
+            d = new Matrix(45, 345, 23, 551, 66, 832);
+            c.multiply(d);
+            c.concatenate(d);
+        }
+        long stop = System.currentTimeMillis();
+        System.out.println("Apache matrix multiplication took " + (stop - start) + "ms.");
+    }
 }
