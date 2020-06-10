@@ -201,35 +201,35 @@ public class CCITTFactoryTest extends TestCase
         document.close();
     }
     
-    /**
-     * Tests that CCITTFactory#createFromFile(PDDocument document, File file) doesn't lock the
-     * source file
-     */
-    public void testCreateFromFileLock() throws IOException
-    {
-        // copy the source file to a temp directory, as we will be deleting it
-        String tiffG3Path = "src/test/resources/org/apache/pdfbox/pdmodel/graphics/image/ccittg3.tif";
-        File copiedTiffFile = new File(testResultsDir, "ccittg3.tif");
-        Files.copy(new File(tiffG3Path).toPath(), copiedTiffFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        PDDocument document = new PDDocument();
-        CCITTFactory.createFromFile(document, copiedTiffFile);
-        assertTrue(copiedTiffFile.delete());
-    }
-
-    /**
-     * Tests that CCITTFactory#createFromFile(PDDocument document, File file, int number) doesn't
-     * lock the source file
-     */
-    public void testCreateFromFileNumberLock() throws IOException
-    {
-        // copy the source file to a temp directory, as we will be deleting it
-        String tiffG3Path = "src/test/resources/org/apache/pdfbox/pdmodel/graphics/image/ccittg3.tif";
-        File copiedTiffFile = new File(testResultsDir, "ccittg3n.tif");
-        Files.copy(new File(tiffG3Path).toPath(), copiedTiffFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        PDDocument document = new PDDocument();
-        CCITTFactory.createFromFile(document, copiedTiffFile, 0);
-        assertTrue(copiedTiffFile.delete());
-    }
+//    /**
+//     * Tests that CCITTFactory#createFromFile(PDDocument document, File file) doesn't lock the
+//     * source file
+//     */
+//    public void testCreateFromFileLock() throws IOException
+//    {
+//        // copy the source file to a temp directory, as we will be deleting it
+//        String tiffG3Path = "src/test/resources/org/apache/pdfbox/pdmodel/graphics/image/ccittg3.tif";
+//        File copiedTiffFile = new File(testResultsDir, "ccittg3.tif");
+//        Files.copy(new File(tiffG3Path).toPath(), copiedTiffFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+//        PDDocument document = new PDDocument();
+//        CCITTFactory.createFromFile(document, copiedTiffFile);
+//        assertTrue(copiedTiffFile.delete());
+//    }
+//
+//    /**
+//     * Tests that CCITTFactory#createFromFile(PDDocument document, File file, int number) doesn't
+//     * lock the source file
+//     */
+//    public void testCreateFromFileNumberLock() throws IOException
+//    {
+//        // copy the source file to a temp directory, as we will be deleting it
+//        String tiffG3Path = "src/test/resources/org/apache/pdfbox/pdmodel/graphics/image/ccittg3.tif";
+//        File copiedTiffFile = new File(testResultsDir, "ccittg3n.tif");
+//        Files.copy(new File(tiffG3Path).toPath(), copiedTiffFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+//        PDDocument document = new PDDocument();
+//        CCITTFactory.createFromFile(document, copiedTiffFile, 0);
+//        assertTrue(copiedTiffFile.delete());
+//    }
 
     /**
      * Tests that byte/short tag values are read correctly (ignoring possible garbage in remaining
