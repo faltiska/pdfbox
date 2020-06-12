@@ -40,18 +40,21 @@ public final class Matrix implements Cloneable
      */
     public Matrix()
     {
-        single = new float[]
-        {
-                1,0,0,  //  a  b  0     sx hy 0    note: hx and hy are reversed vs. the PDF spec as we use
-                0,1,0,  //  c  d  0  =  hx sy 0    AffineTransform's definition x and y shear
-                0,0,1   //  tx ty 1     tx ty 1
-        };
+        // a b 0
+        // c d 0
+        // tx ty 1
+        // note: hx and hy are reversed vs.the PDF spec as we use AffineTransform's definition x and y shear
+        // sx hy 0
+        // hx sy 0
+        // tx ty 1
+        single = new float[] { 1, 0, 0, 0, 1, 0, 0, 0, 1 };
     }
 
     /**
-     * Constructor. This produces an identity matrix.
+     * Constructor. This produces a matrix with the given array as data.<br/>
+     * The source array is not copied or cloned.
      */
-    public Matrix(float[] src)
+    private Matrix(float[] src)
     {
         single = src;
     }
@@ -77,13 +80,13 @@ public final class Matrix implements Cloneable
      * Creates a transformation matrix with the given 6 elements. Transformation matrices are
      * discussed in 8.3.3, "Common Transformations" and 8.3.4, "Transformation Matrices" of the PDF
      * specification. For simple purposes (rotate, scale, translate) it is recommended to use the
-     * static methods below.
-     *
-     * Produces the following matrix:
-     * a b 0
-     * c d 0
-     * e f 1
-     *
+     * static methods below.<br/>
+     * <br/>
+     * Produces the following matrix:<br/>
+     * a b 0<br/>
+     * c d 0<br/>
+     * e f 1<br/>
+     * <br/>
      * @see Matrix#getRotateInstance(double, float, float)
      * @see Matrix#getScaleInstance(float, float)
      * @see Matrix#getTranslateInstance(float, float)
@@ -119,7 +122,6 @@ public final class Matrix implements Cloneable
     public Matrix(AffineTransform at)
     {
         single = new float[SIZE];
-
         single[0] = (float)at.getScaleX();
         single[1] = (float)at.getShearY();
         single[3] = (float)at.getShearX();
@@ -220,12 +222,15 @@ public final class Matrix implements Cloneable
     /**
      * Concatenates (premultiplies) the given matrix to this matrix.
      *
-     * @param matrix The matrix to concatenate.
+     * @param other The matrix to concatenate.
      */
-    public void concatenate(Matrix matrix)
+    public void concatenate(Matrix other)
     {
-        Matrix result = matrix.multiply(this);
-        single = result.single;
+        float[] c = new float[SIZE];
+
+        multiplyArrays(other.single, single, c);
+
+        single = c;
     }
 
     /**
@@ -235,8 +240,7 @@ public final class Matrix implements Cloneable
      */
     public void translate(Vector vector)
     {
-        Matrix m = Matrix.getTranslateInstance(vector.getX(), vector.getY());
-        concatenate(m);
+        concatenate(Matrix.getTranslateInstance(vector.getX(), vector.getY()));
     }
 
     /**
@@ -247,8 +251,7 @@ public final class Matrix implements Cloneable
      */
     public void translate(float tx, float ty)
     {
-        Matrix m = Matrix.getTranslateInstance(tx, ty);
-        concatenate(m);
+        concatenate(Matrix.getTranslateInstance(tx, ty));
     }
 
     /**
@@ -259,8 +262,7 @@ public final class Matrix implements Cloneable
      */
     public void scale(float sx, float sy)
     {
-        Matrix m = Matrix.getScaleInstance(sx, sy);
-        concatenate(m);
+        concatenate(Matrix.getScaleInstance(sx, sy));
     }
 
     /**
@@ -270,29 +272,27 @@ public final class Matrix implements Cloneable
      */
     public void rotate(double theta)
     {
-        Matrix m = Matrix.getRotateInstance(theta, 0, 0);
-        concatenate(m);
+        concatenate(Matrix.getRotateInstance(theta, 0, 0));
     }
 
     /**
-     * This method multiplies this Matrix with the specified other Matrix, storing the product in the specified
-     * result Matrix. By reusing Matrix instances like this, multiplication chains can be executed without having
-     * to create many temporary Matrix objects.
-     * <p>
-     * It is allowed to have (other == this) or (result == this) or indeed (other == result) but if this is done,
-     * the backing float[] matrix values may be copied in order to ensure a correct product.
+     * This method multiplies this Matrix with the specified other Matrix, storing the product in a new instance. It is
+     * allowed to have (other == this).
      *
-     * @param other the second operand Matrix in the multiplication
+     * @param other the second operand Matrix in the multiplication; required
      * @return the product of the two matrices.
      */
-    public Matrix multiply( Matrix other )
+    public Matrix multiply(Matrix other)
     {
-        Matrix result = new Matrix(new float[SIZE]);
+        Matrix result = new Matrix();
 
-        float[] a = this.single;
-        float[] b = other.single;
-        float[] c = result.single;
+        multiplyArrays(single, other.single, result.single);
 
+        return result;
+    }
+
+    private void multiplyArrays(float[] a, float[] b, float[] c)
+    {
         c[0] = a[0] * b[0] + a[1] * b[3] + a[2] * b[6];
         c[1] = a[0] * b[1] + a[1] * b[4] + a[2] * b[7];
         c[2] = a[0] * b[2] + a[1] * b[5] + a[2] * b[8];
@@ -302,10 +302,7 @@ public final class Matrix implements Cloneable
         c[6] = a[6] * b[0] + a[7] * b[3] + a[8] * b[6];
         c[7] = a[6] * b[1] + a[7] * b[4] + a[8] * b[7];
         c[8] = a[6] * b[2] + a[7] * b[5] + a[8] * b[8];
-
-        return result;
     }
-
     /**
      * Transforms the given point by this matrix.
      *
@@ -360,13 +357,13 @@ public final class Matrix implements Cloneable
     }
 
     /**
-     * Convenience method to create a scaled instance.
-     *
-     * Produces the following matrix:
-     * x 0 0
-     * 0 y 0
-     * 0 0 1
-     *
+     * Convenience method to create a scaled instance.<br/>
+     * <br/>
+     * Produces the following matrix:<br/>
+     * x 0 0<br/>
+     * 0 y 0<br/>
+     * 0 0 1<br/>
+     * <br/>
      * @param x The xscale operator.
      * @param y The yscale operator.
      * @return A new matrix with just the x/y scaling
@@ -377,13 +374,13 @@ public final class Matrix implements Cloneable
     }
 
     /**
-     * Convenience method to create a translating instance.
-     *
-     * Produces the following matrix:
-     * 1 0 0
-     * 0 1 0
-     * x y 1
-     *
+     * Convenience method to create a translating instance.<br/>
+     * <br/>
+     * Produces the following matrix:<br/>
+     * 1 0 0<br/>
+     * 0 1 0<br/>
+     * x y 1<br/>
+     * <br/>
      * @param x The x translating operator.
      * @param y The y translating operator.
      * @return A new matrix with just the x/y translating.
@@ -461,9 +458,10 @@ public final class Matrix implements Cloneable
          * sqrt(x2) =
          * abs(x)
          */
-        if( !(Float.compare(single[1], 0.0f) == 0 && Float.compare(single[3], 0.0f) == 0) )
+        if( !(Float.compare(single[1], 0.0f) == 0 && Float.compare(single[3], 0.0f) ==0) )
         {
-            xScale = (float)Math.sqrt(Math.pow(single[0], 2) + Math.pow(single[1], 2));
+            xScale = (float)Math.sqrt(Math.pow(single[0], 2)+
+                    Math.pow(single[1], 2));
         }
         return xScale;
     }
@@ -479,7 +477,7 @@ public final class Matrix implements Cloneable
         if( !(Float.compare(single[1], 0.0f) == 0 && Float.compare(single[3], 0.0f) == 0) )
         {
             yScale = (float)Math.sqrt(Math.pow(single[3], 2)+
-                                      Math.pow(single[4], 2));
+                    Math.pow(single[4], 2));
         }
         return yScale;
     }
@@ -558,12 +556,12 @@ public final class Matrix implements Cloneable
     public String toString()
     {
         return "[" +
-            single[0] + "," +
-            single[1] + "," +
-            single[3] + "," +
-            single[4] + "," +
-            single[6] + "," +
-            single[7] + "]";
+                single[0] + "," +
+                single[1] + "," +
+                single[3] + "," +
+                single[4] + "," +
+                single[6] + "," +
+                single[7] + "]";
     }
 
     @Override
