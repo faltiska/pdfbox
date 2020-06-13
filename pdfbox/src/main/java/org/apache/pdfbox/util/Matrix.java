@@ -33,7 +33,7 @@ import org.apache.pdfbox.cos.COSBase;
 public final class Matrix implements Cloneable
 {
     public static final int SIZE = 9;
-    float[] single;
+    private float[] single;
 
     /**
      * Constructor. This produces an identity matrix.
@@ -51,7 +51,7 @@ public final class Matrix implements Cloneable
     }
 
     /**
-     * Constructor. This produces a matrix with the given array as data.<br/>
+     * Constructor. This produces a matrix with the given array as data.
      * The source array is not copied or cloned.
      */
     private Matrix(float[] src)
@@ -80,13 +80,13 @@ public final class Matrix implements Cloneable
      * Creates a transformation matrix with the given 6 elements. Transformation matrices are
      * discussed in 8.3.3, "Common Transformations" and 8.3.4, "Transformation Matrices" of the PDF
      * specification. For simple purposes (rotate, scale, translate) it is recommended to use the
-     * static methods below.<br/>
-     * <br/>
-     * Produces the following matrix:<br/>
-     * a b 0<br/>
-     * c d 0<br/>
-     * e f 1<br/>
-     * <br/>
+     * static methods below.
+     *
+     * Produces the following matrix:
+     * a b 0
+     * c d 0
+     * e f 1
+     *
      * @see Matrix#getRotateInstance(double, float, float)
      * @see Matrix#getScaleInstance(float, float)
      * @see Matrix#getTranslateInstance(float, float)
@@ -169,9 +169,9 @@ public final class Matrix implements Cloneable
     public AffineTransform createAffineTransform()
     {
         return new AffineTransform(
-                single[0], single[1],   // m00 m10 = scaleX shearY
-                single[3], single[4],   // m01 m11 = shearX scaleY
-                single[6], single[7] ); // m02 m12 = tx ty
+            single[0], single[1],   // m00 m10 = scaleX shearY
+            single[3], single[4],   // m01 m11 = shearX scaleY
+            single[6], single[7] ); // m02 m12 = tx ty
     }
 
     /**
@@ -222,15 +222,11 @@ public final class Matrix implements Cloneable
     /**
      * Concatenates (premultiplies) the given matrix to this matrix.
      *
-     * @param other The matrix to concatenate.
+     * @param matrix The matrix to concatenate.
      */
-    public void concatenate(Matrix other)
+    public void concatenate(Matrix matrix)
     {
-        float[] c = new float[SIZE];
-
-        multiplyArrays(other.single, single, c);
-
-        single = c;
+        single = checkFloatValues(multiplyArrays(matrix.single, single));
     }
 
     /**
@@ -284,15 +280,22 @@ public final class Matrix implements Cloneable
      */
     public Matrix multiply(Matrix other)
     {
-        Matrix result = new Matrix();
-
-        multiplyArrays(single, other.single, result.single);
-
-        return result;
+        return new Matrix(checkFloatValues(multiplyArrays(single, other.single)));
     }
 
-    private void multiplyArrays(float[] a, float[] b, float[] c)
+    private float[] checkFloatValues(float[] values)
     {
+        if (!Float.isFinite(values[0]) || !Float.isFinite(values[1]) || !Float.isFinite(values[2])
+                || !Float.isFinite(values[3]) || !Float.isFinite(values[4]) || !Float.isFinite(values[5])
+                || !Float.isFinite(values[6]) || !Float.isFinite(values[7]) || !Float.isFinite(values[8]))
+            throw new IllegalArgumentException("Multiplying two matrices produces illegal values");
+        return values;
+    }
+
+
+    private float[] multiplyArrays(float[] a, float[] b)
+    {
+        float[] c = new float[SIZE];
         c[0] = a[0] * b[0] + a[1] * b[3] + a[2] * b[6];
         c[1] = a[0] * b[1] + a[1] * b[4] + a[2] * b[7];
         c[2] = a[0] * b[2] + a[1] * b[5] + a[2] * b[8];
@@ -302,6 +305,7 @@ public final class Matrix implements Cloneable
         c[6] = a[6] * b[0] + a[7] * b[3] + a[8] * b[6];
         c[7] = a[6] * b[1] + a[7] * b[4] + a[8] * b[7];
         c[8] = a[6] * b[2] + a[7] * b[5] + a[8] * b[8];
+        return c;
     }
     /**
      * Transforms the given point by this matrix.
@@ -357,13 +361,13 @@ public final class Matrix implements Cloneable
     }
 
     /**
-     * Convenience method to create a scaled instance.<br/>
-     * <br/>
-     * Produces the following matrix:<br/>
-     * x 0 0<br/>
-     * 0 y 0<br/>
-     * 0 0 1<br/>
-     * <br/>
+     * Convenience method to create a scaled instance.
+     *
+     * Produces the following matrix:
+     * x 0 0
+     * 0 y 0
+     * 0 0 1
+     *
      * @param x The xscale operator.
      * @param y The yscale operator.
      * @return A new matrix with just the x/y scaling
@@ -374,13 +378,13 @@ public final class Matrix implements Cloneable
     }
 
     /**
-     * Convenience method to create a translating instance.<br/>
-     * <br/>
-     * Produces the following matrix:<br/>
-     * 1 0 0<br/>
-     * 0 1 0<br/>
-     * x y 1<br/>
-     * <br/>
+     * Convenience method to create a translating instance.
+     *
+     * Produces the following matrix:
+     * 1 0 0
+     * 0 1 0
+     * x y 1
+     *
      * @param x The x translating operator.
      * @param y The y translating operator.
      * @return A new matrix with just the x/y translating.
@@ -441,7 +445,7 @@ public final class Matrix implements Cloneable
     {
         float xScale = single[0];
 
-        /*
+        /**
          * BM: if the trm is rotated, the calculation is a little more complicated
          *
          * The rotation matrix multiplied with the scaling matrix is:
@@ -461,7 +465,7 @@ public final class Matrix implements Cloneable
         if( !(Float.compare(single[1], 0.0f) == 0 && Float.compare(single[3], 0.0f) ==0) )
         {
             xScale = (float)Math.sqrt(Math.pow(single[0], 2)+
-                    Math.pow(single[1], 2));
+                                      Math.pow(single[1], 2));
         }
         return xScale;
     }
@@ -477,15 +481,15 @@ public final class Matrix implements Cloneable
         if( !(Float.compare(single[1], 0.0f) == 0 && Float.compare(single[3], 0.0f) == 0) )
         {
             yScale = (float)Math.sqrt(Math.pow(single[3], 2)+
-                    Math.pow(single[4], 2));
+                                      Math.pow(single[4], 2));
         }
         return yScale;
     }
 
     /**
      * Returns the x-scaling element of this matrix.
-     *
-     * @see #getScalingFactorX()
+     * 
+     * @see #getScalingFactorX() 
      */
     public float getScaleX()
     {
@@ -556,12 +560,12 @@ public final class Matrix implements Cloneable
     public String toString()
     {
         return "[" +
-                single[0] + "," +
-                single[1] + "," +
-                single[3] + "," +
-                single[4] + "," +
-                single[6] + "," +
-                single[7] + "]";
+            single[0] + "," +
+            single[1] + "," +
+            single[3] + "," +
+            single[4] + "," +
+            single[6] + "," +
+            single[7] + "]";
     }
 
     @Override

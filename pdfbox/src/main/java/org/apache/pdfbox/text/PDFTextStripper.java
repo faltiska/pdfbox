@@ -16,7 +16,13 @@
  */
 package org.apache.pdfbox.text;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.LineNumberReader;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.text.Bidi;
 import java.text.Normalizer;
 import java.util.ArrayList;
@@ -1751,7 +1757,8 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
     static
     {
         String path = "/org/apache/pdfbox/resources/text/BidiMirroring.txt";
-        try (InputStream input = new BufferedInputStream(PDFTextStripper.class.getResourceAsStream(path)))
+        try (InputStream resourceAsStream = PDFTextStripper.class.getResourceAsStream(path);
+             InputStream input = new BufferedInputStream(resourceAsStream))
         {
             parseBidiFile(input);
         }

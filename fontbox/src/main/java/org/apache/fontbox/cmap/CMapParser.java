@@ -16,7 +16,12 @@
  */
 package org.apache.fontbox.cmap;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PushbackInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -68,7 +73,7 @@ public class CMapParser
      */
     public CMap parsePredefined(String name) throws IOException
     {
-        try (InputStream input = getExternalCMap(name))
+        try (InputStream input = new BufferedInputStream(getExternalCMap(name)))
         {
             return parse(input);
         }
@@ -100,28 +105,29 @@ public class CMapParser
 
                 if (previousToken != null)
                 {
-                    switch (op.op)
+                    if (op.op.equals("usecmap") && previousToken instanceof LiteralName)
                     {
-                        case "usecmap":
-                            parseUsecmap((LiteralName) previousToken, result);
-                            break;
-                        case "begincodespacerange":
-                            parseBegincodespacerange((Number) previousToken, cmapStream, result);
-                            break;
-                        case "beginbfchar":
-                            parseBeginbfchar((Number) previousToken, cmapStream, result);
-                            break;
-                        case "beginbfrange":
-                            parseBeginbfrange((Number) previousToken, cmapStream, result);
-                            break;
-                        case "begincidchar":
-                            parseBegincidchar((Number) previousToken, cmapStream, result);
-                            break;
-                        case "begincidrange":
-                            parseBegincidrange((Integer) previousToken, cmapStream, result);
-                            break;
-                        default:
-                            break;
+                        parseUsecmap((LiteralName) previousToken, result);
+                    }
+                    else if (op.op.equals("begincodespacerange") && previousToken instanceof Number)
+                    {
+                        parseBegincodespacerange((Number) previousToken, cmapStream, result);
+                    }
+                    else if (op.op.equals("beginbfchar") && previousToken instanceof Number)
+                    {
+                        parseBeginbfchar((Number) previousToken, cmapStream, result);
+                    }
+                    else if (op.op.equals("beginbfrange") && previousToken instanceof Number)
+                    {
+                        parseBeginbfrange((Number) previousToken, cmapStream, result);
+                    }
+                    else if (op.op.equals("begincidchar") && previousToken instanceof Number)
+                    {
+                        parseBegincidchar((Number) previousToken, cmapStream, result);
+                    }
+                    else if (op.op.equals("begincidrange") && previousToken instanceof Integer)
+                    {
+                        parseBegincidrange((Integer) previousToken, cmapStream, result);
                     }
                 }
             }
@@ -136,9 +142,11 @@ public class CMapParser
 
     private void parseUsecmap(LiteralName useCmapName, CMap result) throws IOException
     {
-        InputStream useStream = getExternalCMap(useCmapName.name);
-        CMap useCMap = parse(useStream);
-        result.useCmap(useCMap);
+        try (InputStream useStream = new BufferedInputStream(getExternalCMap(useCmapName.name)))
+        {
+            CMap useCMap = parse(useStream);
+            result.useCmap(useCMap);
+        }
     }
 
     private void parseLiteralName(LiteralName literal, PushbackInputStream cmapStream, CMap result) throws IOException

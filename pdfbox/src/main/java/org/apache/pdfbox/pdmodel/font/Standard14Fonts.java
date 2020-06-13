@@ -17,12 +17,15 @@
 
 package org.apache.pdfbox.pdmodel.font;
 
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import org.apache.fontbox.afm.AFMParser;
 import org.apache.fontbox.afm.FontMetrics;
-
-import java.io.BufferedInputStream;
-import java.io.InputStream;
-import java.util.*;
 
 /**
  * The "Standard 14" PDF fonts, also known as the "base 14" fonts.
@@ -32,8 +35,22 @@ import java.util.*;
  */
 final class Standard14Fonts
 {
-    private static final Map<String, String> ALIASES = new HashMap<>(34);
-    private static final Map<String, FontMetrics> FONTS =  new HashMap<>(34);
+    /**
+     * Contains all base names and alias names for the known fonts.
+     * For base fonts both the key and the value will be the base name.
+     * For aliases, the key is an alias, and the value is a base name.
+     * We want a single lookup in the map to find the font both by a base name or an alias.
+     */
+    private static final Map<String, String> ALIASES = new HashMap<>(38);
+
+    /**
+     * Contains the font metrics for the base fonts.
+     * The key is a base font name, value is a FontMetrics instance.
+     * Metrics are loaded into this map on demand, only if needed.
+     * @see #getAFM
+     */
+    private static final Map<String, FontMetrics> FONTS =  new HashMap<>(14);
+
     static
     {
         // the 14 standard fonts
@@ -82,32 +99,35 @@ final class Standard14Fonts
         mapName("Arial-BoldMT", "Helvetica-Bold");
         mapName("Arial-BoldItalicMT", "Helvetica-BoldOblique");
     }
-    
+
     private Standard14Fonts()
     {
     }
 
     /**
-     * Loads the metrics for the font specified by name.
-     * Metric file must exist in the pdfbox jar under /org/apache/pdfbox/resources/afm/
+     * Loads the metrics for the base font specified by name. Metric file must exist in the pdfbox
+     * jar under /org/apache/pdfbox/resources/afm/
+     *
      * @param fontName one of the standard 14 font names for which to lod the metrics.
+     * @throws IOException if no metrics exist for that font.
      */
-    private static void loadMetrics(String fontName)
+    private static void loadMetrics(String fontName) throws IOException
     {
         String resourceName = "/org/apache/pdfbox/resources/afm/" + fontName + ".afm";
-        try ( InputStream afmStream = new BufferedInputStream(PDType1Font.class.getResourceAsStream(resourceName)) )
+        try (InputStream resourceAsStream = PDType1Font.class.getResourceAsStream(resourceName);
+             InputStream afmStream = new BufferedInputStream(resourceAsStream))
         {
-
             AFMParser parser = new AFMParser(afmStream);
             FontMetrics metric = parser.parse(true);
             FONTS.put(fontName, metric);
-        } catch (Exception e) {
-            throw new IllegalArgumentException(e);
         }
     }
 
     /**
-     * Adds a standard font name to the map of known aliases, to simplify the logic of finding font metrics by name.
+     * Adds a standard font name to the map of known aliases, to simplify the logic of finding
+     * font metrics by name. We want a single lookup in the map to find the font both by a base name or
+     * an alias.
+     *
      * @see #getAFM
      * @param baseName the base name of the font; must be one of the 14 standard fonts
      */
@@ -118,9 +138,11 @@ final class Standard14Fonts
 
     /**
      * Adds an alias name for a standard font to the map of known aliases to the map of aliases
-     * (alias as key, standard name as value).
+     * (alias as key, standard name as value). We want a single lookup in the map to find the font
+     * both by a base name or an alias.
+     *
      * @param alias an alias for the font
-     * @param baseName the base name of the font; must
+     * @param baseName the base name of the font; must be one of the 14 standard fonts
      */
     private static void mapName(String alias, String baseName)
     {
@@ -128,11 +150,14 @@ final class Standard14Fonts
     }
 
     /**
-     * Returns the metrics for font specified by the given name.
-     * Loads the font is not already loaded.
-     * @param fontName name of font; can be one base name or an alias.
+     * Returns the metrics for font specified by fontName. Loads the font metrics if not already
+     * loaded.
+     *
+     * @param fontName name of font; either a base name or alias
+     * @return the font metrics or null if the name is not one of the known names
+     * @throws IllegalArgumentException if no metrics exist for that font.
      */
-    public static FontMetrics getAFM(String fontName) throws IllegalArgumentException
+    public static FontMetrics getAFM(String fontName)
     {
         String baseName = ALIASES.get(fontName);
         if (baseName == null)
@@ -140,26 +165,40 @@ final class Standard14Fonts
             return null;
         }
 
-        FontMetrics fontMetrics = FONTS.get(baseName);
-        if (fontMetrics == null)
+        if (FONTS.get(baseName) == null)
         {
-            loadMetrics(baseName);
+            synchronized (FONTS)
+            {
+                if (FONTS.get(baseName) == null)
+                {
+                    try
+                    {
+                        loadMetrics(baseName);
+                    }
+                    catch (IOException e)
+                    {
+                        throw new IllegalArgumentException(e);
+                    }
+                }
+            }
         }
 
         return FONTS.get(baseName);
     }
 
     /**
-     * Returns true if the given font name a Standard 14 font.
-     * @param baseName base name of font
+     * Returns true if the given font name is one of the known names, including alias.
+     *
+     * @param fontName the name of font, either a base name or alias
+     * @return true if the name is one of the known names
      */
-    public static boolean containsName(String baseName)
+    public static boolean containsName(String fontName)
     {
-        return ALIASES.containsKey(baseName);
+        return ALIASES.containsKey(fontName);
     }
 
     /**
-     * Returns the set of Standard 14 font names, including additional names.
+     * Returns the set of known font names, including aliases.
      */
     public static Set<String> getNames()
     {
@@ -167,11 +206,13 @@ final class Standard14Fonts
     }
 
     /**
-     * Returns the name of the actual font which the given font name maps to.
-     * @param baseName base name of font
+     * Returns the base name of the font which the given font name maps to.
+     *
+     * @param fontName name of font, either a base name or an alias
+     * @return the base name or null if this is not one of the known names
      */
-    public static String getMappedFontName(String baseName)
+    public static String getMappedFontName(String fontName)
     {
-        return ALIASES.get(baseName);
+        return ALIASES.get(fontName);
     }
 }
