@@ -115,7 +115,7 @@ final class FontMapperImpl implements FontMapper
              InputStream ttfStream = new BufferedInputStream(resourceAsStream))
         {
             TTFParser ttfParser = new TTFParser();
-            lastResortFont = ttfParser.parse(is);
+            lastResortFont = ttfParser.parse(ttfStream);
         }
         catch (IOException e)
         {
