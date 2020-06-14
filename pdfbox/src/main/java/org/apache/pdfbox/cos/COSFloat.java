@@ -25,14 +25,11 @@ import java.nio.charset.StandardCharsets;
  * This class represents a floating point number in a PDF document.
  *
  * @author Ben Litchfield
- * 
+ *
  */
 public class COSFloat extends COSNumber
 {
     private Float value;
-    /**
-     * This will be lazily initialized, if/when toString is called.
-     */
     private String valueAsString;
 
     /**
@@ -49,8 +46,11 @@ public class COSFloat extends COSNumber
      * Constructor.
      *
      * @param aFloat The primitive float object that this object wraps.
+     *
+     * @throws IOException If aFloat is not a float.
      */
-    public COSFloat( String aFloat ) throws IOException {
+    public COSFloat( String aFloat ) throws IOException
+    {
         try
         {
             value = Float.parseFloat(aFloat);
@@ -71,7 +71,7 @@ public class COSFloat extends COSNumber
             }
             else
             {
-                throw new IOException("Invalid floating point format: '" + aFloat + "'", e);
+                throw new IOException("Error expected floating point number actual='" + aFloat + "'", e);
             }
 
             try
@@ -84,18 +84,54 @@ public class COSFloat extends COSNumber
             }
         }
 
-        checkMinMaxValues();
+        checkMinMaxValues(aFloat);
     }
 
-    private void checkMinMaxValues()
+
+    private void checkMinMaxValues(String aFloat)
     {
         if (value == Float.POSITIVE_INFINITY)
         {
             value = Float.MAX_VALUE;
-        } else if (value == Float.NEGATIVE_INFINITY)
+        }
+        else if (value == Float.NEGATIVE_INFINITY)
         {
             value = -Float.MAX_VALUE;
         }
+        else if (value > 0 && value < Float.MIN_NORMAL)
+        {
+            value = Float.MIN_NORMAL;
+        }
+        else if (value < 0 && value > -Float.MIN_NORMAL)
+        {
+            value = -Float.MIN_NORMAL;
+        }
+        else if (value == 0 && aFloat.matches(".*[1-9].*"))
+        {
+            if (aFloat.startsWith("-"))
+            {
+                value = -Float.MIN_NORMAL;
+            } else {
+                value = Float.MIN_NORMAL;
+            }
+        }
+        else
+        {
+            valueAsString = aFloat;
+        }
+    }
+
+    private String removeNullDigits(String plainStringValue)
+    {
+        // remove fraction digit "0" only
+        if (plainStringValue.indexOf('.') > -1 && !plainStringValue.endsWith(".0"))
+        {
+            while (plainStringValue.endsWith("0") && !plainStringValue.endsWith(".0"))
+            {
+                plainStringValue = plainStringValue.substring(0,plainStringValue.length()-1);
+            }
+        }
+        return plainStringValue;
     }
 
     /**
@@ -137,7 +173,8 @@ public class COSFloat extends COSNumber
     @Override
     public boolean equals( Object o )
     {
-        return o instanceof COSFloat && value.equals(((COSFloat) o).value);
+        return o instanceof COSFloat &&
+                Float.floatToIntBits(((COSFloat)o).value) == Float.floatToIntBits(value);
     }
 
     /**
@@ -164,7 +201,7 @@ public class COSFloat extends COSNumber
      */
     private String formatString() {
         if (valueAsString == null) {
-            valueAsString = new BigDecimal(String.valueOf(value)).stripTrailingZeros().toPlainString();
+            valueAsString = removeNullDigits(new BigDecimal(String.valueOf(value)).toPlainString());
         }
 
         return valueAsString;
