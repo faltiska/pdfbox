@@ -173,6 +173,7 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
      * True if we started a paragraph but haven't ended it yet.
      */
     private boolean inParagraph;
+    private Pattern lastLiPattern = null;
 
     /**
      * Instantiate a new PDFTextStripper object.
@@ -1446,27 +1447,20 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
                     result = true;
                 }
             }
-            else if (Math.abs(xGap) < positionWidth)
+            else if (Math.abs(xGap) < positionWidth) //this line is vertically aligned with last line (within 1/4 of a char)
             {
-                // current horizontal position is within 1/4 a char of the last
-                // linestart. We'll treat them as lined up.
                 if (lastLineStartPosition.isHangingIndent)
                 {
                     position.isHangingIndent = true;
                 }
                 else if (lastLineStartPosition.isParagraphStart)
                 {
-                    // check to see if the previous line looks like
-                    // any of a number of standard list item formats
-                    Pattern liPattern = matchListItemPattern(lastLineStartPosition);
-                    if (liPattern != null)
+                    Pattern currentLiPattern = matchListItemPattern(position);
+                    if (currentLiPattern != null && lastLiPattern == currentLiPattern)
                     {
-                        Pattern currentPattern = matchListItemPattern(position);
-                        if (liPattern == currentPattern)
-                        {
-                            result = true;
-                        }
+                        result = true;
                     }
+                    lastLiPattern = currentLiPattern;
                 }
             }
         }
@@ -1670,7 +1664,8 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
 
         if (lineBuilder.length() > 0)
         {
-            normalized.add(createWord(lineBuilder.toString(), wordPositions));
+            String built = handleDirection(lineBuilder.toString());
+            normalized.add(createWord(built, wordPositions));
         }
         return normalized;
     }
@@ -1853,28 +1848,26 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
                 // Some fonts map U+FDF2 differently than the Unicode spec.
                 // They add an extra U+0627 character to compensate.
                 // This removes the extra character for those fonts.
-                if (c == 0xFDF2 && q > 0
-                        && (word.charAt(q - 1) == 0x0627 || word.charAt(q - 1) == 0xFE8D))
+                if (c == 0xFDF2 && q > 0 && (word.charAt(q - 1) == 0x0627 || word.charAt(q - 1) == 0xFE8D))
                 {
                     builder.append("\u0644\u0644\u0647");
                 }
                 else
                 {
                     // Trim because some decompositions have an extra space, such as U+FC5E
-                    builder.append(Normalizer
-                            .normalize(word.substring(q, q + 1), Normalizer.Form.NFKC).trim());
+                    builder.append(Normalizer.normalize(word.substring(q, q + 1), Normalizer.Form.NFKC).trim());
                 }
                 p = q + 1;
             }
         }
         if (builder == null)
         {
-            return handleDirection(word);
+            return word;
         }
         else
         {
             builder.append(word, p, q);
-            return handleDirection(builder.toString());
+            return builder.toString();
         }
     }
 
@@ -1888,8 +1881,7 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
     {
         if (item.isWordSeparator())
         {
-            normalized.add(
-                    createWord(lineBuilder.toString(), new ArrayList<>(wordPositions)));
+            normalized.add(createWord(lineBuilder.toString(), new ArrayList<>(wordPositions)));
             lineBuilder = new StringBuilder();
             wordPositions.clear();
         }
