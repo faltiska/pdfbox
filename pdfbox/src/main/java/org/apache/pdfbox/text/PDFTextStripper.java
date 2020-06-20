@@ -1464,15 +1464,12 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
                 return;
             }
 
-            if (lastLineStartPosition.isParagraphStart)
+            Pattern currentLiPattern = matchListItemPattern(position);
+            if (currentLiPattern != null && lastLiPattern == currentLiPattern)
             {
-                Pattern currentLiPattern = matchListItemPattern(position);
-                if (currentLiPattern != null && lastLiPattern == currentLiPattern)
-                {
-                    position.isParagraphStart = true;
-                }
-                lastLiPattern = currentLiPattern;
+                position.isParagraphStart = true;
             }
+            lastLiPattern = currentLiPattern;
         }
     }
 
