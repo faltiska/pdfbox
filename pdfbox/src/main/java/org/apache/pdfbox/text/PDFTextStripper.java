@@ -1426,10 +1426,11 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
 
         // TODO do we need to flip this for rtl?
         float xGap = position.position.getXDirAdj() - lastLineStartPosition.position.getXDirAdj();
-        float newXVal = indentThreshold *position.position.getWidthOfSpace();
-        float positionWidth = 0.25f * position.position.getWidth();
+        float newXVal = indentThreshold * position.position.getWidthOfSpace();
 
-        if (xGap > newXVal)
+        boolean isWhitespace = position.position.getUnicode().matches("[\\h]");
+
+        if (xGap > newXVal || isWhitespace)
         {
             // text is indented, but try to screen for hanging indent
             if (!lastLineStartPosition.isParagraphStart)
@@ -1451,6 +1452,8 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
                 return;
             }
         }
+
+        float positionWidth = 0.25f * position.position.getWidth();
 
         //this line is vertically aligned with last line (within 1/4 of a char)
         if (Math.abs(xGap) < positionWidth)
@@ -1554,10 +1557,11 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
     /**
      * a list of regular expressions that match commonly used list item formats, i.e. bullets, numbers, letters, Roman
      * numerals, etc. Not meant to be comprehensive.
+     * https://en.wikipedia.org/wiki/Bullet_(typography)
      */
     private static final String[] LIST_ITEM_EXPRESSIONS = { "\\.", "\\d+\\.", "\\[\\d+\\]",
             "\\d+\\)", "[A-Z]\\.", "[a-z]\\.", "[A-Z]\\)", "[a-z]\\)", "[IVXL]+\\.",
-            "[ivxl]+\\.", };
+            "[ivxl]+\\.", "[\\u2022|\\u2023|\\u2043|\\u2219|\\u25A0|\\u25CB|\\u25E6|\\u29BE|\\u25BF]"};
 
     private List<Pattern> listOfPatterns = null;
 
