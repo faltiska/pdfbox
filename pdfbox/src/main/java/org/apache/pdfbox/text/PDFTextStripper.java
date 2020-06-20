@@ -1359,7 +1359,7 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
             float maxHeightForLine) throws IOException
     {
         current.isLineStart = true;
-        isParagraphSeparation(current, lastPosition, lastLineStartPosition, maxHeightForLine);
+        checkParagraphSeparation(current, lastPosition, lastLineStartPosition, maxHeightForLine);
         lastLineStartPosition = current;
         if (current.isParagraphStart)
         {
@@ -1406,67 +1406,70 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
      * @param lastLineStartPosition the last text position that followed a line separator, or null.
      * @param maxHeightForLine max height for text positions since lasLineStartPosition.
      */
-    private void isParagraphSeparation(PositionWrapper position, PositionWrapper lastPosition,
-            PositionWrapper lastLineStartPosition, float maxHeightForLine)
+    private void checkParagraphSeparation(PositionWrapper position, PositionWrapper lastPosition,
+                                          PositionWrapper lastLineStartPosition, float maxHeightForLine)
     {
-        boolean result = false;
         if (lastLineStartPosition == null)
         {
-            result = true;
+            position.isParagraphStart = true;
+            return;
         }
-        else
-        {
-            float yGap = Math.abs(position.position.getYDirAdj() - lastPosition.position.getYDirAdj());
-            float newYVal = dropThreshold * maxHeightForLine;
-            // TODO do we need to flip this for rtl?
-            float xGap = position.position.getXDirAdj() - lastLineStartPosition.position.getXDirAdj();
-            float newXVal = indentThreshold *position.position.getWidthOfSpace();
-            float positionWidth = 0.25f * position.position.getWidth();
 
-            if (yGap > newYVal)
-            {
-                result = true;
-            }
-            else if (xGap > newXVal)
-            {
-                // text is indented, but try to screen for hanging indent
-                if (!lastLineStartPosition.isParagraphStart)
-                {
-                    result = true;
-                }
-                else
-                {
-                    position.isHangingIndent = true;
-                }
-            }
-            else if (xGap < -position.position.getWidthOfSpace())
-            {
-                // text is left of previous line. Was it a hanging indent?
-                if (!lastLineStartPosition.isParagraphStart)
-                {
-                    result = true;
-                }
-            }
-            else if (Math.abs(xGap) < positionWidth) //this line is vertically aligned with last line (within 1/4 of a char)
-            {
-                if (lastLineStartPosition.isHangingIndent)
-                {
-                    position.isHangingIndent = true;
-                }
-                else if (lastLineStartPosition.isParagraphStart)
-                {
-                    Pattern currentLiPattern = matchListItemPattern(position);
-                    if (currentLiPattern != null && lastLiPattern == currentLiPattern)
-                    {
-                        result = true;
-                    }
-                    lastLiPattern = currentLiPattern;
-                }
-            }
-        }
-        if (result)
+        float yGap = Math.abs(position.position.getYDirAdj() - lastPosition.position.getYDirAdj());
+        float newYVal = dropThreshold * maxHeightForLine;
+
+        if (yGap > newYVal)
         {
             position.isParagraphStart = true;
+            return;
+        }
+
+        // TODO do we need to flip this for rtl?
+        float xGap = position.position.getXDirAdj() - lastLineStartPosition.position.getXDirAdj();
+        float newXVal = indentThreshold *position.position.getWidthOfSpace();
+        float positionWidth = 0.25f * position.position.getWidth();
+
+        if (xGap > newXVal)
+        {
+            // text is indented, but try to screen for hanging indent
+            if (!lastLineStartPosition.isParagraphStart)
+            {
+                position.isParagraphStart = true;
+                return;
+            }
+
+            position.isHangingIndent = true;
+            return;
+        }
+
+        if (xGap < -position.position.getWidthOfSpace())
+        {
+            // text start is left of previous line. Was it a hanging indent?
+            if (!lastLineStartPosition.isParagraphStart)
+            {
+                position.isParagraphStart = true;
+                return;
+            }
+        }
+
+        //this line is vertically aligned with last line (within 1/4 of a char)
+        if (Math.abs(xGap) < positionWidth)
+        {
+            if (lastLineStartPosition.isHangingIndent)
+            {
+                position.isHangingIndent = true;
+                return;
+            }
+
+            if (lastLineStartPosition.isParagraphStart)
+            {
+                Pattern currentLiPattern = matchListItemPattern(position);
+                if (currentLiPattern != null && lastLiPattern == currentLiPattern)
+                {
+                    position.isParagraphStart = true;
+                }
+                lastLiPattern = currentLiPattern;
+            }
         }
     }
 
