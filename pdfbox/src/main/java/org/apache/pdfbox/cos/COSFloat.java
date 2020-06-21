@@ -124,12 +124,13 @@ public class COSFloat extends COSNumber
     private String removeNullDigits(String plainStringValue)
     {
         // remove fraction digit "0" only
-        if (plainStringValue.indexOf('.') > -1 && !plainStringValue.endsWith(".0"))
+        int lastIndex = plainStringValue.lastIndexOf('.');
+        if (lastIndex > 0)
         {
-            while (plainStringValue.endsWith("0") && !plainStringValue.endsWith(".0"))
-            {
-                plainStringValue = plainStringValue.substring(0,plainStringValue.length()-1);
-            }
+            int i = plainStringValue.length() - 1;
+            while (i > lastIndex + 1 && plainStringValue.charAt(i) == '0')
+                i--;
+            return plainStringValue.substring(0, i + 1);
         }
         return plainStringValue;
     }
