@@ -1415,6 +1415,15 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
             return;
         }
 
+        boolean previousLineHasSingleFont = lastPosition.position.getFontSizeInPt() == lastLineStartPosition.position.getFontSizeInPt();
+        boolean fontChanged = lastPosition.position.getFontSizeInPt() != position.position.getFontSizeInPt();
+        if (previousLineHasSingleFont && fontChanged)
+        {
+            position.isParagraphStart = true;
+            return;
+        }
+
+
         float yGap = Math.abs(position.position.getYDirAdj() - lastPosition.position.getYDirAdj());
         float newYVal = dropThreshold * maxHeightForLine;
 
