@@ -57,27 +57,52 @@ public abstract class COSNumber extends COSBase
      */
     public static COSNumber get( String number ) throws IOException
     {
-        int length = number.length();
-        boolean isFloat = false;
-        for (int i = 0; i < length; i++) {
-            char c = number.charAt(i);
-            if (c == '.' || c == 'e' || c == 'E') {
-                isFloat = true;
-                break;
+        if (number.length() == 1)
+        {
+            char digit = number.charAt(0);
+            if ('0' <= digit && digit <= '9')
+            {
+                return COSInteger.get(digit - '0');
+            }
+            else if (digit == '-' || digit == '.')
+            {
+                // See https://issues.apache.org/jira/browse/PDFBOX-592
+                return COSInteger.ZERO;
+            }
+            else
+            {
+                throw new IOException("Not a number: " + number);
             }
         }
-
-        if (isFloat) {
+        else if (isFloat(number))
+        {
             return new COSFloat(number);
-        } else {
+        }
+        else
+        {
             try
             {
                 return COSInteger.get(Long.parseLong(number));
             }
             catch( NumberFormatException e )
             {
-                throw new IOException("Invalid number format: '" + number + "'", e);
+                // might be a huge number, see PDFBOX-3116
+                return new COSFloat(number);
             }
         }
+    }
+
+    private static boolean isFloat( String number )
+    {
+        int length = number.length();
+        for (int i = 0; i < length; i++)
+        {
+            char digit = number.charAt(i);
+            if (digit == '.' || digit == 'e')
+            {
+                return true;
+            }
+        }
+        return false;
     }
 }
