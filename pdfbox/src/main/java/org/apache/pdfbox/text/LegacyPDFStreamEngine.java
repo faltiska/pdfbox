@@ -16,7 +16,6 @@
  */
 package org.apache.pdfbox.text;
 
-import java.io.BufferedInputStream;
 import java.io.InputStream;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;

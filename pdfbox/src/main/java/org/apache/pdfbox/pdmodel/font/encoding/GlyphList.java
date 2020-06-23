@@ -16,11 +16,13 @@
  */
 package org.apache.pdfbox.pdmodel.font.encoding;
 
-import java.io.*;
-
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -46,10 +48,9 @@ public final class GlyphList
     private static GlyphList load(String filename, int numberOfEntries)
     {
         String path = "/org/apache/pdfbox/resources/glyphlist/";
-        //no need to use a BufferedInputSteam here, as GlyphList uses a BufferedReader
-        try (InputStream resourceAsStream = GlyphList.class.getResourceAsStream(path + filename))
+        try
         {
-            return new GlyphList(resourceAsStream, numberOfEntries);
+            return new GlyphList(GlyphList.class.getResourceAsStream(path + filename), numberOfEntries);
         }
         catch (IOException e)
         {

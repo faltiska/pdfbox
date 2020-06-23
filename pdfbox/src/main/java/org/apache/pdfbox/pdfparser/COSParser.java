@@ -269,23 +269,7 @@ public class COSParser extends BaseParser implements ICOSParser
                 bfSearchForObjStreams();
             }
         }
-        if (resetTrailerResolver())
-        {
-            xrefTrailerResolver.reset();
-            xrefTrailerResolver = null;
-        }
         return trailer;
-    }
-
-    /**
-     * Indicates whether the xref trailer resolver should be reseted or not. Should be overwritten if the xref trailer
-     * resolver is needed after the initial parsing.
-     * 
-     * @return true if the xref trailer resolver should be reseted
-     */
-    protected boolean resetTrailerResolver()
-    {
-        return true;
     }
 
     /**
@@ -2431,8 +2415,8 @@ public class COSParser extends BaseParser implements ICOSParser
             xrefTrailerResolver.nextXrefObj( objByteOffset, XRefType.STREAM );
             xrefTrailerResolver.setTrailer( stream );
         }        
-        PDFXrefStreamParser parser = new PDFXrefStreamParser(stream, document);
-        parser.parse(xrefTrailerResolver);
+        PDFXrefStreamParser parser = new PDFXrefStreamParser(stream, document, xrefTrailerResolver);
+        parser.parse();
     }
 
     /**

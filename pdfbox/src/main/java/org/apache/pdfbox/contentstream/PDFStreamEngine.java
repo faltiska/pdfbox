@@ -81,7 +81,7 @@ public abstract class PDFStreamEngine
     protected Matrix textMatrix;
     protected Matrix textLineMatrix;
 
-    private Deque<PDGraphicsState> graphicsStates = new ArrayDeque<>();
+    private Deque<PDGraphicsState> graphicsStack = new ArrayDeque<>();
 
     private PDResources resources;
     private PDPage currentPage;
@@ -126,8 +126,8 @@ public abstract class PDFStreamEngine
             throw new IllegalArgumentException("Page cannot be null");
         }
         currentPage = page;
-        graphicsStates.clear();
-        graphicsStates.push(new PDGraphicsState(page.getCropBox()));
+        graphicsStack.clear();
+        graphicsStack.push(new PDGraphicsState(page.getCropBox()));
         textMatrix = null;
         textLineMatrix = null;
         resources = null;
@@ -376,7 +376,7 @@ public abstract class PDFStreamEngine
         Rectangle2D bbox = tilingPattern.getBBox().transform(patternMatrix).getBounds2D();
         PDRectangle rect = new PDRectangle((float)bbox.getX(), (float)bbox.getY(),
                 (float)bbox.getWidth(), (float)bbox.getHeight());
-        graphicsStates.push(new PDGraphicsState(rect));
+        graphicsStack.push(new PDGraphicsState(rect));
 
         // non-colored patterns have to be given a color
         if (colorSpace != null)
@@ -921,7 +921,7 @@ public abstract class PDFStreamEngine
      */
     public void saveGraphicsState()
     {
-        graphicsStates.push(graphicsStates.peek().clone());
+        graphicsStack.push(graphicsStack.peek().clone());
     }
 
     /**
@@ -929,7 +929,7 @@ public abstract class PDFStreamEngine
      */
     public void restoreGraphicsState()
     {
-        graphicsStates.pop();
+        graphicsStack.pop();
     }
 
     /**
@@ -939,9 +939,9 @@ public abstract class PDFStreamEngine
      */
     protected final Deque<PDGraphicsState> saveGraphicsStack()
     {
-        Deque<PDGraphicsState> savedStack = graphicsStates;
-        graphicsStates = new ArrayDeque<>();
-        graphicsStates.add(savedStack.peek().clone());
+        Deque<PDGraphicsState> savedStack = graphicsStack;
+        graphicsStack = new ArrayDeque<>();
+        graphicsStack.add(savedStack.peek().clone());
         return savedStack;
     }
 
@@ -950,7 +950,7 @@ public abstract class PDFStreamEngine
      */
     protected final void restoreGraphicsStack(Deque<PDGraphicsState> snapshot)
     {
-        graphicsStates = snapshot;
+        graphicsStack = snapshot;
     }
     
     /**
@@ -958,7 +958,7 @@ public abstract class PDFStreamEngine
      */
     public int getGraphicsStackSize()
     {
-        return graphicsStates.size();
+        return graphicsStack.size();
     }
 
     /**
@@ -966,7 +966,7 @@ public abstract class PDFStreamEngine
      */
     public PDGraphicsState getGraphicsState()
     {
-        return graphicsStates.peek();
+        return graphicsStack.peek();
     }
 
     /**

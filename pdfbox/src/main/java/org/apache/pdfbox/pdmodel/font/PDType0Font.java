@@ -158,7 +158,7 @@ public class PDType0Font extends PDFont implements PDVectorFont
      */
     public static PDType0Font load(PDDocument doc, InputStream input) throws IOException
     {
-        return load(doc, input, true);
+        return new PDType0Font(doc, new TTFParser().parse(input), true, true, false);
     }
 
     /**

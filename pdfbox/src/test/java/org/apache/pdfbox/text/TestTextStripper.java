@@ -38,7 +38,6 @@ import java.net.URISyntaxException;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Random;
 
 import junit.framework.Test;
 import junit.framework.TestCase;
@@ -52,7 +51,6 @@ import org.apache.pdfbox.pdmodel.TestPDPageTree;
 import org.apache.pdfbox.pdmodel.interactive.documentnavigation.destination.PDPageDestination;
 import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDDocumentOutline;
 import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlineItem;
-import org.apache.pdfbox.util.Matrix;
 
 
 /**

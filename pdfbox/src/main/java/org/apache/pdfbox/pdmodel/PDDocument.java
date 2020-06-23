@@ -16,6 +16,20 @@
  */
 package org.apache.pdfbox.pdmodel;
 
+import java.io.BufferedOutputStream;
+import java.io.Closeable;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.fontbox.ttf.TrueTypeFont;
@@ -30,7 +44,6 @@ import org.apache.pdfbox.cos.COSUpdateInfo;
 import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.io.MemoryUsageSetting;
 import org.apache.pdfbox.io.RandomAccessRead;
-import org.apache.pdfbox.io.ScratchFile;
 import org.apache.pdfbox.pdfwriter.COSWriter;
 import org.apache.pdfbox.pdmodel.common.COSArrayList;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
@@ -53,20 +66,6 @@ import org.apache.pdfbox.pdmodel.interactive.digitalsignature.SigningSupport;
 import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
 import org.apache.pdfbox.pdmodel.interactive.form.PDField;
 import org.apache.pdfbox.pdmodel.interactive.form.PDSignatureField;
-
-import java.io.BufferedOutputStream;
-import java.io.Closeable;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * This is the in-memory representation of the PDF document.
@@ -146,20 +145,7 @@ public class PDDocument implements Closeable
      */
     public PDDocument(MemoryUsageSetting memUsageSetting)
     {
-        ScratchFile scratchFile;
-        try
-        {
-            scratchFile = new ScratchFile(memUsageSetting);
-        }
-        catch (IOException ioe)
-        {
-            LOG.warn("Error initializing scratch file: " + ioe.getMessage() +
-                     ". Fall back to main memory usage only.", ioe);
-            
-            scratchFile = ScratchFile.getMainMemoryOnlyInstance();
-        }
-        
-        document = new COSDocument(scratchFile);
+        document = new COSDocument(memUsageSetting);
         pdfSource = null;
 
         // First we need a trailer
@@ -491,6 +477,8 @@ public class PDDocument implements Closeable
     /**
      * Check if the widget already exists in the annotation list
      *
+     * @param acroFormFields the list of AcroForm fields.
+     * @param signatureField the signature field.
      * @return true if the widget already existed in the annotation list, false if not.
      */
     private boolean checkSignatureAnnotation(List<PDAnnotation> annotations, PDAnnotationWidget widget)
@@ -850,7 +838,7 @@ public class PDDocument implements Closeable
      * is closed when the PDDocument is closed to avoid memory leaks. Users don't have to call this
      * method, it is done by the appropriate PDFont classes.
      *
-     * @param ttf the font to close.
+     * @param ttf
      */
     public void registerTrueTypeFontForClosing(TrueTypeFont ttf)
     {

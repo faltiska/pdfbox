@@ -148,37 +148,24 @@ public class BufferedRandomAccessFile extends RandomAccessFile
     @Override
     public int read(byte[] b, int off, int len) throws IOException
     {
-        int curLen = len; // length of what is left to read (shrinks)
-        int curOff = off; // offset where to put read data (grows)
-        int totalRead = 0;
-
-        while (true)
+        int leftover = bufend - bufpos;
+        if (len <= leftover)
         {
-            int leftover = bufend - bufpos;
-            if (curLen <= leftover)
+            System.arraycopy(buffer, bufpos, b, off, len);
+            bufpos += len;
+            return len;
+        }
+        System.arraycopy(buffer, bufpos, b, off, leftover);
+        bufpos += leftover;
+        if (fillBuffer() > 0)
+        {
+            int bytesRead = read(b, off + leftover, len - leftover);
+            if (bytesRead > 0)
             {
-                System.arraycopy(buffer, bufpos, b, curOff, curLen);
-                bufpos += curLen;
-                return totalRead + curLen;
-            }
-            // curLen > leftover, we need to read more than what remains in buffer
-            System.arraycopy(buffer, bufpos, b, curOff, leftover);
-            totalRead += leftover;
-            bufpos += leftover;
-            if (fillBuffer() > 0)
-            {
-                curOff += leftover;
-                curLen -= leftover;
-            }
-            else
-            {
-                if (totalRead == 0)
-                {
-                    return -1;
-                }
-                return totalRead;
+                leftover += bytesRead;
             }
         }
+        return leftover > 0 ? leftover : -1;
     }
 
     /**

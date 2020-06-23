@@ -361,7 +361,7 @@ public abstract class BaseParser
      * @param bracesParameter the number of braces currently open.
      *
      * @return the corrected value of the brace counter
-     * @throws IOException if it fails to read from the {@link #source}.
+     * @throws IOException
      */
     private int checkForEndOfString(final int bracesParameter) throws IOException
     {
@@ -514,7 +514,7 @@ public abstract class BaseParser
                             nextc = c;
                         }
     
-                        int character;
+                        int character = 0;
                         try
                         {
                             character = Integer.parseInt( octal.toString(), 8 );
@@ -584,9 +584,14 @@ public abstract class BaseParser
             {
                 throw new IOException( "Missing closing bracket for hex string. Reached EOS." );
             }
-            else if ((c != ' ') && (c != '\n') &&
-                     (c != '\t') && (c != '\r') &&
-                     (c != '\b') && (c != '\f')) {
+            else if ( ( c == ' ' ) || ( c == '\n' ) ||
+                    ( c == '\t' ) || ( c == '\r' ) ||
+                    ( c == '\b' ) || ( c == '\f' ) )
+            {
+                continue;
+            }
+            else
+            {
                 // if invalid chars was found: discard last
                 // hex character if it is not part of a pair
                 if (sBuf.length()%2!=0)
