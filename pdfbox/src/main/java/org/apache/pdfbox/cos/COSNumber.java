@@ -87,7 +87,12 @@ public abstract class COSNumber extends COSBase
             catch( NumberFormatException e )
             {
                 // might be a huge number, see PDFBOX-3116
-                return new COSFloat(number);
+                if (number.charAt(0) == '-')
+                {
+                    return new COSFloat(-Float.MAX_VALUE);
+                }
+
+                return new COSFloat(Float.MAX_VALUE);
             }
         }
     }
@@ -98,7 +103,7 @@ public abstract class COSNumber extends COSBase
         for (int i = 0; i < length; i++)
         {
             char digit = number.charAt(i);
-            if (digit == '.' || digit == 'e')
+            if (digit == '.' || digit == 'e' || digit == 'E')
             {
                 return true;
             }
