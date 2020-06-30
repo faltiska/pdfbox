@@ -54,6 +54,7 @@ public class COSFloat extends COSNumber
         try
         {
             value = Float.parseFloat(aFloat);
+            valueAsString = checkMinMaxValues(aFloat) ? null : aFloat;
         }
         catch( NumberFormatException e )
         {
@@ -77,6 +78,7 @@ public class COSFloat extends COSNumber
             try
             {
                 value = Float.parseFloat(aFloat);
+                checkMinMaxValues(aFloat);
             }
             catch (NumberFormatException e2)
             {
@@ -84,11 +86,17 @@ public class COSFloat extends COSNumber
             }
         }
 
-        checkMinMaxValues(aFloat);
     }
 
-
-    private void checkMinMaxValues(String aFloat)
+    /**
+     * Check and coerce the value field to be between MIN_NORMAL and MAX_VALUE. Returns "true" if the value was
+     * replaced.
+     * 
+     * @param aFloat the original String representation for the value.
+     * 
+     * @return true if the value was replaced
+     */
+    private boolean checkMinMaxValues(String aFloat)
     {
         if (value == Float.POSITIVE_INFINITY)
         {
@@ -108,28 +116,30 @@ public class COSFloat extends COSNumber
         }
         else if (value == 0 && aFloat.matches(".*[1-9].*"))
         {
-            if (aFloat.startsWith("-"))
-            {
-                value = -Float.MIN_NORMAL;
-            } else {
-                value = Float.MIN_NORMAL;
-            }
+            value = aFloat.startsWith("-") ? -Float.MIN_NORMAL : Float.MIN_NORMAL;
         }
         else
         {
-            valueAsString = aFloat;
+            return false;
         }
+        return true;
     }
-
-    private String removeNullDigits(String plainStringValue)
+    
+    /**
+     * If the string represents a floating point number, this will remove all trailing zeros
+     * 
+     * @param plainStringValue a decimal number
+     */
+    private String trimZeros(String plainStringValue)
     {
-        // remove fraction digit "0" only
         int lastIndex = plainStringValue.lastIndexOf('.');
         if (lastIndex > 0)
         {
             int i = plainStringValue.length() - 1;
             while (i > lastIndex + 1 && plainStringValue.charAt(i) == '0')
+            {
                 i--;
+            }
             return plainStringValue.substring(0, i + 1);
         }
         return plainStringValue;
@@ -200,11 +210,12 @@ public class COSFloat extends COSNumber
      * Builds, if needed, and returns the a string representation of the current value.
      * @return current value as string.
      */
-    private String formatString() {
-        if (valueAsString == null) {
-            valueAsString = removeNullDigits(new BigDecimal(String.valueOf(value)).toPlainString());
+    private String formatString()
+    {
+        if (valueAsString == null)
+        {
+            valueAsString = trimZeros(new BigDecimal(String.valueOf(value)).toPlainString());
         }
-
         return valueAsString;
     }
 
