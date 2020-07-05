@@ -78,8 +78,8 @@ public abstract class PDFStreamEngine
 
     private final Map<String, OperatorProcessor> operators = new HashMap<>(80);
 
-    protected Matrix textMatrix;
-    protected Matrix textLineMatrix;
+    private Matrix textMatrix;
+    private Matrix textLineMatrix;
 
     private Deque<PDGraphicsState> graphicsStack = new ArrayDeque<>();
 
@@ -87,13 +87,6 @@ public abstract class PDFStreamEngine
     private PDPage currentPage;
     private boolean isProcessingPage;
     private Matrix initialMatrix;
-
-    /**
-     * showText computes text displacement very often and creating new instances of
-     * translation matrices takes a lot of time; make sure you don't put bad data in this matrix
-     * it needs to work as a translation matrix.
-     */
-    Matrix textDisplacement = new Matrix();
 
     // used to monitor potentially recursive operations.
     private int level = 0;
@@ -723,7 +716,8 @@ public abstract class PDFStreamEngine
             // get glyph's horizontal and vertical displacements, in text space
             Vector w = font.getDisplacement(code);
 
-            processGlyph(font, code, textRenderingMatrix, w);
+            // process the decoded glyph
+            showGlyph(textRenderingMatrix, font, code, w);
 
             // calculate the combined displacements
             float tx;
@@ -739,19 +733,9 @@ public abstract class PDFStreamEngine
                 ty = 0;
             }
 
-            Matrix.setTranslation(textDisplacement, tx, ty);
-            textMatrix.concatenate(textDisplacement);
+            // update the text matrix
+            textMatrix.concatenate(Matrix.getTranslateInstance(tx, ty));
         }
-    }
-
-    protected void processGlyph(PDFont font, int code, Matrix textRenderingMatrix, Vector w) throws IOException {
-        saveGraphicsState();
-        Matrix textMatrixOld = textMatrix;
-        Matrix textLineMatrixOld = textLineMatrix;
-        showGlyph(textRenderingMatrix, font, code, w);
-        textMatrix = textMatrixOld;
-        textLineMatrix = textLineMatrixOld;
-        restoreGraphicsState();
     }
 
     /**
