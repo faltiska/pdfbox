@@ -138,7 +138,7 @@ public class COSDocument extends COSBase implements Closeable
      *
      * @param scratchFile memory handler for buffering of PDF streams
      * @param parser Parser to be used to parse the document on demand
-     *
+     * 
      */
     public COSDocument(ScratchFile scratchFile, ICOSParser parser)
     {

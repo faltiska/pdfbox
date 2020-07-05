@@ -563,7 +563,7 @@ public class TestTextStripper extends TestCase
             doTestFile(testFile, outDir, false, true);
         }
     }
-
+    
     /**
      * Test to validate text extraction of file set.
      *

@@ -285,9 +285,9 @@ public final class Matrix implements Cloneable
 
     private float[] checkFloatValues(float[] values)
     {
-        if (Float.isInfinite(values[0]) || Float.isInfinite(values[1]) || Float.isInfinite(values[2])
-                || Float.isInfinite(values[3]) || Float.isInfinite(values[4]) || Float.isInfinite(values[5])
-                || Float.isInfinite(values[6]) || Float.isInfinite(values[7]) || Float.isInfinite(values[8]))
+        if (!Float.isFinite(values[0]) || !Float.isFinite(values[1]) || !Float.isFinite(values[2])
+                || !Float.isFinite(values[3]) || !Float.isFinite(values[4]) || !Float.isFinite(values[5])
+                || !Float.isFinite(values[6]) || !Float.isFinite(values[7]) || !Float.isFinite(values[8]))
             throw new IllegalArgumentException("Multiplying two matrices produces illegal values");
         return values;
     }

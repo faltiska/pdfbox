@@ -82,7 +82,26 @@ abstract class TrueTypeEmbedder implements Subsetter
         if (!embedSubset)
         {
             // full embedding
-            PDStream stream = new PDStream(document, ttf.getOriginalData(), COSName.FLATE_DECODE);
+            
+            // TrueType collections are not supported
+            InputStream is = ttf.getOriginalData();
+            byte[] b = new byte[4];
+            is.mark(b.length);
+            if (is.read(b) == b.length && new String(b).equals("ttcf"))
+            {
+                is.close();
+                throw new IOException("Full embedding of TrueType font collections not supported");
+            }
+            if (is.markSupported())
+            {
+                is.reset();
+            }
+            else
+            {
+                is.close();
+                is = ttf.getOriginalData();
+            }
+            PDStream stream = new PDStream(document, is, COSName.FLATE_DECODE);
             stream.getCOSObject().setLong(COSName.LENGTH1, ttf.getOriginalDataSize());
             fontDescriptor.setFontFile2(stream);
         }
@@ -164,7 +183,15 @@ abstract class TrueTypeEmbedder implements Subsetter
         fd.setFontName(ttf.getName());
 
         OS2WindowsMetricsTable os2 = ttf.getOS2Windows();
+        if (os2 == null)
+        {
+            throw new IOException("os2 table is missing in font " + ttf.getName());
+        }
         PostScriptTable post = ttf.getPostScript();
+        if (post == null)
+        {
+            throw new IOException("post table is missing in font " + ttf.getName());            
+        }
 
         // Flags
         fd.setFixedPitch(post.getIsFixedPitch() > 0 ||

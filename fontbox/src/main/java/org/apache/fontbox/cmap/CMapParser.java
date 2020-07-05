@@ -105,28 +105,29 @@ public class CMapParser
 
                 if (previousToken != null)
                 {
-                    switch (op.op)
+                    if (op.op.equals("usecmap") && previousToken instanceof LiteralName)
                     {
-                        case "usecmap":
-                            parseUsecmap((LiteralName) previousToken, result);
-                            break;
-                        case "begincodespacerange":
-                            parseBegincodespacerange((Number) previousToken, cmapStream, result);
-                            break;
-                        case "beginbfchar":
-                            parseBeginbfchar((Number) previousToken, cmapStream, result);
-                            break;
-                        case "beginbfrange":
-                            parseBeginbfrange((Number) previousToken, cmapStream, result);
-                            break;
-                        case "begincidchar":
-                            parseBegincidchar((Number) previousToken, cmapStream, result);
-                            break;
-                        case "begincidrange":
-                            parseBegincidrange((Integer) previousToken, cmapStream, result);
-                            break;
-                        default:
-                            break;
+                        parseUsecmap((LiteralName) previousToken, result);
+                    }
+                    else if (op.op.equals("begincodespacerange") && previousToken instanceof Number)
+                    {
+                        parseBegincodespacerange((Number) previousToken, cmapStream, result);
+                    }
+                    else if (op.op.equals("beginbfchar") && previousToken instanceof Number)
+                    {
+                        parseBeginbfchar((Number) previousToken, cmapStream, result);
+                    }
+                    else if (op.op.equals("beginbfrange") && previousToken instanceof Number)
+                    {
+                        parseBeginbfrange((Number) previousToken, cmapStream, result);
+                    }
+                    else if (op.op.equals("begincidchar") && previousToken instanceof Number)
+                    {
+                        parseBegincidchar((Number) previousToken, cmapStream, result);
+                    }
+                    else if (op.op.equals("begincidrange") && previousToken instanceof Integer)
+                    {
+                        parseBegincidrange((Integer) previousToken, cmapStream, result);
                     }
                 }
             }
@@ -434,7 +435,12 @@ public class CMapParser
      */
     protected InputStream getExternalCMap(String name) throws IOException
     {
-        return new BufferedInputStream(getClass().getResourceAsStream(name));
+        InputStream is = getClass().getResourceAsStream(name);
+        if (is == null)
+        {
+            throw new IOException("Error: Could not find referenced cmap stream " + name);
+        }
+        return is;
     }
 
     private Object parseNextToken(PushbackInputStream is) throws IOException

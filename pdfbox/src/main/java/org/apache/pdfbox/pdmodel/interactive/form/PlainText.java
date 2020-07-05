@@ -172,6 +172,9 @@ class PlainText
             {
                 String word = textContent.substring(start,end);
                 float wordWidth = font.getStringWidth(word) * scale;
+
+                boolean wordNeedsSplit = false;
+                int splitOffset = end - start;
                 
                 lineWidth = lineWidth + wordWidth;
 
@@ -182,12 +185,31 @@ class PlainText
                     lineWidth = lineWidth - whitespaceWidth;
                 }
                 
-                if (lineWidth >= width)
+                if (lineWidth >= width && !textLine.getWords().isEmpty())
                 {
                     textLine.setWidth(textLine.calculateWidth(font, fontSize));
                     textLines.add(textLine);
                     textLine = new Line();
                     lineWidth = font.getStringWidth(word) * scale;
+                }
+                
+                if (wordWidth > width && textLine.getWords().isEmpty())
+                {
+                    // single word does not fit into width
+                    wordNeedsSplit = true;
+                    while (true)
+                    {
+                        splitOffset--;
+                        String substring = word.trim().substring(0, splitOffset);
+                        float substringWidth = font.getStringWidth(substring) * scale;
+                        if (substringWidth < width)
+                        {
+                            word = substring;
+                            wordWidth = font.getStringWidth(word) * scale;
+                            lineWidth = wordWidth;
+                            break;
+                        }
+                    }
                 }
 
                 AttributedString as = new AttributedString(word);
@@ -195,8 +217,16 @@ class PlainText
                 Word wordInstance = new Word(word);
                 wordInstance.setAttributes(as);
                 textLine.addWord(wordInstance);
-                start = end;
-                end = iterator.next();
+
+                if (wordNeedsSplit)
+                {
+                    start = start + splitOffset;
+                }
+                else
+                {
+                    start = end;
+                    end = iterator.next();
+                }
             }
             textLine.setWidth(textLine.calculateWidth(font, fontSize));
             textLines.add(textLine);

@@ -598,22 +598,22 @@ public abstract class BaseParser
                 {
                     sBuf.deleteCharAt(sBuf.length()-1);
                 }
-
+                
                 // read till the closing bracket was found
-                do
+                do 
                 {
                     c = source.read();
-                }
+                } 
                 while ( c != '>' && c >= 0 );
-
+                
                 // might have reached EOF while looking for the closing bracket
                 // this can happen for malformed PDFs only. Make sure that there is
                 // no endless loop.
-                if ( c < 0 )
+                if ( c < 0 ) 
                 {
                     throw new IOException( "Missing closing bracket for hex string. Reached EOS." );
                 }
-
+                
                 // exit loop
                 break;
             }

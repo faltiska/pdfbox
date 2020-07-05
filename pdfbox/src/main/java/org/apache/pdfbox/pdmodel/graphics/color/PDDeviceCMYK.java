@@ -16,7 +16,6 @@
  */
 package org.apache.pdfbox.pdmodel.graphics.color;
 
-import java.io.BufferedInputStream;
 import java.util.Arrays;
 
 import org.apache.pdfbox.cos.COSName;
@@ -26,6 +25,7 @@ import java.awt.color.ICC_ColorSpace;
 import java.awt.color.ICC_Profile;
 import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
+import java.io.BufferedInputStream;
 import java.io.IOException;
 
 import java.io.InputStream;

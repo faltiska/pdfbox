@@ -200,9 +200,9 @@ public class TestCOSFloat extends TestCOSNumber
             COSFloat testFloat = new COSFloat(num);
             assertEquals((long) num, testFloat.longValue());
         }
-
+        
     }
-
+    
     @Override
     public void testLongValue()
     {
@@ -418,11 +418,11 @@ public class TestCOSFloat extends TestCOSNumber
 
     private String floatToString(float value)
     {
-        // use a BigDecimal as intermediate state to avoid
+        // use a BigDecimal as intermediate state to avoid 
         // a floating point string representation of the float value
-        return removeTrailingNull(new BigDecimal(String.valueOf(value)).toPlainString());
+        return removeTrailingNull(new BigDecimal(String.valueOf(value)).toPlainString()); 
     }
-
+    
     private String removeTrailingNull(String value)
     {
         // remove fraction digit "0" only

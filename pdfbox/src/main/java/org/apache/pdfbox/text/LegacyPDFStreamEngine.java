@@ -87,13 +87,6 @@ class LegacyPDFStreamEngine extends PDFStreamEngine
     private final GlyphList glyphList;
 
     /**
-     * showText computes text displacement very often and creating new instances of
-     * translation matrices takes a lot of time; make sure you don't put bad data in this matrix
-     * it needs to work as a translation matrix.
-     */
-    private Matrix legacyTextDisplacement = new Matrix();
-
-    /**
      * Constructor.
      */
     LegacyPDFStreamEngine() throws IOException
@@ -152,14 +145,6 @@ class LegacyPDFStreamEngine extends PDFStreamEngine
             translateMatrix = Matrix.getTranslateInstance(-pageSize.getLowerLeftX(), -pageSize.getLowerLeftY());
         }            
         super.processPage(page);
-    }
-
-    protected void processGlyph(PDFont font, int code, Matrix textRenderingMatrix, Vector w) throws IOException {
-        Matrix textMatrixOld = textMatrix;
-        Matrix textLineMatrixOld = textLineMatrix;
-        showGlyph(textRenderingMatrix, font, code, w);
-        textMatrix = textMatrixOld;
-        textLineMatrix = textLineMatrixOld;
     }
 
     /**
@@ -223,12 +208,16 @@ class LegacyPDFStreamEngine extends PDFStreamEngine
         float ty = displacement.getY() * fontSize;
 
         // (modified) combined displacement matrix
-        Matrix.setTranslation(legacyTextDisplacement, tx, ty);
+        Matrix td = Matrix.getTranslateInstance(tx, ty);
 
         // (modified) text rendering matrix
-        Matrix nextTextRenderingMatrix = legacyTextDisplacement.multiply(textMatrix).multiply(ctm); // text space -> device space
+        Matrix nextTextRenderingMatrix = td.multiply(textMatrix).multiply(ctm); // text space -> device space
         float nextX = nextTextRenderingMatrix.getTranslateX();
         float nextY = nextTextRenderingMatrix.getTranslateY();
+
+        // (modified) width and height calculations
+        float dxDisplay = nextX - textRenderingMatrix.getTranslateX();
+        float dyDisplay = currentFontHeight * textRenderingMatrix.getScalingFactorY();
 
         //
         // start of the original method
@@ -304,10 +293,6 @@ class LegacyPDFStreamEngine extends PDFStreamEngine
             nextX -= pageSize.getLowerLeftX();
             nextY -= pageSize.getLowerLeftY();
         }
-
-        // (modified) width and height calculations
-        float dxDisplay = nextX - textRenderingMatrix.getTranslateX();
-        float dyDisplay = currentFontHeight * textRenderingMatrix.getScalingFactorY();
 
         processTextPosition(new TextPosition(pageRotation, pageSize.getWidth(),
                 pageSize.getHeight(), translatedTextRenderingMatrix, nextX, nextY,
