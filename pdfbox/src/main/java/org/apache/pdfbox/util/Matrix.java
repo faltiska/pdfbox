@@ -236,7 +236,7 @@ public final class Matrix implements Cloneable
      */
     public void translate(Vector vector)
     {
-        concatenate(Matrix.getTranslateInstance(vector.getX(), vector.getY()));
+        translate(vector.getX(), vector.getY());
     }
 
     /**
@@ -247,7 +247,20 @@ public final class Matrix implements Cloneable
      */
     public void translate(float tx, float ty)
     {
-        concatenate(Matrix.getTranslateInstance(tx, ty));
+        float[] a = single;
+        float[] b = new float[SIZE];
+        
+        b[0] = a[0];
+        b[1] = a[1];
+        b[2] = a[2];
+        b[3] = a[3];
+        b[4] = a[4];
+        b[5] = a[5];
+        b[6] = tx * a[0] + ty * a[3] + a[6];
+        b[7] = tx * a[1] + ty * a[4] + a[7];
+        b[8] = tx * a[2] + ty * a[5] + a[8];
+
+        single = checkFloatValues(b);
     }
 
     /**
@@ -258,7 +271,20 @@ public final class Matrix implements Cloneable
      */
     public void scale(float sx, float sy)
     {
-        concatenate(Matrix.getScaleInstance(sx, sy));
+        float[] a = single;
+        float[] b = new float[SIZE];
+
+        b[0] = sx * a[0];
+        b[1] = sx * a[1];
+        b[2] = sx * a[2];
+        b[3] = sy * a[3];
+        b[4] = sy * a[4];
+        b[5] = sy * a[5];
+        b[6] = a[6];
+        b[7] = a[7];
+        b[8] = a[8];
+
+        this.single = checkFloatValues(b);
     }
 
     /**
