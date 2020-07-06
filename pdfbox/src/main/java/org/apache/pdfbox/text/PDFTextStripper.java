@@ -1418,7 +1418,7 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
      * @param maxHeightForLine max height for text positions since lasLineStartPosition.
      */
     private void checkParagraphSeparation(PositionWrapper position, PositionWrapper lastPosition,
-                                          PositionWrapper lastLineStartPosition, float maxHeightForLine)
+            PositionWrapper lastLineStartPosition, float maxHeightForLine)
     {
         if (lastLineStartPosition == null)
         {
@@ -1688,8 +1688,7 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
 
         if (lineBuilder.length() > 0)
         {
-            String built = handleDirection(lineBuilder.toString());
-            normalized.add(createWord(built, wordPositions));
+            normalized.add(createWord(lineBuilder.toString(), wordPositions));
         }
         return normalized;
     }
@@ -1889,12 +1888,12 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
         }
         if (builder == null)
         {
-            return word;
+            return handleDirection(word);
         }
         else
         {
             builder.append(word, p, q);
-            return builder.toString();
+            return handleDirection(builder.toString());
         }
     }
 
