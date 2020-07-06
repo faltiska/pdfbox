@@ -16,34 +16,13 @@
  */
 package org.apache.pdfbox.text;
 
-import java.io.InputStream;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.pdfbox.contentstream.PDFStreamEngine;
-import org.apache.pdfbox.contentstream.operator.Operator;
-import org.apache.pdfbox.cos.COSBase;
-import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.pdmodel.font.encoding.GlyphList;
-import org.apache.pdfbox.pdmodel.common.PDRectangle;
-import org.apache.pdfbox.pdmodel.font.PDCIDFont;
-import org.apache.pdfbox.pdmodel.font.PDCIDFontType2;
-import org.apache.pdfbox.pdmodel.font.PDFont;
-import org.apache.pdfbox.pdmodel.font.PDSimpleFont;
-import org.apache.pdfbox.pdmodel.font.PDTrueTypeFont;
-import org.apache.pdfbox.pdmodel.font.PDType0Font;
-import org.apache.pdfbox.pdmodel.font.PDType3Font;
-import org.apache.pdfbox.pdmodel.graphics.state.PDGraphicsState;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.fontbox.ttf.TrueTypeFont;
 import org.apache.fontbox.util.BoundingBox;
-import org.apache.pdfbox.util.Matrix;
-import org.apache.pdfbox.util.Vector;
+import org.apache.pdfbox.contentstream.PDFStreamEngine;
 import org.apache.pdfbox.contentstream.operator.DrawObject;
+import org.apache.pdfbox.contentstream.operator.Operator;
 import org.apache.pdfbox.contentstream.operator.state.Concatenate;
 import org.apache.pdfbox.contentstream.operator.state.Restore;
 import org.apache.pdfbox.contentstream.operator.state.Save;
@@ -51,21 +30,39 @@ import org.apache.pdfbox.contentstream.operator.state.SetGraphicsStateParameters
 import org.apache.pdfbox.contentstream.operator.state.SetMatrix;
 import org.apache.pdfbox.contentstream.operator.text.BeginText;
 import org.apache.pdfbox.contentstream.operator.text.EndText;
-import org.apache.pdfbox.contentstream.operator.text.SetFontAndSize;
-import org.apache.pdfbox.contentstream.operator.text.SetTextHorizontalScaling;
-import org.apache.pdfbox.contentstream.operator.text.ShowTextAdjusted;
-import org.apache.pdfbox.contentstream.operator.text.ShowTextLine;
-import org.apache.pdfbox.contentstream.operator.text.ShowTextLineAndSpace;
 import org.apache.pdfbox.contentstream.operator.text.MoveText;
 import org.apache.pdfbox.contentstream.operator.text.MoveTextSetLeading;
 import org.apache.pdfbox.contentstream.operator.text.NextLine;
 import org.apache.pdfbox.contentstream.operator.text.SetCharSpacing;
+import org.apache.pdfbox.contentstream.operator.text.SetFontAndSize;
+import org.apache.pdfbox.contentstream.operator.text.SetTextHorizontalScaling;
 import org.apache.pdfbox.contentstream.operator.text.SetTextLeading;
 import org.apache.pdfbox.contentstream.operator.text.SetTextRenderingMode;
 import org.apache.pdfbox.contentstream.operator.text.SetTextRise;
 import org.apache.pdfbox.contentstream.operator.text.SetWordSpacing;
 import org.apache.pdfbox.contentstream.operator.text.ShowText;
+import org.apache.pdfbox.contentstream.operator.text.ShowTextAdjusted;
+import org.apache.pdfbox.contentstream.operator.text.ShowTextLine;
+import org.apache.pdfbox.contentstream.operator.text.ShowTextLineAndSpace;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.font.PDCIDFont;
+import org.apache.pdfbox.pdmodel.font.PDCIDFontType2;
+import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.font.PDFontDescriptor;
+import org.apache.pdfbox.pdmodel.font.PDSimpleFont;
+import org.apache.pdfbox.pdmodel.font.PDTrueTypeFont;
+import org.apache.pdfbox.pdmodel.font.PDType0Font;
+import org.apache.pdfbox.pdmodel.font.PDType3Font;
+import org.apache.pdfbox.pdmodel.font.encoding.GlyphList;
+import org.apache.pdfbox.pdmodel.graphics.state.PDGraphicsState;
+import org.apache.pdfbox.util.Matrix;
+import org.apache.pdfbox.util.Vector;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
 
 /**
  * LEGACY text calculations which are known to be incorrect but are depended on by PDFTextStripper.
@@ -86,6 +83,8 @@ class LegacyPDFStreamEngine extends PDFStreamEngine
     private Matrix translateMatrix;
     private final GlyphList glyphList;
 
+    float currentFontHeight = -1;
+    
     /**
      * Constructor.
      */
@@ -301,15 +300,7 @@ class LegacyPDFStreamEngine extends PDFStreamEngine
                 (int)(fontSize * textMatrix.getScalingFactorX())));
     }
 
-    float currentFontHeight;
-    Map<String, Float> fontHeights = new HashMap<>();
     protected float computeFontHeight(PDFont font) throws IOException {
-        String fontName = font.getName();
-        Float cachedHeight = fontHeights.get(fontName);
-        if (cachedHeight != null) {
-            return cachedHeight;
-        }
-
         BoundingBox bbox = font.getBoundingBox();
         if (bbox.getLowerLeftY() < Short.MIN_VALUE)
         {
@@ -353,7 +344,6 @@ class LegacyPDFStreamEngine extends PDFStreamEngine
             height = glyphHeight / 1000;
         }
 
-        fontHeights.put(fontName, height);
         return height;
     }
 
