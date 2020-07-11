@@ -20,7 +20,6 @@ import java.io.InputStream;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.contentstream.PDFStreamEngine;
-import org.apache.pdfbox.contentstream.operator.Operator;
 import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.font.encoding.GlyphList;
@@ -42,6 +41,7 @@ import org.apache.fontbox.util.BoundingBox;
 import org.apache.pdfbox.util.Matrix;
 import org.apache.pdfbox.util.Vector;
 import org.apache.pdfbox.contentstream.operator.DrawObject;
+import org.apache.pdfbox.contentstream.operator.Operator;
 import org.apache.pdfbox.contentstream.operator.state.Concatenate;
 import org.apache.pdfbox.contentstream.operator.state.Restore;
 import org.apache.pdfbox.contentstream.operator.state.Save;
@@ -301,7 +301,16 @@ class LegacyPDFStreamEngine extends PDFStreamEngine
                 (int)(fontSize * textMatrix.getScalingFactorX())));
     }
 
-    protected float computeFontHeight(PDFont font) throws IOException {
+    /**
+     * Compute the font height. Override this if you want to use own calculations.
+     * 
+     * @param font the font.
+     * @return the font height.
+     * 
+     * @throws IOException if there is an error while getting the font bounding box.
+     */
+    protected float computeFontHeight(PDFont font) throws IOException
+    {
         BoundingBox bbox = font.getBoundingBox();
         if (bbox.getLowerLeftY() < Short.MIN_VALUE)
         {
@@ -358,8 +367,11 @@ class LegacyPDFStreamEngine extends PDFStreamEngine
         // subclasses can override to provide specific functionality
     }
 
-    private class CapturingSetFontAndSize extends SetFontAndSize {
-        public void process(Operator operator, List<COSBase> arguments) throws IOException {
+    private class CapturingSetFontAndSize extends SetFontAndSize
+    {
+        @Override
+        public void process(Operator operator, List<COSBase> arguments) throws IOException
+        {
             super.process(operator, arguments);
             PDFont font = context.getGraphicsState().getTextState().getFont();
             currentFontHeight = computeFontHeight(font);
