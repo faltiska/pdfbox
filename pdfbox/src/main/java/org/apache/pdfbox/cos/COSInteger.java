@@ -44,14 +44,6 @@ public final class COSInteger extends COSNumber
      */
     private static final COSInteger[] STATIC = new COSInteger[HIGH - LOW + 1];
 
-    static {
-        for (int number = LOW; number <= HIGH; number++)
-        {
-            int index = number - LOW;
-            STATIC[index] = new COSInteger(number);
-        }
-    }
-
     /**
      * Constant for the number zero.
      * @since Apache PDFBox 1.1.0
@@ -84,13 +76,17 @@ public final class COSInteger extends COSNumber
      */
     public static COSInteger get(long val)
     {
-        try
+        if (LOW <= val && val <= HIGH)
         {
             int index = (int) val - LOW;
+            // no synchronization needed
+            if (STATIC[index] == null)
+            {
+                STATIC[index] = new COSInteger(val);
+            }
             return STATIC[index];
-        } catch (IndexOutOfBoundsException e) {
-            return new COSInteger(val);
         }
+        return new COSInteger(val);
     }
 
     private final long value;

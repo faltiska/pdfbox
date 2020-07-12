@@ -48,13 +48,10 @@ import org.apache.pdfbox.io.RandomAccessRead;
 public abstract class BaseParser
 {
     private static final long OBJECT_NUMBER_THRESHOLD = 10000000000L;
-    static final byte MAX_OBJECT_NUMBER_LENGTH = (byte) Long.toString(OBJECT_NUMBER_THRESHOLD).length();
 
     private static final long GENERATION_NUMBER_THRESHOLD = 65535;
-    static final byte MAX_GENERATION_NUMBER_LENGTH = (byte) Long.toString(GENERATION_NUMBER_THRESHOLD).length();
 
-    static final byte MAX_LENGTH_INT = (byte) Long.toString(Integer.MAX_VALUE).length();
-    static final byte MAX_LENGTH_LONG = (byte) Long.toString(Long.MAX_VALUE).length();
+    static final int MAX_LENGTH_LONG = Long.toString(Long.MAX_VALUE).length();
 
     private final CharsetDecoder utf8Decoder = StandardCharsets.UTF_8.newDecoder();
 
@@ -1245,9 +1242,12 @@ public abstract class BaseParser
      */
     protected long readObjectNumber() throws IOException
     {
-        skipSpaces();
-
-        return readStringNumber(MAX_OBJECT_NUMBER_LENGTH);
+        long retval = readLong();
+        if (retval < 0 || retval >= OBJECT_NUMBER_THRESHOLD)
+        {
+            throw new IOException("Object Number '" + retval + "' has more than 10 digits or is negative");
+        }
+        return retval;
     }
 
     /**
@@ -1258,9 +1258,12 @@ public abstract class BaseParser
      */
     protected int readGenerationNumber() throws IOException
     {
-        skipSpaces();
-
-        return (int) readStringNumber(MAX_GENERATION_NUMBER_LENGTH);
+        int retval = readInt();
+        if(retval < 0 || retval > GENERATION_NUMBER_THRESHOLD)
+        {
+            throw new IOException("Generation Number '" + retval + "' has more than 5 digits");
+        }
+        return retval;
     }
     
     /**
@@ -1273,8 +1276,22 @@ public abstract class BaseParser
     protected int readInt() throws IOException
     {
         skipSpaces();
+        int retval = 0;
 
-        return (int) readStringNumber(MAX_LENGTH_INT);
+        StringBuilder intBuffer = readStringNumber();
+
+        try
+        {
+            retval = Integer.parseInt( intBuffer.toString() );
+        }
+        catch( NumberFormatException e )
+        {
+            source.unread(intBuffer.toString().getBytes(StandardCharsets.ISO_8859_1));
+            throw new IOException("Error: Expected an integer type at offset " +
+                    source.getPosition() +
+                                  ", instead got '" + intBuffer + "'", e);
+        }
+        return retval;
     }
     
 
@@ -1288,8 +1305,21 @@ public abstract class BaseParser
     protected long readLong() throws IOException
     {
         skipSpaces();
+        long retval = 0;
 
-        return readStringNumber(MAX_LENGTH_LONG);
+        StringBuilder longBuffer = readStringNumber();
+
+        try
+        {
+            retval = Long.parseLong( longBuffer.toString() );
+        }
+        catch( NumberFormatException e )
+        {
+            source.unread(longBuffer.toString().getBytes(StandardCharsets.ISO_8859_1));
+            throw new IOException( "Error: Expected a long type at offset "
+                    + source.getPosition() + ", instead got '" + longBuffer + "'", e);
+        }
+        return retval;
     }
 
     /**
@@ -1297,28 +1327,25 @@ public abstract class BaseParser
      * delimiters are any non digit values.
      *
      * @return the token to parse as integer or long by the calling method.
-     * @throws IOException if it fails to read from the {@link #source}.
+     * @throws IOException throws by the {@link #source} methods.
      */
-    protected final long readStringNumber(byte maxLength) throws IOException
+    protected final StringBuilder readStringNumber() throws IOException
     {
         int lastByte;
-        byte numDigits = 0;
-        long number = 0;
-
+        StringBuilder buffer = new StringBuilder();
         while ((lastByte = source.read()) >= '0' && lastByte <= '9')
         {
-            if (++numDigits > maxLength)
+            buffer.append( (char)lastByte );
+            if (buffer.length() > MAX_LENGTH_LONG)
             {
-                throw new IOException("Number has too many digits: '" + numDigits + "', stopped reading at offset " + source.getPosition());
+                throw new IOException("Number '" + buffer + 
+                        "' is getting too long, stop reading at offset " + source.getPosition());
             }
-            number = number * 10 + (lastByte - '0');
         }
-
         if( lastByte != -1 )
         {
             source.unread(lastByte);
         }
-
-        return number;
+        return buffer;
     }
 }
