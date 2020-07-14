@@ -73,7 +73,7 @@ public abstract class COSNumber extends COSBase
             {
                 throw new IOException("Not a number: " + number);
             }
-        }
+        } 
         else if (isFloat(number))
         {
             return new COSFloat(number);
