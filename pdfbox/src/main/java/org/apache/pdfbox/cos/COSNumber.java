@@ -57,23 +57,23 @@ public abstract class COSNumber extends COSBase
      */
     public static COSNumber get( String number ) throws IOException
     {
-        if (number.length() == 1) 
+        if (number.length() == 1)
         {
             char digit = number.charAt(0);
-            if ('0' <= digit && digit <= '9') 
+            if ('0' <= digit && digit <= '9')
             {
                 return COSInteger.get(digit - '0');
-            } 
-            else if (digit == '-' || digit == '.') 
+            }
+            else if (digit == '-' || digit == '.')
             {
                 // See https://issues.apache.org/jira/browse/PDFBOX-592
                 return COSInteger.ZERO;
-            } 
-            else 
+            }
+            else
             {
                 throw new IOException("Not a number: " + number);
             }
-        } 
+        }
         else if (isFloat(number))
         {
             return new COSFloat(number);
@@ -87,14 +87,15 @@ public abstract class COSNumber extends COSBase
             catch( NumberFormatException e )
             {
                 // might be a huge number, see PDFBOX-3116
-                if (number.charAt(0) == '-')
+                char digit = number.charAt(0);
+                if (digit == '-')
                 {
                     return new COSFloat(-Float.MAX_VALUE);
                 }
 
                 return new COSFloat(Float.MAX_VALUE);
             }
-        } 
+        }
     }
 
     private static boolean isFloat( String number )
@@ -103,7 +104,7 @@ public abstract class COSNumber extends COSBase
         for (int i = 0; i < length; i++)
         {
             char digit = number.charAt(i);
-            if (digit == '.' || digit == 'e' || digit == 'E')
+            if (digit == '.' || digit == 'e')
             {
                 return true;
             }
