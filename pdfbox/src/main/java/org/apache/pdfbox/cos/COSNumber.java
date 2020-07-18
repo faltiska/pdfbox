@@ -87,13 +87,7 @@ public abstract class COSNumber extends COSBase
             catch( NumberFormatException e )
             {
                 // might be a huge number, see PDFBOX-3116
-                char digit = number.charAt(0);
-                if (digit == '-')
-                {
-                    return new COSFloat(-Float.MAX_VALUE);
-                }
-
-                return new COSFloat(Float.MAX_VALUE);
+                return new COSFloat(number);
             }
         }
     }
