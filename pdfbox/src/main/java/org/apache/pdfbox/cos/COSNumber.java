@@ -57,7 +57,7 @@ public abstract class COSNumber extends COSBase
      */
     public static COSNumber get( String number ) throws IOException
     {
-        if (number.length() == 1) 
+        if (number.length() == 1)
         {
             char digit = number.charAt(0);
             if ('0' <= digit && digit <= '9') 
