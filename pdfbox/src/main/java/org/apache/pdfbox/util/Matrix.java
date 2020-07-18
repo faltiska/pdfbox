@@ -420,11 +420,6 @@ public final class Matrix implements Cloneable
         return new Matrix(1, 0, 0, 1, x, y);
     }
 
-    public static void setTranslation(Matrix instance, float tx, float ty) {
-        instance.single[6] = tx;
-        instance.single[7] = ty;
-    }
-
     /**
      * Convenience method to create a rotated instance.
      *
@@ -471,7 +466,7 @@ public final class Matrix implements Cloneable
     {
         float xScale = single[0];
 
-        /**
+        /*
          * BM: if the trm is rotated, the calculation is a little more complicated
          *
          * The rotation matrix multiplied with the scaling matrix is:
