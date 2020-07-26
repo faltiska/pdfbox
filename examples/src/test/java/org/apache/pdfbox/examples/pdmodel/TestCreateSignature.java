@@ -18,6 +18,7 @@ package org.apache.pdfbox.examples.pdmodel;
 
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -25,6 +26,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
@@ -33,14 +35,17 @@ import java.security.KeyStoreException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.security.Security;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 
 import org.apache.pdfbox.Loader;
@@ -51,6 +56,8 @@ import org.apache.pdfbox.examples.signature.CreateEmbeddedTimeStamp;
 import org.apache.pdfbox.examples.signature.CreateEmptySignatureForm;
 import org.apache.pdfbox.examples.signature.CreateSignature;
 import org.apache.pdfbox.examples.signature.CreateVisibleSignature;
+import org.apache.pdfbox.examples.signature.SigUtils;
+import org.apache.pdfbox.examples.signature.cert.CertificateVerificationException;
 import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -63,22 +70,20 @@ import org.apache.pdfbox.pdmodel.interactive.form.PDField;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.apache.pdfbox.util.Hex;
 import org.apache.wink.client.MockHttpServer;
-import org.bouncycastle.asn1.ASN1Object;
-import org.bouncycastle.asn1.cms.Attribute;
-import org.bouncycastle.asn1.cms.AttributeTable;
-import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
 import org.bouncycastle.cert.X509CertificateHolder;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cms.CMSException;
 import org.bouncycastle.cms.CMSProcessableByteArray;
 import org.bouncycastle.cms.CMSSignedData;
 import org.bouncycastle.cms.SignerInformation;
-import org.bouncycastle.cms.SignerInformationVerifier;
 import org.bouncycastle.cms.jcajce.JcaSimpleSignerInfoVerifierBuilder;
 import org.bouncycastle.crypto.prng.FixedSecureRandom;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.tsp.TSPException;
 import org.bouncycastle.tsp.TSPValidationException;
 import org.bouncycastle.tsp.TimeStampToken;
+import org.bouncycastle.tsp.TimeStampTokenInfo;
+import org.bouncycastle.util.CollectionStore;
 import org.bouncycastle.util.Selector;
 import org.bouncycastle.util.Store;
 import org.junit.Assert;
@@ -119,6 +124,8 @@ public class TestCreateSignature
     @BeforeClass
     public static void init() throws Exception
     {
+        Security.addProvider(SecurityProvider.getProvider());
+
         new File("target/test-output").mkdirs();
         
         KeyStore keystore = KeyStore.getInstance("PKCS12");
@@ -135,11 +142,12 @@ public class TestCreateSignature
      * @throws CMSException
      * @throws OperatorCreationException
      * @throws TSPException
+     * @throws CertificateVerificationException
      */
     @Test
     public void testDetachedSHA256()
             throws IOException, CMSException, OperatorCreationException, GeneralSecurityException,
-                   TSPException
+                   TSPException, CertificateVerificationException
     {
         // load the keystore
         KeyStore keystore = KeyStore.getInstance("PKCS12");
@@ -181,11 +189,12 @@ public class TestCreateSignature
      * @throws CMSException
      * @throws OperatorCreationException
      * @throws TSPException
+     * @throws CertificateVerificationException
      */
     @Test
     public void testDetachedSHA256WithTSA()
             throws IOException, CMSException, OperatorCreationException, GeneralSecurityException,
-                   TSPException
+                   TSPException, CertificateVerificationException
     {
         // mock TSA response content
         byte[] content = Files.readAllBytes(Paths.get(IN_DIR, TSA_RESPONSE));
@@ -244,18 +253,19 @@ public class TestCreateSignature
      * @throws OperatorCreationException
      * @throws GeneralSecurityException
      * @throws TSPException
+     * @throws CertificateVerificationException
      */
     @Test
     public void testCreateVisibleSignature()
             throws IOException, CMSException, OperatorCreationException, GeneralSecurityException,
-                   TSPException
+                   TSPException, CertificateVerificationException
     {
         // load the keystore
         KeyStore keystore = KeyStore.getInstance("PKCS12");
         keystore.load(new FileInputStream(KEYSTORE_PATH), PASSWORD.toCharArray());
 
         // sign PDF
-        String inPath = IN_DIR + "sign_me.pdf";
+        String inPath = IN_DIR + "sign_me_visible.pdf";
         File destFile;
         try (FileInputStream fis = new FileInputStream(JPEG_PATH))
         {
@@ -283,12 +293,13 @@ public class TestCreateSignature
      * @throws OperatorCreationException
      * @throws GeneralSecurityException
      * @throws TSPException
+     * @throws CertificateVerificationException
      */
     @Test
     public void testPDFBox3978() throws IOException, NoSuchAlgorithmException, KeyStoreException, 
                                         CertificateException, UnrecoverableKeyException, 
                                         CMSException, OperatorCreationException, GeneralSecurityException,
-                                        TSPException
+                                        TSPException, CertificateVerificationException
     {
         String filename        = OUT_DIR + "EmptySignatureForm.pdf";
         String filenameSigned1 = OUT_DIR + "EmptySignatureForm-signed1.pdf";
@@ -346,7 +357,7 @@ public class TestCreateSignature
     // This check fails with a file created with the code before PDFBOX-3011 was solved.
     private void checkSignature(File origFile, File signedFile, boolean checkTimeStamp)
             throws IOException, CMSException, OperatorCreationException, GeneralSecurityException,
-            TSPException
+            TSPException, CertificateVerificationException
     {
         String origPageKey;
         try (PDDocument document = Loader.loadPDF(origFile))
@@ -402,17 +413,30 @@ public class TestCreateSignature
                     Assert.fail("Signature verification failed");
                 }
 
-                TimeStampToken timeStampToken = extractTimeStampTokenFromSignerInformation(signerInformation);
+                TimeStampToken timeStampToken = SigUtils.extractTimeStampTokenFromSignerInformation(signerInformation);
                 if (checkTimeStamp)
                 {
                     Assert.assertNotNull(timeStampToken);
-                    validateTimestampToken(timeStampToken);
+                    SigUtils.validateTimestampToken(timeStampToken);
+
+                    TimeStampTokenInfo timeStampInfo = timeStampToken.getTimeStampInfo();
 
                     // compare the hash of the signed content with the hash in the timestamp
-                    byte[] tsMessageImprintDigest = timeStampToken.getTimeStampInfo().getMessageImprintDigest();
-                    String hashAlgorithm = timeStampToken.getTimeStampInfo().getMessageImprintAlgOID().getId();
+                    byte[] tsMessageImprintDigest = timeStampInfo.getMessageImprintDigest();
+                    String hashAlgorithm = timeStampInfo.getMessageImprintAlgOID().getId();
                     byte[] sigMessageImprintDigest = MessageDigest.getInstance(hashAlgorithm).digest(signerInformation.getSignature());
                     Assert.assertArrayEquals("timestamp signature verification failed", sigMessageImprintDigest, tsMessageImprintDigest);                    
+
+                    Store<X509CertificateHolder> tsCertStore = timeStampToken.getCertificates();
+
+                    // get the certificate from the timeStampToken
+                    @SuppressWarnings("unchecked") // TimeStampToken.getSID() is untyped
+                    Collection<X509CertificateHolder> tsCertStoreMatches = tsCertStore.getMatches(timeStampToken.getSID());
+                    X509CertificateHolder certHolderFromTimeStamp = tsCertStoreMatches.iterator().next();
+                    X509Certificate certFromTimeStamp = new JcaX509CertificateConverter().getCertificate(certHolderFromTimeStamp);
+
+                    SigUtils.checkTimeStampCertificateUsage(certFromTimeStamp);
+                    SigUtils.verifyCertificateChain(tsCertStore, certFromTimeStamp, timeStampInfo.getGenTime());
                 }
                 else
                 {
@@ -420,37 +444,6 @@ public class TestCreateSignature
                 }
             }
         }
-    }
-
-    private void validateTimestampToken(TimeStampToken timeStampToken)
-            throws TSPException, CertificateException, OperatorCreationException, IOException
-    {
-        // https://stackoverflow.com/questions/42114742/
-        @SuppressWarnings("unchecked") // TimeStampToken.getSID() is untyped
-        Collection<X509CertificateHolder> tstMatches =
-                timeStampToken.getCertificates().getMatches((Selector<X509CertificateHolder>) timeStampToken.getSID());
-        X509CertificateHolder holder = tstMatches.iterator().next();
-        SignerInformationVerifier siv = new JcaSimpleSignerInfoVerifierBuilder().setProvider(SecurityProvider.getProvider()).build(holder);
-        timeStampToken.validate(siv);
-    }
-
-    private TimeStampToken extractTimeStampTokenFromSignerInformation(SignerInformation signerInformation)
-            throws CMSException, IOException, TSPException
-    {
-        if (signerInformation.getUnsignedAttributes() == null)
-        {
-            return null;
-        }
-        AttributeTable unsignedAttributes = signerInformation.getUnsignedAttributes();
-        // https://stackoverflow.com/questions/1647759/how-to-validate-if-a-signed-jar-contains-a-timestamp
-        Attribute attribute = unsignedAttributes.get(PKCSObjectIdentifiers.id_aa_signatureTimeStampToken);
-        if (attribute == null)
-        {
-            return null;
-        }
-        ASN1Object obj = (ASN1Object) attribute.getAttrValues().getObjectAt(0);
-        CMSSignedData signedTSTData = new CMSSignedData(obj.getEncoded());
-        return new TimeStampToken(signedTSTData);
     }
 
     private String calculateDigestString(InputStream inputStream) throws NoSuchAlgorithmException, IOException
@@ -603,6 +596,65 @@ public class TestCreateSignature
                 signingTime);
         Assert.assertTrue(Arrays.equals(fixedRandomSignedOne, fixedRandomSignedTwo));
 
+    }
+
+    /**
+     * Test getting CRLs when OCSP (adobe-ocsp.geotrust.com) is unavailable.
+     * This validates the certificates of the signature from the file 083698.pdf, which is 
+     * 109TH CONGRESS 2D SESSION H. R. 5500, from MAY 25, 2006.
+     *
+     * @throws IOException
+     * @throws CMSException
+     * @throws CertificateException
+     * @throws TSPException
+     * @throws OperatorCreationException
+     * @throws CertificateVerificationException
+     * @throws NoSuchAlgorithmException 
+     */
+    @Test
+    public void testCRL() throws IOException, CMSException, CertificateException, TSPException,
+            OperatorCreationException, CertificateVerificationException, NoSuchAlgorithmException
+    {
+        String hexSignature;
+        try (BufferedReader bfr = 
+            new BufferedReader(new InputStreamReader(new FileInputStream(IN_DIR + "hexsignature.txt"))))
+        {
+            hexSignature = bfr.readLine();
+        }
+
+        CMSSignedData signedData = new CMSSignedData(Hex.decodeHex(hexSignature));
+        Collection<SignerInformation> signers = signedData.getSignerInfos().getSigners();
+        SignerInformation signerInformation = signers.iterator().next();
+        Store<X509CertificateHolder> certificatesStore = signedData.getCertificates();
+        Collection<X509CertificateHolder> matches = certificatesStore.getMatches(signerInformation.getSID());
+        X509CertificateHolder certificateHolder = matches.iterator().next();
+        X509Certificate certFromSignedData = new JcaX509CertificateConverter().getCertificate(certificateHolder);
+        SigUtils.checkCertificateUsage(certFromSignedData);
+
+        TimeStampToken timeStampToken = SigUtils.extractTimeStampTokenFromSignerInformation(signerInformation);
+        SigUtils.validateTimestampToken(timeStampToken);
+        @SuppressWarnings("unchecked") // TimeStampToken.getSID() is untyped
+        Collection<X509CertificateHolder> tstMatches =
+            timeStampToken.getCertificates().getMatches((Selector<X509CertificateHolder>) timeStampToken.getSID());
+        X509CertificateHolder tstCertHolder = tstMatches.iterator().next();
+        X509Certificate certFromTimeStamp = new JcaX509CertificateConverter().getCertificate(tstCertHolder);
+        // merge both stores using a set to remove duplicates
+        HashSet<X509CertificateHolder> certificateHolderSet = new HashSet<>();
+        certificateHolderSet.addAll(certificatesStore.getMatches(null));
+        certificateHolderSet.addAll(timeStampToken.getCertificates().getMatches(null));
+        SigUtils.verifyCertificateChain(new CollectionStore<>(certificateHolderSet),
+                certFromTimeStamp,
+                timeStampToken.getTimeStampInfo().getGenTime());
+        SigUtils.checkTimeStampCertificateUsage(certFromTimeStamp);
+
+        // compare the hash of the signature with the hash in the timestamp
+        byte[] tsMessageImprintDigest = timeStampToken.getTimeStampInfo().getMessageImprintDigest();
+        String hashAlgorithm = timeStampToken.getTimeStampInfo().getMessageImprintAlgOID().getId();
+        byte[] sigMessageImprintDigest = MessageDigest.getInstance(hashAlgorithm).digest(signerInformation.getSignature());
+        Assert.assertArrayEquals(tsMessageImprintDigest, sigMessageImprintDigest);
+
+        certFromSignedData.checkValidity(timeStampToken.getTimeStampInfo().getGenTime());
+        SigUtils.verifyCertificateChain(certificatesStore, certFromSignedData, timeStampToken.getTimeStampInfo().getGenTime());
     }
 
     private byte[] signEncrypted(SecureRandom secureRandom, Date signingTime) throws Exception
