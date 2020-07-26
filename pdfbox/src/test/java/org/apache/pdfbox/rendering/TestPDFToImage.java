@@ -121,7 +121,7 @@ public class TestPDFToImage
 
         if (!doTestFile(new File(inDir, filename), inDir, outDir))
         {
-            fail("failure, see test log for details");
+            fail(filename + " test failed, see test log for details.");
         }
     }
 
@@ -266,7 +266,6 @@ public class TestPDFToImage
         }
         catch (IOException e)
         {
-            failed = true;
             LOG.error("Error converting file " + file.getName());
             throw e;
         }
@@ -298,7 +297,7 @@ public class TestPDFToImage
             if (outFiles.length == 0)
             {
                 failed = true;
-                LOG.warn("*** TEST FAILURE *** Output missing for file: " + file.getName());
+                LOG.error("*** TEST FAILURE *** Output missing for file: " + file.getName());
             }
             for (File outFile : outFiles)
             {
@@ -307,7 +306,7 @@ public class TestPDFToImage
                 if (!inFile.exists())
                 {
                     failed = true;
-                    LOG.warn("*** TEST FAILURE *** Input missing for file: " + inFile.getName());
+                    LOG.error("*** TEST FAILURE *** Input missing for file: " + inFile.getName());
                 }
                 else if (!filesAreIdentical(outFile, inFile))
                 {
@@ -317,7 +316,7 @@ public class TestPDFToImage
                     if (bim3 != null)
                     {
                         failed = true;
-                        LOG.warn("*** TEST FAILURE *** Input and output not identical for file: " + inFile.getName());
+                        LOG.error("*** TEST FAILURE *** Input and output not identical for file: " + inFile.getName());
                         ImageIO.write(bim3, "png", new File(outFile.getAbsolutePath() + "-diff.png"));
                         System.err.println("Files differ: "  + inFile.getAbsolutePath() + "\n" +
                                            "              " + outFile.getAbsolutePath());

@@ -558,6 +558,9 @@ public class TestTextStripper extends TestCase
             //Test with sorting
             doTestFile(testFile, outDir, false, true);
         }
+
+        log.info("\n\n---------------------------------\n" + testFiles.length + 
+                " files processed successfully.\n---------------------------------\n\n" );
     }
     
     /**

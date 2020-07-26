@@ -81,21 +81,6 @@ public abstract class TestCOSNumber extends TestCOSBase
         }
     }
 
-    public void testBigNumbers()
-    {
-        try
-        {
-            //see https://issues.apache.org/jira/browse/PDFBOX-4889
-            //and https://issues.apache.org/jira/browse/PDFBOX-4895
-            assertEquals(new COSFloat(18446744073307448448f), COSNumber.get("18446744073307448448"));
-            assertEquals(new COSFloat(-18446744073307448448f), COSNumber.get("-18446744073307448448"));
-        }
-        catch (IOException e)
-        {
-            fail("Failed to convert a number " + e.getMessage());
-        }
-    }
-
     /**
      * PDFBOX-4895: large number, too big for a long leads to a null value.
      * 
