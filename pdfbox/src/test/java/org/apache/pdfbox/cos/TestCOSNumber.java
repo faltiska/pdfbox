@@ -91,17 +91,4 @@ public abstract class TestCOSNumber extends TestCOSBase
         assertNull(COSNumber.get("18446744073307448448"));
         assertNull(COSNumber.get("-18446744073307448448"));
     }
-
-    public void testInvalidNumber()
-    {
-        try
-        {
-            COSNumber.get("18446744073307F448448");
-            fail("Was expecting an IOException");
-        }
-        catch (IOException e)
-        {
-        }
-    }
-
 }
