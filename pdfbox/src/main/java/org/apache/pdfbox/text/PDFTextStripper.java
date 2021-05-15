@@ -162,7 +162,7 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
      *
      * Most PDFs won't have any beads, so charactersByArticle will contain a single entry.
      */
-    protected ArrayList<List<TextPosition>> charactersByArticle;
+    protected ArrayList<List<TextPosition>> charactersByArticle = new ArrayList<>();
 
     private final Map<String, TreeMap<Float, TreeSet<Float>>> characterListMapping = new HashMap<>();
 
@@ -173,7 +173,6 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
      * True if we started a paragraph but haven't ended it yet.
      */
     private boolean inParagraph;
-    private Pattern lastLiPattern = null;
 
     /**
      * Instantiate a new PDFTextStripper object.
@@ -336,9 +335,10 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
                 fillBeadRectangles(page);
                 numberOfArticleSections += beadRectangles.size() * 2;
             }
-
-            charactersByArticle = new ArrayList<>(numberOfArticleSections);
-            for (int i = 0; i < numberOfArticleSections; i++)
+            int originalSize = charactersByArticle.size();
+            charactersByArticle.ensureCapacity(numberOfArticleSections);
+            int lastIndex = Math.max(numberOfArticleSections, originalSize);
+            for (int i = 0; i < lastIndex; i++)
             {
                 if (i < originalSize)
                 {
@@ -358,8 +358,7 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
                     }
                 }
             }
-            characterListMapping = new HashMap<>();
-
+            characterListMapping.clear();
             super.processPage(page);
             writePage();
             endPage(page);
@@ -532,8 +531,8 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
                 // Resets the average character width when we see a change in font
                 // or a change in the font size
                 if (lastPosition != null &&
-                    (position.getFont() != lastPosition.position.getFont() || 
-                     Float.compare(position.getFontSize(), lastPosition.position.getFontSize()) != 0))
+                    (position.getFont() != lastPosition.getTextPosition().getFont() || 
+                     Float.compare(position.getFontSize(),lastPosition.getTextPosition().getFontSize()) != 0))
                 {
                     previousAveCharWidth = -1;
                 }
@@ -610,7 +609,7 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
                 {
                     if (startOfArticle)
                     {
-                        lastPosition.isArticleStart = true;
+                        lastPosition.setArticleStart();
                         startOfArticle = false;
                     }
                     // RDD - Here we determine whether this text object is on the current
@@ -639,8 +638,8 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
                             && expectedStartOfNextWordX < positionX
                             // only bother adding a word separator if the last character was not a word separator
                             && (wordSeparator.isEmpty() || //
-                                    (lastPosition.position.getUnicode() != null
-                                            && !lastPosition.position.getUnicode()
+                                    (lastPosition.getTextPosition().getUnicode() != null
+                                            && !lastPosition.getTextPosition().getUnicode()
                                                     .endsWith(wordSeparator))))
                     {
                         line.add(LineItem.getWordSeparator());
@@ -667,7 +666,7 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
                 // add it to the list
                 if (characterValue != null)
                 {
-                    if (startOfPage)
+                    if (startOfPage && lastPosition == null)
                     {
                         writeParagraphStart();// not sure this is correct for RTL?
                     }
@@ -678,8 +677,8 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
                 lastPosition = current;
                 if (startOfPage)
                 {
-                    lastPosition.isParagraphStart = true;
-                    lastPosition.isLineStart = true;
+                    lastPosition.setParagraphStart();
+                    lastPosition.setLineStart();
                     lastLineStartPosition = lastPosition;
                     startOfPage = false;
                 }
@@ -786,9 +785,13 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
             String textCharacter = text.getUnicode();
             float textX = text.getX();
             float textY = text.getY();
-            TreeMap<Float, TreeSet<Float>> sameTextCharacters = characterListMapping.
-                    computeIfAbsent(textCharacter, k -> new TreeMap<>());
-
+            TreeMap<Float, TreeSet<Float>> sameTextCharacters = characterListMapping
+                    .get(textCharacter);
+            if (sameTextCharacters == null)
+            {
+                sameTextCharacters = new TreeMap<>();
+                characterListMapping.put(textCharacter, sameTextCharacters);
+            }
             // RDD - Here we compute the value that represents the end of the rendered
             // text. This value is used to determine whether subsequent text rendered
             // on the same line overwrites the current text.
@@ -815,7 +818,12 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
             }
             if (!suppressCharacter)
             {
-                TreeSet<Float> ySet = sameTextCharacters.computeIfAbsent(textX, k->new TreeSet<>());
+                TreeSet<Float> ySet = sameTextCharacters.get(textX);
+                if (ySet == null)
+                {
+                    ySet = new TreeSet<>();
+                    sameTextCharacters.put(textX, ySet);
+                }
                 ySet.add(textY);
                 showCharacter = true;
             }
@@ -1397,14 +1405,14 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
             PositionWrapper lastPosition, PositionWrapper lastLineStartPosition,
             float maxHeightForLine) throws IOException
     {
-        current.isLineStart = true;
-        checkParagraphSeparation(current, lastPosition, lastLineStartPosition, maxHeightForLine);
+        current.setLineStart();
+        isParagraphSeparation(current, lastPosition, lastLineStartPosition, maxHeightForLine);
         lastLineStartPosition = current;
-        if (current.isParagraphStart)
+        if (current.isParagraphStart())
         {
-            if (lastPosition.isArticleStart)
+            if (lastPosition.isArticleStart())
             {
-                if (lastPosition.isLineStart)
+                if (lastPosition.isLineStart())
                 {
                     writeLineSeparator();
                 }
@@ -1445,80 +1453,85 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
      * @param lastLineStartPosition the last text position that followed a line separator, or null.
      * @param maxHeightForLine max height for text positions since lasLineStartPosition.
      */
-    private void checkParagraphSeparation(PositionWrapper position, PositionWrapper lastPosition,
+    private void isParagraphSeparation(PositionWrapper position, PositionWrapper lastPosition,
             PositionWrapper lastLineStartPosition, float maxHeightForLine)
     {
+        boolean result = false;
         if (lastLineStartPosition == null)
         {
-            position.isParagraphStart = true;
-            return;
+            result = true;
         }
-
-        boolean previousLineHasSingleFont = lastPosition.position.getFontSizeInPt() == lastLineStartPosition.position.getFontSizeInPt();
-        boolean fontChanged = lastPosition.position.getFontSizeInPt() != position.position.getFontSizeInPt();
-        if (previousLineHasSingleFont && fontChanged)
+        else
         {
-            position.isParagraphStart = true;
-            return;
-        }
+            float yGap = Math.abs(position.getTextPosition().getYDirAdj()
+                    - lastPosition.getTextPosition().getYDirAdj());
+            float newYVal = multiplyFloat(getDropThreshold(), maxHeightForLine);
+            // do we need to flip this for rtl?
+            float xGap = position.getTextPosition().getXDirAdj()
+                    - lastLineStartPosition.getTextPosition().getXDirAdj();
+            float newXVal = multiplyFloat(getIndentThreshold(),
+                    position.getTextPosition().getWidthOfSpace());
+            float positionWidth = multiplyFloat(0.25f, position.getTextPosition().getWidth());
 
-
-        float yGap = Math.abs(position.position.getYDirAdj() - lastPosition.position.getYDirAdj());
-        float newYVal = dropThreshold * maxHeightForLine;
-
-        if (yGap > newYVal)
-        {
-            position.isParagraphStart = true;
-            return;
-        }
-
-        // TODO do we need to flip this for rtl?
-        float xGap = position.position.getXDirAdj() - lastLineStartPosition.position.getXDirAdj();
-        float newXVal = indentThreshold * position.position.getWidthOfSpace();
-
-        boolean isWhitespace = position.position.getUnicode().matches("[\\h]");
-
-        if (xGap > newXVal || isWhitespace)
-        {
-            // text is indented, but try to screen for hanging indent
-            if (!lastLineStartPosition.isParagraphStart)
+            if (yGap > newYVal)
             {
-                position.isParagraphStart = true;
-                return;
+                result = true;
             }
-
-            position.isHangingIndent = true;
-            return;
+            else if (xGap > newXVal)
+            {
+                // text is indented, but try to screen for hanging indent
+                if (!lastLineStartPosition.isParagraphStart())
+                {
+                    result = true;
+                }
+                else
+                {
+                    position.setHangingIndent();
+                }
+            }
+            else if (xGap < -position.getTextPosition().getWidthOfSpace())
+            {
+                // text is left of previous line. Was it a hanging indent?
+                if (!lastLineStartPosition.isParagraphStart())
+                {
+                    result = true;
+                }
+            }
+            else if (Math.abs(xGap) < positionWidth)
+            {
+                // current horizontal position is within 1/4 a char of the last
+                // linestart. We'll treat them as lined up.
+                if (lastLineStartPosition.isHangingIndent())
+                {
+                    position.setHangingIndent();
+                }
+                else if (lastLineStartPosition.isParagraphStart())
+                {
+                    // check to see if the previous line looks like
+                    // any of a number of standard list item formats
+                    Pattern liPattern = matchListItemPattern(lastLineStartPosition);
+                    if (liPattern != null)
+                    {
+                        Pattern currentPattern = matchListItemPattern(position);
+                        if (liPattern == currentPattern)
+                        {
+                            result = true;
+                        }
+                    }
+                }
+            }
         }
-
-        if (xGap < -position.position.getWidthOfSpace())
+        if (result)
         {
-            // text start is left of previous line. Was it a hanging indent?
-            if (!lastLineStartPosition.isParagraphStart)
-            {
-                position.isParagraphStart = true;
-                return;
-            }
+            position.setParagraphStart();
         }
+    }
 
-        float positionWidth = 0.25f * position.position.getWidth();
-
-        //this line is vertically aligned with last line (within 1/4 of a char)
-        if (Math.abs(xGap) < positionWidth)
-        {
-            if (lastLineStartPosition.isHangingIndent)
-            {
-                position.isHangingIndent = true;
-                return;
-            }
-
-            Pattern currentLiPattern = matchListItemPattern(position);
-            if (currentLiPattern != null && lastLiPattern == currentLiPattern)
-            {
-                position.isParagraphStart = true;
-            }
-            lastLiPattern = currentLiPattern;
-        }
+    private float multiplyFloat(float value1, float value2)
+    {
+        // multiply 2 floats and truncate the resulting value to 3 decimal places
+        // to avoid wrong results when comparing with another float
+        return Math.round(value1 * value2 * 1000) / 1000f;
     }
 
     /**
@@ -1594,7 +1607,7 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
      */
     private Pattern matchListItemPattern(PositionWrapper pw)
     {
-        TextPosition tp = pw.position;
+        TextPosition tp = pw.getTextPosition();
         String txt = tp.getUnicode();
         return matchPattern(txt, getListItemPatterns());
     }
@@ -1605,7 +1618,7 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
      */
     private static final String[] LIST_ITEM_EXPRESSIONS = { "\\.", "\\d+\\.", "\\[\\d+\\]",
             "\\d+\\)", "[A-Z]\\.", "[a-z]\\.", "[A-Z]\\)", "[a-z]\\)", "[IVXL]+\\.",
-            "[ivxl]+\\.", "[\\u2022|\\u2023|\\u2043|\\u2219|\\u25A0|\\u25CB|\\u25E6|\\u29BE|\\u25BF]"};
+            "[ivxl]+\\.", };
 
     private List<Pattern> listOfPatterns = null;
 
@@ -1682,7 +1695,7 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
      * @param line a list with the words of the given line
      * @throws IOException if something went wrong
      */
-    protected void writeLine(List<WordWithTextPositions> line)
+    private void writeLine(List<WordWithTextPositions> line)
             throws IOException
     {
         int numberOfStrings = line.size();
@@ -1896,7 +1909,7 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
                 {
                     builder = new StringBuilder(strLength * 2);
                 }
-                builder.append(word, p, q);
+                builder.append(word.substring(p, q));
                 // Some fonts map U+FDF2 differently than the Unicode spec.
                 // They add an extra U+0627 character to compensate.
                 // This removes the extra character for those fonts.
@@ -1920,7 +1933,7 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
         }
         else
         {
-            builder.append(word, p, q);
+            builder.append(word.substring(p, q));
             return handleDirection(builder.toString());
         }
     }
@@ -1990,7 +2003,7 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
      *
      * @author Axel Dörfler
      */
-    protected static final class WordWithTextPositions
+    private static final class WordWithTextPositions
     {
         final String text;
         final List<TextPosition> textPositions;
@@ -2026,10 +2039,11 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
     {
         private boolean isLineStart = false;
         private boolean isParagraphStart = false;
+        private boolean isPageBreak = false;
         private boolean isHangingIndent = false;
         private boolean isArticleStart = false;
 
-        private TextPosition position;
+        private TextPosition position = null;
 
         /**
          * Constructs a PositionWrapper around the specified TextPosition object.
@@ -2039,6 +2053,81 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
         PositionWrapper(TextPosition position)
         {
             this.position = position;
+        }
+
+        /**
+         * Returns the underlying TextPosition object.
+         * 
+         * @return the text position
+         */
+        public TextPosition getTextPosition()
+        {
+            return position;
+        }
+
+        public boolean isLineStart()
+        {
+            return isLineStart;
+        }
+
+        /**
+         * Sets the isLineStart() flag to true.
+         */
+        public void setLineStart()
+        {
+            this.isLineStart = true;
+        }
+
+        public boolean isParagraphStart()
+        {
+            return isParagraphStart;
+        }
+
+        /**
+         * sets the isParagraphStart() flag to true.
+         */
+        public void setParagraphStart()
+        {
+            this.isParagraphStart = true;
+        }
+
+        public boolean isArticleStart()
+        {
+            return isArticleStart;
+        }
+
+        /**
+         * Sets the isArticleStart() flag to true.
+         */
+        public void setArticleStart()
+        {
+            this.isArticleStart = true;
+        }
+
+        public boolean isPageBreak()
+        {
+            return isPageBreak;
+        }
+
+        /**
+         * Sets the isPageBreak() flag to true.
+         */
+        public void setPageBreak()
+        {
+            this.isPageBreak = true;
+        }
+
+        public boolean isHangingIndent()
+        {
+            return isHangingIndent;
+        }
+
+        /**
+         * Sets the isHangingIndent() flag to true.
+         */
+        public void setHangingIndent()
+        {
+            this.isHangingIndent = true;
         }
     }
 }
