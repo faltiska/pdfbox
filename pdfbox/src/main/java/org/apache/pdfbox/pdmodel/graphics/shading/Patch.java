@@ -28,7 +28,7 @@ import java.util.List;
 abstract class Patch
 {
     protected Point2D[][] controlPoints;
-    protected float[][] cornerColor;
+    protected final float[][] cornerColor;
 
     /*
      level = {levelU, levelV}, levelU defines the patch's u direction edges should be 
@@ -41,11 +41,9 @@ abstract class Patch
     /**
      * Constructor of Patch.
      *
-     * @param ctl control points, size is 12 (for type 6 shading) or 16 (for
-     * type 7 shading)
      * @param color 4 corner's colors
      */
-    Patch(Point2D[] ctl, float[][] color)
+    Patch(float[][] color)
     {
         cornerColor = color.clone();
     }
@@ -181,8 +179,10 @@ abstract class Patch
         {
             for (int j = 1; j < szU; j++)
             {
-                Point2D p0 = patchCC[i - 1][j - 1].coordinate, p1 = patchCC[i - 1][j].coordinate, p2 = patchCC[i][j].coordinate,
-                        p3 = patchCC[i][j - 1].coordinate;
+                Point2D p0 = patchCC[i - 1][j - 1].coordinate;
+                Point2D p1 = patchCC[i - 1][j].coordinate;
+                Point2D p2 = patchCC[i][j].coordinate;
+                Point2D p3 = patchCC[i][j - 1].coordinate;
                 boolean ll = true;
                 if (overlaps(p0, p1) || overlaps(p0, p3))
                 {

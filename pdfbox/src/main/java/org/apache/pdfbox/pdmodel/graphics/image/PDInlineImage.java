@@ -19,6 +19,7 @@ package org.apache.pdfbox.pdmodel.graphics.image;
 import java.awt.Paint;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
+import java.awt.image.WritableRaster;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -34,7 +35,6 @@ import org.apache.pdfbox.filter.DecodeResult;
 import org.apache.pdfbox.filter.Filter;
 import org.apache.pdfbox.filter.FilterFactory;
 import org.apache.pdfbox.pdmodel.PDResources;
-import org.apache.pdfbox.pdmodel.common.COSArrayList;
 import org.apache.pdfbox.pdmodel.graphics.color.PDColorSpace;
 import org.apache.pdfbox.pdmodel.graphics.color.PDDeviceGray;
 
@@ -243,18 +243,17 @@ public final class PDInlineImage implements PDImage
      */
     public List<String> getFilters()
     {
-        List<String> names = Collections.emptyList();
         COSBase filters = parameters.getDictionaryObject(COSName.F, COSName.FILTER);
         if (filters instanceof COSName)
         {
             COSName name = (COSName) filters;
-            names = new COSArrayList<>(name.getName(), name, parameters, COSName.FILTER);
+            return Collections.singletonList(name.getName());
         }
         else if (filters instanceof COSArray)
         {
-            names = COSArrayList.convertCOSNameCOSArrayToList((COSArray) filters);
+            return ((COSArray) filters).toCOSNameStringList();
         }
-        return names;
+        return Collections.emptyList();
     }
 
     /**
@@ -264,7 +263,7 @@ public final class PDInlineImage implements PDImage
      */
     public void setFilters(List<String> filters)
     {
-        COSBase obj = COSArrayList.convertStringListToCOSNameCOSArray(filters);
+        COSBase obj = COSArray.ofCOSNames(filters);
         parameters.setItem(COSName.F, obj);
     }
 
@@ -351,6 +350,18 @@ public final class PDInlineImage implements PDImage
     public BufferedImage getImage(Rectangle region, int subsampling) throws IOException
     {
         return SampledImageReader.getRGBImage(this, region, subsampling, null);
+    }
+
+    @Override
+    public WritableRaster getRawRaster() throws IOException
+    {
+        return SampledImageReader.getRawRaster(this);
+    }
+
+    @Override
+    public BufferedImage getRawImage() throws IOException
+    {
+        return getColorSpace().toRawImage(getRawRaster());
     }
 
     @Override

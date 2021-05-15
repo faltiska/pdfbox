@@ -16,16 +16,19 @@
  */
 package org.apache.pdfbox.util;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-import junit.framework.TestCase;
+
+import org.junit.jupiter.api.Test;
 
 /**
  *
  * @author Uwe Pachler
  */
-public class TestQuickSort extends TestCase
+class TestQuickSort
 {
 
     <T extends Comparable<T>> void doTest(T[] input, T[] expected)
@@ -33,15 +36,14 @@ public class TestQuickSort extends TestCase
         List<T> list = Arrays.asList(input);
         QuickSort.sort(list);
 
-        boolean equal = Arrays.equals(list.toArray(new Object[input.length]), expected);
-
-        assertTrue(equal);
+        assertTrue(Arrays.equals(list.toArray(new Object[input.length]), expected));
     }
 
     /**
      * Test for different cases.
      */
-    public void testSort()
+    @Test
+    void testSort()
     {
 
         {

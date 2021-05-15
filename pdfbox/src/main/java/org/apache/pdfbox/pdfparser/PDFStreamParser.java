@@ -18,11 +18,11 @@ package org.apache.pdfbox.pdfparser;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.pdfbox.contentstream.PDContentStream;
 import org.apache.pdfbox.contentstream.operator.Operator;
 import org.apache.pdfbox.contentstream.operator.OperatorName;
 import org.apache.pdfbox.cos.COSBase;
@@ -31,8 +31,6 @@ import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.cos.COSNull;
 import org.apache.pdfbox.cos.COSNumber;
-import org.apache.pdfbox.cos.COSObject;
-import org.apache.pdfbox.io.InputStreamRandomAccessRead;
 import org.apache.pdfbox.io.RandomAccessReadBuffer;
 
 /**
@@ -53,14 +51,14 @@ public class PDFStreamParser extends BaseParser
     /**
      * Constructor.
      *
-     * @param stream The content stream to parse.
+     * @param pdContentstream The content stream to parse.
      * @throws IOException If there is an error initializing the stream.
      */
-    public PDFStreamParser(InputStream stream) throws IOException
+    public PDFStreamParser(PDContentStream pdContentstream) throws IOException
     {
-        super(new InputStreamRandomAccessRead(stream));
+        super(pdContentstream.getContentsForRandomAccess());
     }
-    
+
     /**
      * Constructor.
      *
@@ -86,7 +84,6 @@ public class PDFStreamParser extends BaseParser
         {
             streamObjects.add( token );
         }
-        source.close();
         return streamObjects;
     }
 
@@ -99,99 +96,68 @@ public class PDFStreamParser extends BaseParser
      */
     public Object parseNextToken() throws IOException
     {
-        Object retval;
-
         skipSpaces();
-        int nextByte = source.peek();
-        if( ((byte)nextByte) == -1 )
+        if (source.isEOF())
         {
             source.close();
             return null;
         }
-        char c = (char)nextByte;
+        char c = (char) source.peek();
         switch (c)
         {
             case '<':
-            {
                 // pull off first left bracket
-                int leftBracket = source.read();
+                source.read();
 
                 // check for second left bracket
                 c = (char) source.peek();
 
                 // put back first bracket
-                source.unread(leftBracket);
+                source.rewind(1);
 
                 if (c == '<')
                 {
-                    retval = parseCOSDictionary();
+                    return parseCOSDictionary();
                 }
                 else
                 {
-                    retval = parseCOSString();
+                    return parseCOSString();
                 }
-                break;
-            }
             case '[':
-            {
                 // array
-                retval = parseCOSArray();
-                break;
-            }
+                return parseCOSArray();
             case '(':
                 // string
-                retval = parseCOSString();
-                break;
+                return parseCOSString();
             case '/':
                 // name
-                retval = parseCOSName();
-                break;
+                return parseCOSName();
             case 'n':   
-            {
                 // null
                 String nullString = readString();
                 if( nullString.equals( "null") )
                 {
-                    retval = COSNull.NULL;
+                    return COSNull.NULL;
                 }
                 else
                 {
-                    retval = Operator.getOperator(nullString);
+                    return Operator.getOperator(nullString);
                 }
-                break;
-            }
             case 't':
             case 'f':
-            {
                 String next = readString();
                 if( next.equals( "true" ) )
                 {
-                    retval = COSBoolean.TRUE;
-                    break;
+                    return COSBoolean.TRUE;
                 }
                 else if( next.equals( "false" ) )
                 {
-                    retval = COSBoolean.FALSE;
+                    return COSBoolean.FALSE;
                 }
                 else
                 {
-                    retval = Operator.getOperator(next);
+                    return Operator.getOperator(next);
                 }
-                break;
-            }
-            case 'R':
-            {
-                String line = readString();
-                if( line.equals( "R" ) )
-                {
-                retval = new COSObject(null);
-                }
-                else
-                {
-                    retval = Operator.getOperator(line);
-                }
-                break;
-            }
             case '0':
             case '1':
             case '2':
@@ -205,7 +171,6 @@ public class PDFStreamParser extends BaseParser
             case '-':
             case '+':
             case '.':
-            {
                 /* We will be filling buf with the rest of the number.  Only
                  * allow 1 "." and "-" and "+" at start of number. */
                 StringBuilder buf = new StringBuilder();
@@ -234,22 +199,24 @@ public class PDFStreamParser extends BaseParser
                         dotNotRead = false;
                     }
                 }
-                retval = COSNumber.get( buf.toString() );
-                break;
-            }
+                return COSNumber.get(buf.toString());
             case 'B':
-            {
-                String next = readString();
-                retval = Operator.getOperator(next);
-                if( next.equals( OperatorName.BEGIN_INLINE_IMAGE ) )
+                String nextOperator = readString();
+                Operator beginImageOP = Operator.getOperator(nextOperator);
+                if (nextOperator.equals(OperatorName.BEGIN_INLINE_IMAGE))
                 {
-                    Operator beginImageOP = (Operator)retval;
                     COSDictionary imageParams = new COSDictionary();
                     beginImageOP.setImageParameters( imageParams );
                     Object nextToken = null;
                     while( (nextToken = parseNextToken()) instanceof COSName )
                     {
                         Object value = parseNextToken();
+                        if (!(value instanceof COSBase))
+                        {
+                            LOG.warn("Unexpected token in inline image dictionary at offset " +
+                                    source.getPosition());
+                            break;
+                        }
                         imageParams.setItem( (COSName)nextToken, (COSBase)value );
                     }
                     //final token will be the image data, maybe??
@@ -263,10 +230,8 @@ public class PDFStreamParser extends BaseParser
                         beginImageOP.setImageData(imageData.getImageData());
                     }
                 }
-                break;
-            }
+                return beginImageOP;
             case 'I':
-            {
                 //Special case for ID operator
                 String id = Character.toString((char) source.read()) + (char) source.read();
                 if (!id.equals(OperatorName.BEGIN_INLINE_IMAGE_DATA))
@@ -297,37 +262,27 @@ public class PDFStreamParser extends BaseParser
                     currentByte = source.read();
                 }
                 // the EI operator isn't unread, as it won't be processed anyway
-                retval = Operator.getOperator(OperatorName.BEGIN_INLINE_IMAGE_DATA);
+                Operator beginImageDataOP = Operator
+                        .getOperator(OperatorName.BEGIN_INLINE_IMAGE_DATA);
                 // save the image data to the operator, so that it can be accessed later
-                ((Operator)retval).setImageData( imageData.toByteArray() );
-                break;
-            }
+                beginImageDataOP.setImageData(imageData.toByteArray());
+                return beginImageDataOP;
             case ']':
-            {
                 // some ']' around without its previous '['
                 // this means a PDF is somewhat corrupt but we will continue to parse.
                 source.read();
                 
                 // must be a better solution than null...
-                retval = COSNull.NULL;  
-                break;
-            }
+                return COSNull.NULL;
             default:
-            {
-                //we must be an operator
-                String operator = readOperator();
-                if( operator.trim().length() == 0 )
+                // we must be an operator
+                String operator = readOperator().trim();
+                if (operator.length() > 0)
                 {
-                    //we have a corrupt stream, stop reading here
-                    retval = null;
+                    return Operator.getOperator(operator);
                 }
-                else
-                {
-                    retval = Operator.getOperator(operator);
-                }
-            }
         }
-        return retval;
+        return null;
     }
 
     /**
@@ -393,7 +348,7 @@ public class PDFStreamParser extends BaseParser
                     noBinData = false;
                 }
             }
-            source.unread(binCharTestArr, 0, readBytes);
+            source.rewind(readBytes);
         }
         if (!noBinData)
         {

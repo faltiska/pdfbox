@@ -37,8 +37,13 @@ import javax.swing.SwingWorker;
 import javax.swing.event.AncestorEvent;
 import javax.swing.event.AncestorListener;
 import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Desktop;
+import java.awt.DisplayMode;
 import java.awt.Font;
+import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
+import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
@@ -47,6 +52,8 @@ import java.awt.event.MouseMotionListener;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -56,11 +63,14 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.pdfbox.debugger.ui.ErrorDialog;
 import org.apache.pdfbox.debugger.ui.HighResolutionImageIcon;
 import org.apache.pdfbox.debugger.ui.ImageTypeMenu;
 import org.apache.pdfbox.debugger.ui.RenderDestinationMenu;
 import org.apache.pdfbox.debugger.ui.TextDialog;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.fixup.AcroFormDefaultFixup;
+import org.apache.pdfbox.pdmodel.fixup.PDDocumentFixup;
 import org.apache.pdfbox.pdmodel.interactive.action.PDAction;
 import org.apache.pdfbox.pdmodel.interactive.action.PDActionGoTo;
 import org.apache.pdfbox.pdmodel.interactive.action.PDActionURI;
@@ -95,6 +105,7 @@ public class PagePane implements ActionListener, AncestorListener, MouseMotionLi
     private RenderDestinationMenu renderDestinationMenu;
     private ViewMenu viewMenu;
     private String labelText = "";
+    private String currentURI = "";
     private final Map<PDRectangle,String> rectMap = new HashMap<>();
     private final AffineTransform defaultTransform = GraphicsEnvironment.getLocalGraphicsEnvironment().
                         getDefaultScreenDevice().getDefaultConfiguration().getDefaultTransform();
@@ -172,7 +183,9 @@ public class PagePane implements ActionListener, AncestorListener, MouseMotionLi
 
     private void collectFieldLocations() throws IOException
     {
-        PDAcroForm acroForm = document.getDocumentCatalog().getAcroForm();
+        // get Acroform without applying fixups to enure that we get the original content
+        PDDocumentFixup fixup = ViewMenu.isRepairAcroformSelected() ? new AcroFormDefaultFixup(document) : null;
+        PDAcroForm acroForm = document.getDocumentCatalog().getAcroForm(fixup);
         if (acroForm == null)
         {
             return;
@@ -242,15 +255,21 @@ public class PagePane implements ActionListener, AncestorListener, MouseMotionLi
     public void actionPerformed(ActionEvent actionEvent)
     {
         String actionCommand = actionEvent.getActionCommand();
-        if (ZoomMenu.isZoomMenu(actionCommand) ||
+        if (ViewMenu.isRepairAcroformEvent(actionEvent))
+        {
+            PDDocumentFixup fixup = ViewMenu.isRepairAcroformSelected() ? new AcroFormDefaultFixup(document) : null;
+            document.getDocumentCatalog().getAcroForm(fixup);
+            startRendering();
+        }
+        else if (ZoomMenu.isZoomMenu(actionCommand) ||
             RotationMenu.isRotationMenu(actionCommand) ||
             ImageTypeMenu.isImageTypeMenu(actionCommand) ||
             RenderDestinationMenu.isRenderDestinationMenu(actionCommand) ||
-            ViewMenu.isRenderingOptions(actionCommand))
+            ViewMenu.isRenderingOption(actionCommand))
         {
             startRendering();
         }
-        else if (ViewMenu.isExtractText(actionEvent))
+        else if (ViewMenu.isExtractTextEvent(actionEvent))
         {
             startExtracting();
         }
@@ -258,11 +277,21 @@ public class PagePane implements ActionListener, AncestorListener, MouseMotionLi
 
     private void startExtracting()
     {
+        GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
+        DisplayMode dm = gd.getDisplayMode();
+        int screenWidth = dm.getWidth();
+        int screenHeight = dm.getHeight();
+
         TextDialog textDialog = TextDialog.instance();
-        textDialog.setSize(800, 400);
+        textDialog.setSize(screenWidth / 3, screenHeight / 3);
         textDialog.setVisible(true);
-        textDialog.setLocation(getPanel().getLocationOnScreen().x + getPanel().getWidth() / 2,
-                               getPanel().getLocationOnScreen().y + getPanel().getHeight() / 2);
+
+        // avoid that the text extraction window gets outside of the screen
+        Point locationOnScreen = getPanel().getLocationOnScreen();
+        int x = Math.min(locationOnScreen.x + getPanel().getWidth() / 2, screenWidth * 3 / 4);
+        int y = Math.min(locationOnScreen.y + getPanel().getHeight() / 2, screenHeight * 3 / 4);
+        textDialog.setLocation(x, y);
+
         try
         {
             PDFTextStripper stripper = new PDFTextStripper();
@@ -369,10 +398,11 @@ public class PagePane implements ActionListener, AncestorListener, MouseMotionLi
     @Override
     public void mouseMoved(MouseEvent e)
     {
-        float height = page.getCropBox().getHeight();
-        float width  = page.getCropBox().getWidth();
-        float offsetX = page.getCropBox().getLowerLeftX();
-        float offsetY = page.getCropBox().getLowerLeftY();
+        PDRectangle cropBox = page.getCropBox();
+        float height = cropBox.getHeight();
+        float width = cropBox.getWidth();
+        float offsetX = cropBox.getLowerLeftX();
+        float offsetY = cropBox.getLowerLeftY();
         float zoomScale = zoomMenu.getPageZoomScale();
         float x = e.getX() / zoomScale * (float) defaultTransform.getScaleX();
         float y = e.getY() / zoomScale * (float) defaultTransform.getScaleY();
@@ -399,16 +429,25 @@ public class PagePane implements ActionListener, AncestorListener, MouseMotionLi
                 break;
         }
         String text = "x: " + x1 + ", y: " + y1;
-        
-        // are we in a field widget?
+
+        // are we in a field widget or a link annotation?
+        Cursor cursor = Cursor.getDefaultCursor();
+        currentURI = "";
         for (Entry<PDRectangle,String> entry : rectMap.entrySet())
         {
             if (entry.getKey().contains(x1, y1))
             {
-                text += ", " + rectMap.get(entry.getKey());
+                String s = rectMap.get(entry.getKey());
+                text += ", " + s;
+                if (s.startsWith("URI: "))
+                {
+                    currentURI = s.substring(5);
+                    cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR);
+                }
                 break;
             }
         }
+        panel.setCursor(cursor);
 
         statuslabel.setText(text);
     }
@@ -416,7 +455,18 @@ public class PagePane implements ActionListener, AncestorListener, MouseMotionLi
     @Override
     public void mouseClicked(MouseEvent e)
     {
-        // do nothing
+        if (!currentURI.isEmpty() &&
+            Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE))
+        {
+            try
+            {
+                Desktop.getDesktop().browse(new URI(currentURI));
+            }
+            catch (URISyntaxException | IOException ex)
+            {
+                new ErrorDialog(ex).setVisible(true);
+            }
+        }
     }
 
     @Override
@@ -463,7 +513,7 @@ public class PagePane implements ActionListener, AncestorListener, MouseMotionLi
             label.setText(labelText);
             statuslabel.setText(labelText);
 
-            PDFRenderer renderer = new DebugPDFRenderer(document, ViewMenu.isShowGlyphBounds());
+            PDFRenderer renderer = new PDFRenderer(document);
             renderer.setSubsamplingAllowed(ViewMenu.isAllowSubsampling());
 
             long t0 = System.nanoTime();
@@ -477,7 +527,7 @@ public class PagePane implements ActionListener, AncestorListener, MouseMotionLi
             // debug overlays
             DebugTextOverlay debugText = new DebugTextOverlay(document, pageIndex, scale, 
                                                               showTextStripper, showTextStripperBeads,
-                                                              showFontBBox);
+                                                              showFontBBox, ViewMenu.isShowGlyphBounds());
             Graphics2D g = image.createGraphics();
             debugText.renderTo(g);
             g.dispose();

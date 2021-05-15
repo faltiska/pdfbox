@@ -42,11 +42,23 @@ public class CMapParser
 
     private final byte[] tokenParserByteBuffer = new byte[512];
 
+    private boolean strictMode = false;
+
     /**
      * Creates a new instance of CMapParser.
      */
     public CMapParser()
     {
+    }
+
+    /**
+     * Creates a new instance of CMapParser.
+     * 
+     * @param strictMode activates the strict mode used for inline CMaps
+     */
+    public CMapParser(boolean strictMode)
+    {
+        this.strictMode = strictMode;
     }
 
     /**
@@ -75,6 +87,8 @@ public class CMapParser
     {
         try (InputStream input = new BufferedInputStream(getExternalCMap(name)))
         {
+            // deactivate strict mode
+            strictMode = false;
             return parse(input);
         }
     }
@@ -109,25 +123,28 @@ public class CMapParser
                     {
                         parseUsecmap((LiteralName) previousToken, result);
                     }
-                    else if (op.op.equals("begincodespacerange") && previousToken instanceof Number)
+                    else if (previousToken instanceof Number)
                     {
-                        parseBegincodespacerange((Number) previousToken, cmapStream, result);
-                    }
-                    else if (op.op.equals("beginbfchar") && previousToken instanceof Number)
-                    {
-                        parseBeginbfchar((Number) previousToken, cmapStream, result);
-                    }
-                    else if (op.op.equals("beginbfrange") && previousToken instanceof Number)
-                    {
-                        parseBeginbfrange((Number) previousToken, cmapStream, result);
-                    }
-                    else if (op.op.equals("begincidchar") && previousToken instanceof Number)
-                    {
-                        parseBegincidchar((Number) previousToken, cmapStream, result);
-                    }
-                    else if (op.op.equals("begincidrange") && previousToken instanceof Integer)
-                    {
-                        parseBegincidrange((Integer) previousToken, cmapStream, result);
+                        if (op.op.equals("begincodespacerange"))
+                        {
+                            parseBegincodespacerange((Number) previousToken, cmapStream, result);
+                        }
+                        else if (op.op.equals("beginbfchar"))
+                        {
+                            parseBeginbfchar((Number) previousToken, cmapStream, result);
+                        }
+                        else if (op.op.equals("beginbfrange"))
+                        {
+                            parseBeginbfrange((Number) previousToken, cmapStream, result);
+                        }
+                        else if (op.op.equals("begincidchar"))
+                        {
+                            parseBegincidchar((Number) previousToken, cmapStream, result);
+                        }
+                        else if (op.op.equals("begincidrange") && previousToken instanceof Integer)
+                        {
+                            parseBegincidrange((Integer) previousToken, cmapStream, result);
+                        }
                     }
                 }
             }
@@ -241,7 +258,14 @@ public class CMapParser
             }
             byte[] startRange = (byte[]) nextToken;
             byte[] endRange = (byte[]) parseNextToken(cmapStream);
-            result.addCodespaceRange(new CodespaceRange(startRange, endRange));
+            try
+            {
+                result.addCodespaceRange(new CodespaceRange(startRange, endRange));
+            }
+            catch (IllegalArgumentException ex)
+            {
+                throw new IOException(ex);
+            }
         }
     }
 
@@ -386,18 +410,16 @@ public class CMapParser
                     {
                         for (int i = 0; i < 256; i++)
                         {
-                            startCode[1] = (byte) i;
-                            tokenBytes[1] = (byte) i;
-                            addMappingFrombfrange(result, startCode, 0xff, tokenBytes);
-
+                            startCode[0] = (byte) i;
+                            startCode[1] = 0;
+                            tokenBytes[0] = (byte) i;
+                            tokenBytes[1] = 0;
+                            addMappingFrombfrange(result, startCode, 256, tokenBytes);
                         }
                     }
                     else
                     {
-                        // PDFBOX-4661: avoid overflow of the last byte, all following values are undefined
-                        int values = Math.min(end - start,
-                                255 - (tokenBytes[tokenBytes.length - 1] & 0xFF)) + 1;
-                        addMappingFrombfrange(result, startCode, values, tokenBytes);
+                        addMappingFrombfrange(result, startCode, end - start + 1, tokenBytes);
                     }
                 }
             }
@@ -410,7 +432,7 @@ public class CMapParser
         {
             String value = createStringFromBytes(tokenBytes);
             cmap.addCharMapping(startCode, value);
-            increment(startCode);
+            increment(startCode, startCode.length - 1, false);
         }
     }
 
@@ -421,8 +443,12 @@ public class CMapParser
         {
             String value = createStringFromBytes(tokenBytes);
             cmap.addCharMapping(startCode, value);
-            increment(startCode);
-            increment(tokenBytes);
+            if (!increment(tokenBytes, tokenBytes.length - 1, strictMode))
+            {
+                // overflow detected -> stop adding further mappings
+                break;
+            }
+            increment(startCode, startCode.length - 1, false);
         }
     }
 
@@ -562,6 +588,11 @@ public class CMapParser
                     if (multiplyer == 16)
                     {
                         bufferIndex++;
+                        if (bufferIndex >= tokenParserByteBuffer.length)
+                        {
+                            throw new IOException("cmap token ist larger than buffer size " +
+                                    tokenParserByteBuffer.length);
+                        }
                         tokenParserByteBuffer[bufferIndex] = 0;
                         multiplyer = 1;
                     }
@@ -693,22 +724,24 @@ public class CMapParser
         }
     }
 
-    private void increment(byte[] data)
-    {
-        increment(data, data.length - 1);
-    }
-
-    private void increment(byte[] data, int position)
+    private boolean increment(byte[] data, int position, boolean useStrictMode)
     {
         if (position > 0 && (data[position] & 0xFF) == 255)
         {
+            // PDFBOX-4661: avoid overflow of the last byte, all following values are undefined
+            // PDFBOX-5090: strict mode has to be used for CMaps within pdfs
+            if (useStrictMode)
+            {
+                return false;
+            }
             data[position] = 0;
-            increment(data, position - 1);
+            increment(data, position - 1, useStrictMode);
         }
         else
         {
             data[position] = (byte) (data[position] + 1);
         }
+        return true;
     }
 
     private String createStringFromBytes(byte[] bytes)
@@ -721,7 +754,7 @@ public class CMapParser
      */
     private static final class LiteralName
     {
-        private String name;
+        private final String name;
 
         private LiteralName(String theName)
         {
@@ -734,7 +767,7 @@ public class CMapParser
      */
     private static final class Operator
     {
-        private String op;
+        private final String op;
 
         private Operator(String theOp)
         {

@@ -47,7 +47,7 @@ public class TrueTypeFont implements FontBoxFont, Closeable
     private float version;
     private int numberOfGlyphs = -1;
     private int unitsPerEm = -1;
-    protected Map<String,TTFTable> tables = new HashMap<>();
+    protected final Map<String,TTFTable> tables = new HashMap<>();
     private final TTFDataStream data;
     private volatile Map<String, Integer> postScriptNames;
     
@@ -69,6 +69,14 @@ public class TrueTypeFont implements FontBoxFont, Closeable
     public void close() throws IOException
     {
         data.close();
+    }
+
+    @Override
+    protected void finalize() throws Throwable
+    {
+        super.finalize();
+        // PDFBOX-4963: risk of memory leaks due to SoftReference in FontCache 
+        close();
     }
 
     /**
@@ -696,7 +704,7 @@ public class TrueTypeFont implements FontBoxFont, Closeable
     @Override
     public float getWidth(String name) throws IOException
     {
-        Integer gid = nameToGID(name);
+        int gid = nameToGID(name);
         return getAdvanceWidth(gid);
     }
 
@@ -709,10 +717,11 @@ public class TrueTypeFont implements FontBoxFont, Closeable
     @Override
     public BoundingBox getFontBBox() throws IOException
     {
-        short xMin = getHeader().getXMin();
-        short xMax = getHeader().getXMax();
-        short yMin = getHeader().getYMin();
-        short yMax = getHeader().getYMax();
+        HeaderTable headerTable = getHeader();
+        short xMin = headerTable.getXMin();
+        short xMax = headerTable.getXMax();
+        short yMin = headerTable.getYMin();
+        short yMax = headerTable.getYMax();
         float scale = 1000f / getUnitsPerEm();
         return new BoundingBox(xMin * scale, yMin * scale, xMax * scale, yMax * scale);
     }

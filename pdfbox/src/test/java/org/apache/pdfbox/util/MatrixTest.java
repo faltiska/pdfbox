@@ -18,19 +18,21 @@ package org.apache.pdfbox.util;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSFloat;
 import org.apache.pdfbox.cos.COSName;
-import org.junit.Test;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.junit.jupiter.api.Test;
 
 /**
  *
  * @author Neil McErlean
  * @author Tilman Hausherr
  */
-public class MatrixTest
+class MatrixTest
 {
     
     @Test
-    public void testConstructionAndCopy() throws Exception
+    void testConstructionAndCopy() throws Exception
     {
         Matrix m1 = new Matrix();
         assertMatrixIsPristine(m1);
@@ -41,7 +43,7 @@ public class MatrixTest
     }
 
     @Test
-    public void testGetScalingFactor()
+    void testGetScalingFactor()
     {
         // check scaling factor of an initial matrix
         Matrix m1 = new Matrix();
@@ -55,7 +57,7 @@ public class MatrixTest
     }
 
     @Test
-    public void testCreateMatrixUsingInvalidInput()
+    void testCreateMatrixUsingInvalidInput()
     {
         // anything but a COSArray is invalid and leads to an initial matrix
         Matrix createMatrix = Matrix.createMatrix(COSName.A);
@@ -78,7 +80,7 @@ public class MatrixTest
     }
 
     @Test
-    public void testMultiplication()
+    void testMultiplication()
     {
         // These matrices will not change - we use it to drive the various multiplications.
         final Matrix const1 = new Matrix();
@@ -139,7 +141,7 @@ public class MatrixTest
     }
 
     @Test
-    public void testOldMultiplication() throws Exception
+    void testOldMultiplication() throws Exception
     {
         // This matrix will not change - we use it to drive the various multiplications.
         final Matrix testMatrix = new Matrix();
@@ -187,43 +189,43 @@ public class MatrixTest
         assertMatrixValuesEqualTo(new float[] { 5, 8, 11, 8, 14, 20, 11, 20, 29 }, retVal);
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testIllegalValueNaN1()
+    @Test
+    void testIllegalValueNaN1()
     {
         Matrix m = new Matrix();
         m.setValue(0, 0, Float.MAX_VALUE);
-        m.multiply(m);
+        assertThrows(IllegalArgumentException.class, () -> m.multiply(m));
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testIllegalValueNaN2()
+    @Test
+    void testIllegalValueNaN2()
     {
         Matrix m = new Matrix();
         m.setValue(0, 0, Float.NaN);
-        m.multiply(m);
+        assertThrows(IllegalArgumentException.class, () -> m.multiply(m));
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testIllegalValuePositiveInfinity()
+    @Test
+    void testIllegalValuePositiveInfinity()
     {
         Matrix m = new Matrix();
         m.setValue(0, 0, Float.POSITIVE_INFINITY);
-        m.multiply(m);
+        assertThrows(IllegalArgumentException.class, () -> m.multiply(m));
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testIllegalValueNegativeInfinity()
+    @Test
+    void testIllegalValueNegativeInfinity()
     {
         Matrix m = new Matrix();
         m.setValue(0, 0, Float.NEGATIVE_INFINITY);
-        m.multiply(m);
+        assertThrows(IllegalArgumentException.class, () -> m.multiply(m));
     }
 
     /**
      * Test of PDFBOX-2872 bug
      */
     @Test
-    public void testPdfbox2872()
+    void testPdfbox2872()
     {
         Matrix m = new Matrix(2, 4, 5, 8, 2, 0);
         COSArray toCOSArray = m.toCOSArray();
@@ -237,7 +239,7 @@ public class MatrixTest
     }
 
     @Test
-    public void testGetValues()
+    void testGetValues()
     {
         Matrix m = new Matrix(2, 4, 4, 2, 15, 30);
         float[][] values = m.getValues();
@@ -253,7 +255,7 @@ public class MatrixTest
     }
 
     @Test
-    public void testScaling()
+    void testScaling()
     {
         Matrix m = new Matrix(2, 4, 4, 2, 15, 30);
         m.scale(2, 3);
@@ -274,7 +276,7 @@ public class MatrixTest
     }
 
     @Test
-    public void testTranslation()
+    void testTranslation()
     {
         Matrix m = new Matrix(2, 4, 4, 2, 15, 30);
         m.translate(2, 3);
@@ -322,7 +324,7 @@ public class MatrixTest
             StringBuilder failureMsg = new StringBuilder();
             failureMsg.append("Incorrect value for matrix[").append(row).append(",").append(column)
                     .append("]");
-            assertEquals(failureMsg.toString(), values[i], m.getValue(row, column), delta);
+            assertEquals(values[i], m.getValue(row, column), delta, failureMsg.toString());
         }
     }
 

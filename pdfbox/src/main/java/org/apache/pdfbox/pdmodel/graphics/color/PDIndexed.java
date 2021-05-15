@@ -18,7 +18,9 @@ package org.apache.pdfbox.pdmodel.graphics.color;
 
 import java.awt.Point;
 import java.awt.image.BufferedImage;
+import java.awt.image.ColorModel;
 import java.awt.image.DataBuffer;
+import java.awt.image.IndexColorModel;
 import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
 import java.io.IOException;
@@ -210,6 +212,29 @@ public final class PDIndexed extends PDSpecialColorSpace
         return rgbImage;
     }
 
+    @Override
+    public BufferedImage toRawImage(WritableRaster raster)
+    {
+        // We can only convert sRGB index colorspaces, depending on the base colorspace
+        if (baseColorSpace instanceof PDICCBased && ((PDICCBased) baseColorSpace).isSRGB())
+        {
+            byte[] r = new byte[colorTable.length];
+            byte[] g = new byte[colorTable.length];
+            byte[] b = new byte[colorTable.length];
+            for (int i = 0; i < colorTable.length; i++)
+            {
+                r[i] = (byte) ((int) (colorTable[i][0] * 255) & 0xFF);
+                g[i] = (byte) ((int) (colorTable[i][1] * 255) & 0xFF);
+                b[i] = (byte) ((int) (colorTable[i][2] * 255) & 0xFF);
+            }
+            ColorModel colorModel = new IndexColorModel(8, colorTable.length, r, g, b);
+            return new BufferedImage(colorModel, raster, false, null);
+        }
+
+        // We can't handle all other cases at the moment.
+        return null;
+    }
+
     /**
      * Returns the base color space.
      * @return the base color space.
@@ -226,7 +251,7 @@ public final class PDIndexed extends PDSpecialColorSpace
     }
 
     // reads the lookup table data from the array
-    private byte[] getLookupData() throws IOException
+    private void readLookupData() throws IOException
     {
         if (lookupData == null)
         {
@@ -248,7 +273,6 @@ public final class PDIndexed extends PDSpecialColorSpace
                 throw new IOException("Error: Unknown type for lookup table " + lookupTable);
             }
         }
-        return lookupData;
     }
 
     //
@@ -256,7 +280,8 @@ public final class PDIndexed extends PDSpecialColorSpace
     //
     private void readColorTable() throws IOException
     {
-        byte[] lookupData = getLookupData();
+        readLookupData();
+
         int maxIndex = Math.min(getHival(), 255);
         int numComponents = baseColorSpace.getNumberOfComponents();
 

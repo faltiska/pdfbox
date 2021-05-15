@@ -88,7 +88,7 @@ public class PDNumberTreeNode implements COSObjectable
     public List<PDNumberTreeNode> getKids()
     {
         List<PDNumberTreeNode> retval = null;
-        COSArray kids = (COSArray)node.getDictionaryObject( COSName.KIDS );
+        COSArray kids = node.getCOSArray(COSName.KIDS);
         if( kids != null )
         {
             List<PDNumberTreeNode> pdObjects = new ArrayList<>();
@@ -105,7 +105,9 @@ public class PDNumberTreeNode implements COSObjectable
     /**
      * Set the children of this number tree.
      *
-     * @param kids The children of this number tree.
+     * @param kids The children of this number tree. These have to be in sorted order. Because of
+     * that, it is usually easier to call {@link setNumbers} with a map and pass a single element
+     * list here.
      */
     public void setKids( List<? extends PDNumberTreeNode> kids )
     {
@@ -114,16 +116,17 @@ public class PDNumberTreeNode implements COSObjectable
             PDNumberTreeNode firstKid = kids.get(0);
             PDNumberTreeNode lastKid = kids.get(kids.size() - 1);
             Integer lowerLimit = firstKid.getLowerLimit();
-            this.setLowerLimit(lowerLimit);
+            setLowerLimit(lowerLimit);
             Integer upperLimit = lastKid.getUpperLimit();
-            this.setUpperLimit(upperLimit);
+            setUpperLimit(upperLimit);
+            node.setItem(COSName.KIDS, new COSArray(kids));
         }
         else if ( node.getDictionaryObject( COSName.NUMS ) == null )
         {
             // Remove limits if there are no kids and no numbers set.
             node.setItem( COSName.LIMITS, null);
+            node.setItem(COSName.KIDS, null);
         }
-        node.setItem( COSName.KIDS, COSArrayList.converterToCOSArray( kids ) );
     }
 
     /**
@@ -163,7 +166,6 @@ public class PDNumberTreeNode implements COSObjectable
         return retval;
     }
 
-
     /**
      * This will return a map of numbers.  The key will be a java.lang.Integer, the value will
      * depend on where this class is being used.
@@ -175,12 +177,15 @@ public class PDNumberTreeNode implements COSObjectable
     public Map<Integer,COSObjectable> getNumbers()  throws IOException
     {
         Map<Integer, COSObjectable> indices = null;
-        COSBase numBase = node.getDictionaryObject(COSName.NUMS);
-        if (numBase instanceof COSArray)
+        COSArray numbersArray = node.getCOSArray(COSName.NUMS);
+        if (numbersArray != null)
         {
-            COSArray numbersArray = (COSArray) numBase;
             indices = new HashMap<>();
-            for (int i = 0; i < numbersArray.size(); i += 2)
+            if (numbersArray.size() % 2 != 0)
+            {
+                LOG.warn("Numbers array has odd size: " + numbersArray.size());
+            }
+            for (int i = 0; i + 1 < numbersArray.size(); i += 2)
             {
                 COSBase base = numbersArray.getObject(i);
                 if (!(base instanceof COSInteger))
@@ -232,7 +237,7 @@ public class PDNumberTreeNode implements COSObjectable
 
     /**
      * Set the numbers for this node. This method will set the appropriate upper and lower limits
-     * based on the keys in the map.
+     * based on the keys in the map and take care of the ordering.
      *
      * @param numbers The map of numbers to objects, or <code>null</code> for nothing.
      */
@@ -275,7 +280,7 @@ public class PDNumberTreeNode implements COSObjectable
     public Integer getUpperLimit()
     {
         Integer retval = null;
-        COSArray arr = (COSArray)node.getDictionaryObject( COSName.LIMITS );
+        COSArray arr = node.getCOSArray(COSName.LIMITS);
         if( arr != null && arr.get(0) != null )
         {
             retval = arr.getInt( 1 );
@@ -290,7 +295,7 @@ public class PDNumberTreeNode implements COSObjectable
      */
     private void setUpperLimit( Integer upper )
     {
-        COSArray arr = (COSArray)node.getDictionaryObject( COSName.LIMITS );
+        COSArray arr = node.getCOSArray(COSName.LIMITS);
         if( arr == null )
         {
             arr = new COSArray();
@@ -316,7 +321,7 @@ public class PDNumberTreeNode implements COSObjectable
     public Integer getLowerLimit()
     {
         Integer retval = null;
-        COSArray arr = (COSArray)node.getDictionaryObject( COSName.LIMITS );
+        COSArray arr = node.getCOSArray(COSName.LIMITS);
         if( arr != null && arr.get(0) != null )
         {
             retval = arr.getInt( 0 );
@@ -331,7 +336,7 @@ public class PDNumberTreeNode implements COSObjectable
      */
     private void setLowerLimit( Integer lower )
     {
-        COSArray arr = (COSArray)node.getDictionaryObject( COSName.LIMITS );
+        COSArray arr = node.getCOSArray(COSName.LIMITS);
         if( arr == null )
         {
             arr = new COSArray();

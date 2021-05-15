@@ -16,33 +16,44 @@
  */
 package org.apache.pdfbox.tools;
 
+import java.io.PrintStream;
+import java.util.concurrent.Callable;
+
+import picocli.CommandLine;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.IVersionProvider;
+import picocli.CommandLine.Spec;
+import picocli.CommandLine.Model.CommandSpec;
+
 /**
  * A simple command line utility to get the version of PDFBox.
  *
  * @author Ben Litchfield
  */
-final class Version
+@Command(name = "version", header = "Gets the version of PDFBox")
+final class Version implements Callable<Integer>, IVersionProvider
 {
-    private Version()
-    {
-        //should not be constructed.
-    }
+    // Expected for CLI app to write to System.out/System.err
+    @SuppressWarnings("squid:S106")
+    private static final PrintStream SYSOUT = System.out;
+
+    @Spec CommandSpec spec;
 
     /**
      * Get the version of PDFBox or unknown if it is not known.
      *
      * @return The version of pdfbox that is being used.
      */
-    public static String getVersion()
+    public String[] getVersion()
     {
         String version = org.apache.pdfbox.util.Version.getVersion();
         if (version != null)
         {
-            return version;
+            return new String[] { spec.qualifiedName() + " [" + version + "]" };
         }
         else
         {
-            return "unknown";
+            return new String[] { "unknown" };
         }
     }
 
@@ -55,21 +66,14 @@ final class Version
     {
         // suppress the Dock icon on OS X
         System.setProperty("apple.awt.UIElement", "true");
-
-        if( args.length != 0 )
-        {
-            usage();
-            return;
-        }
-        System.out.println( "Version:" + getVersion() );
+        
+        int exitCode = new CommandLine(new Version()).execute(args);
+        System.exit(exitCode);
     }
 
-    /**
-     * This will print out a message telling how to use this example.
-     */
-    private static void usage()
+    public Integer call()
     {
-        System.err.println("Usage: " + Version.class.getName());
-        System.exit(1);
+        SYSOUT.println(getVersion()[0]);
+        return 0;
     }
 }

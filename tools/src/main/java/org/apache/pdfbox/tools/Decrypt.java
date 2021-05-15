@@ -20,19 +20,16 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.List;
+import java.io.PrintStream;
+import java.util.concurrent.Callable;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
 import org.apache.pdfbox.Loader;
-import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.encryption.AccessPermission;
+
+import picocli.CommandLine;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
 
 /**
  * This will read a document from the filesystem, decrypt it and and then write
@@ -40,119 +37,60 @@ import org.apache.pdfbox.pdmodel.encryption.AccessPermission;
  *
  * @author  Ben Litchfield
  */
-public final class Decrypt
+@Command(
+    name = "decrpyt",
+    header = "Decrypts a PDF document",
+    description = "This will read an encrypted document and decrypt it either using a password or a certificate.",
+    versionProvider = Version.class,
+    mixinStandardHelpOptions = true
+)
+public final class Decrypt implements Callable<Integer>
 {
-    private static final String ALIAS = "alias";
-    @SuppressWarnings({"squid:S2068"})
-    private static final String PASSWORD = "password";
-    private static final String KEYSTORE = "keyStore";
-    
-    private String password;
-    private String infile;
-    private String outfile;
+    // Expected for CLI app to write to System.out/System.err
+    @SuppressWarnings("squid:S106")
+    private static final PrintStream SYSERR = System.err;
+
+    @Option(names = "-alias", description = "the alias to the certificate in the keystore.")
     private String alias;
+
+    @Option(names = "-keyStore", description = "the path to the keystore that holds the certificate to decrypt the document. " + 
+        "This is only required if the document is encrypted with a certificate, otherwise only the password is required.")
     private String keyStore;
 
+    @Option(names = "-password", arity="0..1", interactive = true, description = "the password for the PDF or certificate in keystore.")    
+    private String password;
 
-    private Decrypt()
-    {
-    }
+    @Option(names = {"-i", "--input"}, description = "the PDF file to decrypt", required = true)
+    private File infile;
+
+    @Option(names = {"-o", "--output"}, description = "the decrypted PDF file. If omitted the original file is overwritten.")
+    private File outfile;
+   
     /**
      * This is the entry point for the application.
      *
      * @param args The command-line arguments.
      *
-     * @throws IOException If there is an error decrypting the document.
      */
-    public static void main(String[] args) throws IOException
+    public static void main(String[] args)
     {
         // suppress the Dock icon on OS X
         System.setProperty("apple.awt.UIElement", "true");
-        
-        Decrypt decrypt = new Decrypt();
-        decrypt.parseCommandLine(args);
-        decrypt.decrypt();
-    }
-    
-    private void parseCommandLine(String[] args)
-    {
-        Options options = defineOptions();
-        CommandLine commandLine = parseArguments(options, args);
-        
-        this.alias = commandLine.getOptionValue(ALIAS);
-        this.password = commandLine.getOptionValue(PASSWORD, "");
-        this.keyStore = commandLine.getOptionValue(KEYSTORE);
-        
-        // get the additional command line parameters 
-        // and handle these as the file names being passed
-        List<String> fileNames = commandLine.getArgList();
-        if (fileNames.isEmpty() || fileNames.size() > 2 )
-        {
-            usage(options);
-        }
-        
-        this.infile = fileNames.get(0);
-        
-        if (fileNames.size() == 1)
-        {
-            this.outfile = fileNames.get(0);
-        }
-        else
-        {
-            this.outfile = fileNames.get(1);
-        }
-                
-    }
-    
-    private static Options defineOptions()
-    {
-        Options options = new Options();
-        
-        options.addOption(Option.builder(ALIAS)
-                    .hasArg()
-                    .desc("The alias of the key in the certificate file (mandatory if several keys are available).")
-                    .build()
-               );
-       options.addOption(Option.builder(PASSWORD)
-                   .hasArg()
-                   .desc("The password to open the certificate and extract the private key from it.")
-                   .build()
-               );
-       options.addOption(Option.builder(KEYSTORE)
-                   .hasArg()
-                   .desc("The KeyStore that holds the certificate.")
-                   .build()
-               );
-       return options;
-    }
-    
-    private static CommandLine parseArguments(Options options, String[] commandLineArguments)
-    {
-        CommandLineParser cmdLineParser = new DefaultParser();
-        CommandLine commandLine = null;
-        try
-        {
-            commandLine = cmdLineParser.parse(options, commandLineArguments);
-        }
-        catch (ParseException parseException)
-        {
-            System.out.println(parseException.getMessage());
-            usage(options);
-        }
-        return commandLine;
+
+        int exitCode = new CommandLine(new Decrypt()).execute(args);
+        System.exit(exitCode);
     }
 
-   private void decrypt() throws IOException
+
+    public Integer call()
     {
-        PDDocument document = null;
-        InputStream keyStoreStream = null;
-        try
+        try (InputStream keyStoreStream = keyStore == null ? null : new FileInputStream(keyStore); 
+                PDDocument document = Loader.loadPDF(infile, password, keyStoreStream, alias))
         {
-            if( keyStore != null )
-            {
-                keyStoreStream = new FileInputStream(keyStore);
+            // overwrite inputfile if no outputfile was specified
+            if (outfile == null) {
+                outfile = infile;
             }
-            document = Loader.loadPDF(new File(infile), password, keyStoreStream, alias);
             
             if (document.isEncrypted())
             {
@@ -164,38 +102,21 @@ public final class Decrypt
                 }
                 else
                 {
-                    throw new IOException(
-                            "Error: You are only allowed to decrypt a document with the owner password." );
+                    SYSERR.println( "Error: You are only allowed to decrypt a document with the owner password.");
+                    return 1;
                 }
             }
             else
             {
-                System.err.println( "Error: Document is not encrypted." );
+                SYSERR.println( "Error: Document is not encrypted.");
+                return 1;
             }
         }
-        finally
+        catch (IOException ioe)
         {
-            if( document != null )
-            {
-                document.close();
-            }
-            IOUtils.closeQuietly(keyStoreStream);
+            SYSERR.println( "Error decrypting document [" + ioe.getClass().getSimpleName() + "]: " + ioe.getMessage());
+            return 4;
         }
+        return 0;
     }
-
-    /**
-     * This will print a usage message.
-     */
-    private static void usage(Options options)
-    {
-        HelpFormatter formatter = new HelpFormatter();
-        String syntax = "java -jar pdfbox-app-x.y.z.jar Decrypt [options] <inputfile> [outputfile]";
-        String header = "\nOptions";
-
-        formatter.setWidth(132);
-        formatter.printHelp(syntax, header, options, "");
-        
-        System.exit(1);
-    }
-
 }

@@ -15,19 +15,20 @@
  */
 package org.apache.pdfbox.preflight;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
 import java.io.File;
 import java.io.IOException;
 
 import org.apache.pdfbox.preflight.parser.PreflightParser;
-
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  *
  * @author Tilman Hausherr
  */
-public class TestPDFBox3741
+class TestPDFBox3741
 {
     /**
      * Test whether use of default colorspace without output intent for text output is detected.
@@ -35,14 +36,14 @@ public class TestPDFBox3741
      * @throws IOException
      */
     @Test
-    public void testPDFBox3741() throws IOException
+    void testPDFBox3741() throws IOException
     {
         ValidationResult result = PreflightParser
                 .validate(new File("src/test/resources/PDFBOX-3741.pdf"));
         // Error should be:
         // 2.4.3: Invalid Color space, /DeviceGray default for operator "Tj" can't be used without Color Profile
-        Assert.assertFalse("File PDFBOX-3741.pdf should be detected as not PDF/A-1b", result.isValid());
-        Assert.assertEquals("List should contain one result", 1, result.getErrorsList().size());
-        Assert.assertEquals("2.4.3", result.getErrorsList().get(0).getErrorCode());
+        assertFalse(result.isValid(), "File PDFBOX-3741.pdf should be detected as not PDF/A-1b");
+        assertEquals(1, result.getErrorsList().size(), "List should contain one result");
+        assertEquals("2.4.3", result.getErrorsList().get(0).getErrorCode());
     }
 }

@@ -17,7 +17,6 @@ package org.apache.pdfbox.pdmodel.graphics.color;
 
 import java.awt.color.ColorSpace;
 import org.apache.pdfbox.cos.COSArray;
-import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSFloat;
 import org.apache.pdfbox.cos.COSName;
@@ -30,7 +29,7 @@ import org.apache.pdfbox.cos.COSName;
  */
 public abstract class PDCIEDictionaryBasedColorSpace extends PDCIEBasedColorSpace
 {
-    protected COSDictionary dictionary;
+    protected final COSDictionary dictionary;
 
     private static final ColorSpace CIEXYZ = ColorSpace.getInstance(ColorSpace.CS_CIEXYZ);
 
@@ -115,7 +114,7 @@ public abstract class PDCIEDictionaryBasedColorSpace extends PDCIEBasedColorSpac
      */
     public final PDTristimulus getWhitepoint()
     {
-        COSArray wp = (COSArray) dictionary.getDictionaryObject(COSName.WHITE_POINT);
+        COSArray wp = dictionary.getCOSArray(COSName.WHITE_POINT);
         if (wp == null)
         {
             wp = new COSArray();
@@ -135,7 +134,7 @@ public abstract class PDCIEDictionaryBasedColorSpace extends PDCIEBasedColorSpac
      */
     public final PDTristimulus getBlackPoint()
     {
-        COSArray bp = (COSArray) dictionary.getDictionaryObject(COSName.BLACK_POINT);
+        COSArray bp = dictionary.getCOSArray(COSName.BLACK_POINT);
         if (bp == null)
         {
             bp = new COSArray();
@@ -147,35 +146,30 @@ public abstract class PDCIEDictionaryBasedColorSpace extends PDCIEBasedColorSpac
     }
 
     /**
-     * This will set the whitepoint tristimulus. As this is a required field
-     * this null should not be passed into this function.
+     * This will set the whitepoint tristimulus. As this is a required field, null should not be
+     * passed into this function.
      *
-     * @param whitepoint the whitepoint tristimulus
+     * @param whitepoint the whitepoint tristimulus.
+     * @throws IllegalArgumentException if null is passed as argument.
      */
     public void setWhitePoint(PDTristimulus whitepoint)
     {
-        COSBase wpArray = whitepoint.getCOSObject();
-        if (wpArray != null)
+        if (whitepoint == null)
         {
-            dictionary.setItem(COSName.WHITE_POINT, wpArray);
+            throw new IllegalArgumentException("Whitepoint may not be null");
         }
+        dictionary.setItem(COSName.WHITE_POINT, whitepoint);
         fillWhitepointCache(whitepoint);
     }
 
     /**
-     * This will set the BlackPoint tristimulus. As this is a required field
-     * this null should not be passed into this function.
+     * This will set the BlackPoint tristimulus.
      *
      * @param blackpoint the BlackPoint tristimulus
      */
     public void setBlackPoint(PDTristimulus blackpoint)
     {
-        COSBase bpArray = null;
-        if (blackpoint != null)
-        {
-            bpArray = blackpoint.getCOSObject();
-        }
-        dictionary.setItem(COSName.BLACK_POINT, bpArray);
+        dictionary.setItem(COSName.BLACK_POINT, blackpoint);
     }
 
 }

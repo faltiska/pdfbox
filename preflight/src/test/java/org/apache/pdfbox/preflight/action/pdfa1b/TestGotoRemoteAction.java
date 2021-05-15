@@ -21,25 +21,25 @@
 
 package org.apache.pdfbox.preflight.action.pdfa1b;
 
-import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.pdmodel.common.filespecification.PDFileSpecification;
 import org.apache.pdfbox.pdmodel.interactive.action.PDActionRemoteGoTo;
 import org.apache.pdfbox.preflight.PreflightConstants;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class TestGotoRemoteAction extends AbstractTestAction
+class TestGotoRemoteAction extends AbstractTestAction
 {
 
     @Test
-    public void testGoto_OK() throws Exception
+    void testGoto_OK() throws Exception
     {
         PDActionRemoteGoTo gotoAction = new PDActionRemoteGoTo();
         gotoAction.setD(COSName.getPDFName("ADest"));
         gotoAction.setFile(new PDFileSpecification()
         {
-            public COSBase getCOSObject()
+            @Override
+            public COSName getCOSObject()
             {
                 return COSName.getPDFName("ADest");
             }
@@ -59,13 +59,14 @@ public class TestGotoRemoteAction extends AbstractTestAction
     }
 
     @Test
-    public void testGoto_KO_InvalidContent() throws Exception
+    void testGoto_KO_InvalidContent() throws Exception
     {
         PDActionRemoteGoTo gotoAction = new PDActionRemoteGoTo();
         gotoAction.setD(new COSDictionary());
         gotoAction.setFile(new PDFileSpecification()
         {
-            public COSBase getCOSObject()
+            @Override
+            public COSName getCOSObject()
             {
                 return COSName.getPDFName("ADest");
             }
@@ -85,12 +86,13 @@ public class TestGotoRemoteAction extends AbstractTestAction
     }
 
     @Test
-    public void testGoto_KO_MissingD() throws Exception
+    void testGoto_KO_MissingD() throws Exception
     {
         PDActionRemoteGoTo gotoAction = new PDActionRemoteGoTo();
         gotoAction.setFile(new PDFileSpecification()
         {
-            public COSBase getCOSObject()
+            @Override
+            public COSName getCOSObject()
             {
                 return COSName.getPDFName("ADest");
             }
@@ -110,7 +112,7 @@ public class TestGotoRemoteAction extends AbstractTestAction
     }
 
     @Test
-    public void testGoto_KO_MissingF() throws Exception
+    void testGoto_KO_MissingF() throws Exception
     {
         PDActionRemoteGoTo gotoAction = new PDActionRemoteGoTo();
         gotoAction.setD(COSName.getPDFName("ADest"));

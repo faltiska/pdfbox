@@ -16,22 +16,22 @@
  */
 package org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * @author Andrea Vacondio
  *
  */
-public class PDDocumentOutlineTest
+class PDDocumentOutlineTest
 {
     /**
      * see PDF 32000-1:2008 table 152
      */
     @Test
-    public void outlinesCountShouldNotBeNegative()
+    void outlinesCountShouldNotBeNegative()
     {
         PDDocumentOutline outline = new PDDocumentOutline();
         PDOutlineItem firstLevelChild = new PDOutlineItem();
@@ -40,12 +40,12 @@ public class PDDocumentOutlineTest
         firstLevelChild.addLast(secondLevelChild);
         assertEquals(0, secondLevelChild.getOpenCount());
         assertEquals(-1, firstLevelChild.getOpenCount());
-        assertFalse("Outlines count cannot be " + outline.getOpenCount(),
-                outline.getOpenCount() < 0);
+        assertFalse(outline.getOpenCount() < 0,
+                "Outlines count cannot be " + outline.getOpenCount());
     }
 
     @Test
-    public void outlinesCount()
+    void outlinesCount()
     {
         PDDocumentOutline outline = new PDDocumentOutline();
         PDOutlineItem root = new PDOutlineItem();

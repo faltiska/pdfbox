@@ -21,11 +21,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import org.apache.pdfbox.contentstream.PDContentStream;
 import org.apache.pdfbox.cos.COSArray;
-import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSFloat;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.cos.COSStream;
+import org.apache.pdfbox.io.RandomAccessRead;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDResources;
 import org.apache.pdfbox.pdmodel.ResourceCache;
@@ -126,7 +126,7 @@ public class PDFormXObject extends PDXObject implements PDContentStream
     {
         if( group == null ) 
         {
-            COSDictionary dic = (COSDictionary) getCOSObject().getDictionaryObject(COSName.GROUP);
+            COSDictionary dic = getCOSObject().getCOSDictionary(COSName.GROUP);
             if( dic != null ) 
             {
                 group = new PDTransparencyGroupAttributes(dic);
@@ -146,6 +146,11 @@ public class PDFormXObject extends PDXObject implements PDContentStream
         return getCOSObject().createInputStream();
     }
 
+    @Override
+    public RandomAccessRead getContentsForRandomAccess() throws IOException
+    {
+        return getCOSObject().createView();
+    }
     /**
      * This will get the resources for this Form XObject.
      * This will return null if no resources are available.
@@ -189,13 +194,8 @@ public class PDFormXObject extends PDXObject implements PDContentStream
     @Override
     public PDRectangle getBBox()
     {
-        PDRectangle retval = null;
-        COSArray array = (COSArray) getCOSObject().getDictionaryObject(COSName.BBOX);
-        if (array != null)
-        {
-            retval = new PDRectangle(array);
-        }
-        return retval;
+        COSArray array = getCOSObject().getCOSArray(COSName.BBOX);
+        return array != null ? new PDRectangle(array) : null;
     }
 
     /**
@@ -269,12 +269,8 @@ public class PDFormXObject extends PDXObject implements PDContentStream
      */
     public PDPropertyList getOptionalContent()
     {
-        COSBase base = getCOSObject().getDictionaryObject(COSName.OC);
-        if (base instanceof COSDictionary)
-        {
-            return PDPropertyList.create((COSDictionary) base);
-        }
-        return null;
+        COSDictionary optionalContent = getCOSObject().getCOSDictionary(COSName.OC);
+        return optionalContent != null ? PDPropertyList.create(optionalContent) : null;
     }
 
     /**

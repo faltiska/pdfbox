@@ -21,25 +21,24 @@
 
 package org.apache.pdfbox.preflight.action.pdfa1b;
 
-import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.pdmodel.interactive.action.PDActionGoTo;
 import org.apache.pdfbox.pdmodel.interactive.documentnavigation.destination.PDDestination;
 import org.apache.pdfbox.preflight.PreflightConstants;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class TestGotoAction extends AbstractTestAction
+class TestGotoAction extends AbstractTestAction
 {
 
     @Test
-    public void testGoto_OK() throws Exception
+    void testGoto_OK() throws Exception
     {
         PDActionGoTo gotoAction = new PDActionGoTo();
         gotoAction.setDestination(new PDDestination()
         {
             @Override
-            public COSBase getCOSObject()
+            public COSName getCOSObject()
             {
                 return COSName.getPDFName("ADest");
             }
@@ -49,13 +48,13 @@ public class TestGotoAction extends AbstractTestAction
     }
 
     @Test
-    public void testGoto_KO_invalidContent() throws Exception
+    void testGoto_KO_invalidContent() throws Exception
     {
         PDActionGoTo gotoAction = new PDActionGoTo();
         gotoAction.setDestination(new PDDestination()
         {
             @Override
-            public COSBase getCOSObject()
+            public COSDictionary getCOSObject()
             {
                 return new COSDictionary();
             }
@@ -65,7 +64,7 @@ public class TestGotoAction extends AbstractTestAction
     }
 
     @Test
-    public void testGoto_KO_missingD() throws Exception
+    void testGoto_KO_missingD() throws Exception
     {
         PDActionGoTo gotoAction = new PDActionGoTo();
         valid(gotoAction, false, PreflightConstants.ERROR_ACTION_MISING_KEY);

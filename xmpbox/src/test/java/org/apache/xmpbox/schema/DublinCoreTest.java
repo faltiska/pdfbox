@@ -20,55 +20,117 @@
 
 package org.apache.xmpbox.schema;
 
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.stream.Stream;
 
+import org.apache.xmpbox.XMPMetadata;
 import org.apache.xmpbox.type.Cardinality;
 import org.apache.xmpbox.type.Types;
-import org.junit.Before;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RunWith(Parameterized.class)
-public class DublinCoreTest extends AbstractSchemaTester
+
+class DublinCoreTest
 {
 
-    public DublinCoreSchema getSchema()
+    private XMPMetadata metadata;
+    private Class<?> schemaClass;
+
+    @BeforeEach
+    void initMetadata()
     {
-        return xmp.createAndAddDublinCoreSchema();
+        metadata = XMPMetadata.createXMPMetadata();
+        schemaClass = DublinCoreSchema.class;
+    }
+    
+    @ParameterizedTest
+    @MethodSource("initializeParameters")
+    void testInitializedToNull(String fieldName, Types type, Cardinality card) throws Exception
+    {
+        SchemaTester schemaTester = new SchemaTester(metadata, schemaClass, fieldName, type, card);
+        schemaTester.testInitializedToNull();
     }
 
-    @Before
-    public void before() throws Exception
+    @ParameterizedTest
+    @MethodSource("initializeParameters")
+    void testSettingValue(String fieldName, Types type, Cardinality card) throws Exception
     {
-        super.before();
+        SchemaTester schemaTester = new SchemaTester(metadata, schemaClass, fieldName, type, card);
+        schemaTester.testSettingValue();
     }
 
-    public DublinCoreTest(String fieldName, Types type, Cardinality card)
+    @ParameterizedTest
+    @MethodSource("initializeParameters")
+    void testRandomSettingValue(String fieldName, Types type, Cardinality card) throws Exception
     {
-        super(fieldName, type, card);
+        SchemaTester schemaTester = new SchemaTester(metadata, schemaClass, fieldName, type, card);
+        schemaTester.testRandomSettingValue();
     }
 
-    @Parameters
-    public static Collection<Object[]> initializeParameters() throws Exception
+    @ParameterizedTest
+    @MethodSource("initializeParameters")
+    void testSettingValueInArray(String fieldName, Types type, Cardinality card) throws Exception
     {
-        Collection<Object[]> result = new ArrayList<>();
-
-        result.add(new Object[] { "contributor", Types.ProperName, Cardinality.Bag });
-        result.add(new Object[] { "coverage", Types.Text, Cardinality.Simple });
-        result.add(new Object[] { "creator", Types.ProperName, Cardinality.Seq });
-        result.add(new Object[] { "date", Types.Date, Cardinality.Seq });
-        result.add(new Object[] { "format", Types.MIMEType, Cardinality.Simple });
-        result.add(new Object[] { "identifier", Types.Text, Cardinality.Simple });
-        result.add(new Object[] { "language", Types.Locale, Cardinality.Bag });
-        result.add(new Object[] { "publisher", Types.ProperName, Cardinality.Bag });
-        result.add(new Object[] { "relation", Types.Text, Cardinality.Bag });
-        result.add(new Object[] { "source", Types.Text, Cardinality.Simple });
-        result.add(new Object[] { "subject", Types.Text, Cardinality.Bag });
-        result.add(new Object[] { "type", Types.Text, Cardinality.Bag });
-
-        return result;
+        SchemaTester schemaTester = new SchemaTester(metadata, schemaClass, fieldName, type, card);
+        schemaTester.testSettingValueInArray();
     }
 
+    @ParameterizedTest
+    @MethodSource("initializeParameters")
+    void testRandomSettingValueInArray(String fieldName, Types type, Cardinality card) throws Exception
+    {
+        SchemaTester schemaTester = new SchemaTester(metadata, schemaClass, fieldName, type, card);
+        schemaTester.testRandomSettingValueInArray();
+    }
+
+    @ParameterizedTest
+    @MethodSource("initializeParameters")
+    void testPropertySetterSimple(String fieldName, Types type, Cardinality card) throws Exception
+    {
+        SchemaTester schemaTester = new SchemaTester(metadata, schemaClass, fieldName, type, card);
+        schemaTester.testPropertySetterSimple();
+    }
+
+    @ParameterizedTest
+    @MethodSource("initializeParameters")
+    void testRandomPropertySetterSimple(String fieldName, Types type, Cardinality card) throws Exception
+    {
+        SchemaTester schemaTester = new SchemaTester(metadata, schemaClass, fieldName, type, card);
+        schemaTester.testRandomPropertySetterSimple();
+    }
+
+    @ParameterizedTest
+    @MethodSource("initializeParameters")
+    void testPropertySetterInArray(String fieldName, Types type, Cardinality card) throws Exception
+    {
+        SchemaTester schemaTester = new SchemaTester(metadata, schemaClass, fieldName, type, card);
+        schemaTester.testPropertySetterInArray();
+    }
+
+    @ParameterizedTest
+    @MethodSource("initializeParameters")
+    void testRandomPropertySetterInArray(String fieldName, Types type, Cardinality card) throws Exception
+    {
+        SchemaTester schemaTester = new SchemaTester(metadata, schemaClass, fieldName, type, card);
+        schemaTester.testRandomPropertySetterInArray();
+    }
+    
+    private static Stream<Arguments> initializeParameters()
+    {   
+        return Stream.of(
+            Arguments.of("contributor", Types.ProperName, Cardinality.Bag),
+            Arguments.of("coverage", Types.Text, Cardinality.Simple),
+            Arguments.of("creator", Types.ProperName, Cardinality.Seq),
+            Arguments.of("date", Types.Date, Cardinality.Seq),
+            Arguments.of("format", Types.MIMEType, Cardinality.Simple),
+            Arguments.of("identifier", Types.Text, Cardinality.Simple),
+            Arguments.of("language", Types.Locale, Cardinality.Bag),
+            Arguments.of("publisher", Types.ProperName, Cardinality.Bag),
+            Arguments.of("relation", Types.Text, Cardinality.Bag),
+            Arguments.of("source", Types.Text, Cardinality.Simple),
+            Arguments.of("subject", Types.Text, Cardinality.Bag),
+            Arguments.of("type", Types.Text, Cardinality.Bag)
+        );
+    }
 }

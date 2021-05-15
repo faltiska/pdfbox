@@ -15,19 +15,21 @@
  */
 package org.apache.fontbox.ttf;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Calendar;
 import java.util.TimeZone;
 
-import junit.framework.TestCase;
+import org.junit.jupiter.api.Test;
 
 /**
  * This will test the TTFParser implementation.
  *
  * @author Tim Allison
  */
-public class TestTTFParser extends TestCase
+class TestTTFParser
 {
 
     /**
@@ -35,7 +37,8 @@ public class TestTTFParser extends TestCase
      *
      * @throws IOException If something went wrong
      */
-    public void testUTCDate() throws IOException
+    @Test
+    void testUTCDate() throws IOException
     {
         final File testFile = new File("src/test/resources/ttf/LiberationSans-Regular.ttf");
         TimeZone utc = TimeZone.getTimeZone("UTC");

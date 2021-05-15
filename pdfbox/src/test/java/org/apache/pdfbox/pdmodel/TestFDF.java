@@ -16,18 +16,20 @@
  */
 package org.apache.pdfbox.pdmodel;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URISyntaxException;
 import java.util.List;
-import junit.framework.TestCase;
 
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.fdf.FDFDocument;
 import org.apache.pdfbox.pdmodel.fdf.FDFField;
 import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
+import org.junit.jupiter.api.Test;
 
 /**
  * This will test the FDF algorithms in PDFBox.
@@ -36,7 +38,7 @@ import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
  * @author Tilman Hausherr
  * 
  */
-public class TestFDF extends TestCase
+class TestFDF
 {
     /**
      * Test load two simple fdf files with two fields. One of the files does not have a
@@ -45,7 +47,8 @@ public class TestFDF extends TestCase
      * @throws URISyntaxException
      * @throws IOException
      */
-    public void testLoad2() throws URISyntaxException, IOException
+    @Test
+    void testLoad2() throws URISyntaxException, IOException
     {
         checkFields("/org/apache/pdfbox/pdfparser/withcatalog.fdf");
         checkFields("/org/apache/pdfbox/pdfparser/nocatalog.fdf");

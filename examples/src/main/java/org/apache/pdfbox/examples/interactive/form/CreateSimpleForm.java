@@ -33,6 +33,7 @@ import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationWidget;
 import org.apache.pdfbox.pdmodel.interactive.annotation.PDAppearanceCharacteristicsDictionary;
 import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
 import org.apache.pdfbox.pdmodel.interactive.form.PDTextField;
+import org.apache.pdfbox.pdmodel.interactive.form.PDVariableText;
 
 /**
  * An example of creating an AcroForm and a form field from scratch.
@@ -43,6 +44,8 @@ import org.apache.pdfbox.pdmodel.interactive.form.PDTextField;
  */
 public final class CreateSimpleForm
 {
+    static final String DEFAULT_FILENAME = "target/SimpleForm.pdf";
+
     private CreateSimpleForm()
     {
     }
@@ -107,7 +110,10 @@ public final class CreateSimpleForm
             
             // Add the widget annotation to the page
             page.getAnnotations().add(widget);
-            
+
+            // set the alignment ("quadding")
+            textBox.setQ(PDVariableText.QUADDING_CENTERED);
+
             // set the field value
             textBox.setValue("Sample field content");
 
@@ -121,7 +127,14 @@ public final class CreateSimpleForm
                 cs.endText();
             }
 
-            document.save("target/SimpleForm.pdf");
+            if (args == null || args.length == 0)
+            {
+                document.save(DEFAULT_FILENAME);
+            }
+            else
+            {
+                document.save(args[0]); // used for concurrent build tests
+            }
         }
     }
 }

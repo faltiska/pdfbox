@@ -21,52 +21,66 @@
 
 package org.apache.xmpbox.schema;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import java.util.stream.Stream;
 
 import org.apache.xmpbox.XMPMetadata;
 import org.apache.xmpbox.type.BadFieldValueException;
 import org.apache.xmpbox.type.PropertyType;
 import org.apache.xmpbox.type.Types;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RunWith(Parameterized.class)
-public class AdobePDFTest extends AbstractXMPSchemaTest
+class AdobePDFTest
 {
 
-    @Before
-    public void initTempMetaData() throws Exception
+    private XMPMetadata metadata;
+    private XMPSchema schema;
+    private Class<?> schemaClass;
+
+    @BeforeEach
+    void initMetadata()
     {
         metadata = XMPMetadata.createXMPMetadata();
         schema = metadata.createAndAddAdobePDFSchema();
         schemaClass = AdobePDFSchema.class;
     }
 
-    @Parameters
-    public static Collection<Object[]> initializeParameters() throws Exception
+    @ParameterizedTest
+    @MethodSource("initializeParameters")
+    void testElementValue(String property, PropertyType type, String value) throws Exception
     {
-        List<Object[]> data = new ArrayList<>();
-        data.add(wrapProperty("Keywords", Types.Text, "kw1 kw2 kw3"));
-        data.add(wrapProperty("PDFVersion", Types.Text, "1.4"));
-        data.add(wrapProperty("Producer", Types.Text, "testcase"));
-
-        return data;
+        XMPSchemaTester xmpSchemaTester = new XMPSchemaTester(metadata, schema, schemaClass, property, type, value);
+        xmpSchemaTester.testGetSetValue();
     }
 
-    public AdobePDFTest(String property, PropertyType type, Object value)
+    @ParameterizedTest
+    @MethodSource("initializeParameters")
+    void testElementProperty(String property, PropertyType type, String value) throws Exception
     {
-        super(property, type, value);
+        XMPSchemaTester xmpSchemaTester = new XMPSchemaTester(metadata, schema, schemaClass, property, type, value);
+        xmpSchemaTester.testGetSetProperty();
+    }
+
+    static Stream<Arguments> initializeParameters() throws Exception
+    {  
+        return Stream.of(
+            Arguments.of("Keywords", XMPSchemaTester.createPropertyType(Types.Text), "kw1 kw2 kw3"),
+            Arguments.of("PDFVersion", XMPSchemaTester.createPropertyType(Types.Text), "1.4"),
+            Arguments.of("Producer", XMPSchemaTester.createPropertyType(Types.Text), "testcase")
+        );
     }
 
     @Test
-    public void testPDFAIdentification() throws Exception
+    void testPDFAIdentification() throws Exception
     {
+        XMPMetadata metadata = XMPMetadata.createXMPMetadata();
         AdobePDFSchema schem = metadata.createAndAddAdobePDFSchema();
 
         String keywords = "keywords ihih";
@@ -77,30 +91,31 @@ public class AdobePDFTest extends AbstractXMPSchemaTest
         schem.setPDFVersion(pdfVersion);
 
         // Check get null if property not defined
-        Assert.assertNull(schem.getProducer());
+        assertNull(schem.getProducer());
 
         schem.setProducer(producer);
 
-        Assert.assertEquals("pdf", schem.getKeywordsProperty().getPrefix());
-        Assert.assertEquals("Keywords", schem.getKeywordsProperty().getPropertyName());
-        Assert.assertEquals(keywords, schem.getKeywords());
+        assertEquals("pdf", schem.getKeywordsProperty().getPrefix());
+        assertEquals("Keywords", schem.getKeywordsProperty().getPropertyName());
+        assertEquals(keywords, schem.getKeywords());
 
-        Assert.assertEquals("pdf", schem.getPDFVersionProperty().getPrefix());
-        Assert.assertEquals("PDFVersion", schem.getPDFVersionProperty().getPropertyName());
-        Assert.assertEquals(pdfVersion, schem.getPDFVersion());
+        assertEquals("pdf", schem.getPDFVersionProperty().getPrefix());
+        assertEquals("PDFVersion", schem.getPDFVersionProperty().getPropertyName());
+        assertEquals(pdfVersion, schem.getPDFVersion());
 
-        Assert.assertEquals("pdf", schem.getProducerProperty().getPrefix());
-        Assert.assertEquals("Producer", schem.getProducerProperty().getPropertyName());
-        Assert.assertEquals(producer, schem.getProducer());
-
+        assertEquals("pdf", schem.getProducerProperty().getPrefix());
+        assertEquals("Producer", schem.getProducerProperty().getPropertyName());
+        assertEquals(producer, schem.getProducer());
     }
 
-    @Test(expected = BadFieldValueException.class)
-    public void testBadPDFAConformanceId() throws BadFieldValueException
+    @Test
+    void testBadPDFAConformanceId() throws BadFieldValueException
     {
+        XMPMetadata metadata = XMPMetadata.createXMPMetadata();
         PDFAIdentificationSchema pdfaid = metadata.createAndAddPFAIdentificationSchema();
         String conformance = "kiohiohiohiohio";
-        pdfaid.setConformance(conformance);
+        assertThrows(BadFieldValueException.class, () -> {
+            pdfaid.setConformance(conformance);
+        }); 
     }
-
 }

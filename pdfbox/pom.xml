@@ -61,10 +61,9 @@
             <optional>true</optional>
         </dependency>
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <scope>test</scope>
-        </dependency>
+	      <groupId>org.junit.jupiter</groupId>
+	      <artifactId>junit-jupiter</artifactId>
+	    </dependency>
         <dependency>
             <groupId>com.googlecode.java-diff-utils</groupId>
             <artifactId>diffutils</artifactId>
@@ -74,6 +73,12 @@
         <dependency>
             <groupId>org.apache.pdfbox</groupId>
             <artifactId>jbig2-imageio</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>3.3.3</version>
             <scope>test</scope>
         </dependency>
         <!-- For legal reasons (incompatible license), these three dependencies below
@@ -132,6 +137,7 @@
                             META-INF=target/maven-shared-archive-resources/META-INF,
                             org/apache/pdfbox/resources=target/classes/org/apache/pdfbox/resources
                         </Include-Resource>
+                        <Automatic-Module-Name>org.apache.pdfbox</Automatic-Module-Name>
                     </instructions>
                 </configuration>
             </plugin>
@@ -155,7 +161,9 @@
                         <exclude>src/test/resources/org/apache/pdfbox/encryption/*.der</exclude>
                         <exclude>src/test/resources/org/apache/pdfbox/encryption/*.pfx</exclude>
                         <exclude>src/test/resources/org/apache/pdfbox/filter/*.bin</exclude>
+                        <exclude>src/test/resources/org/apache/pdfbox/io/*.txt</exclude>
                         <exclude>src/test/resources/org/apache/pdfbox/text/*.txt</exclude>
+                        <exclude>src/test/resources/*.properties</exclude>
                         <exclude>src/main/java/org/apache/pdfbox/filter/CCITTFaxDecoderStream.java</exclude>
                         <exclude>src/main/java/org/apache/pdfbox/filter/CCITTFaxEncoderStream.java</exclude>
                         <exclude>src/main/java/org/apache/pdfbox/filter/TIFFExtension.java</exclude>
@@ -178,18 +186,6 @@
                     <serverId>pdfbox-site</serverId>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <configuration>
-                    <archive>
-                        <manifestEntries>
-                            <Automatic-Module-Name>org.apache.pdfbox</Automatic-Module-Name>
-                        </manifestEntries>
-                    </archive>
-                </configuration>
-            </plugin>
-
             <!-- PDFBOX-3974: download test files from JIRA and keep them in repository cache -->
             <plugin>
                 <groupId>com.googlecode.maven-download-plugin</groupId>
@@ -472,7 +468,7 @@
                             <goal>wget</goal>
                         </goals>
                         <configuration>
-                            <url>https://ipafont.ipa.go.jp/IPAfont/ipag00303.zip</url>
+                            <url>https://moji.or.jp/wp-content/ipafont/IPAfont/ipag00303.zip</url>
                             <outputDirectory>${project.build.directory}/fonts</outputDirectory>
                             <outputFileName>ipag00303.zip</outputFileName>
                             <unpack>true</unpack>
@@ -486,7 +482,7 @@
                             <goal>wget</goal>
                         </goals>
                         <configuration>
-                            <url>https://ipafont.ipa.go.jp/IPAfont/ipagp00303.zip</url>
+                            <url>https://moji.or.jp/wp-content/ipafont/IPAfont/ipagp00303.zip</url>
                             <outputDirectory>${project.build.directory}/fonts</outputDirectory>
                             <outputFileName>ipagp00303.zip</outputFileName>
                             <unpack>true</unpack>

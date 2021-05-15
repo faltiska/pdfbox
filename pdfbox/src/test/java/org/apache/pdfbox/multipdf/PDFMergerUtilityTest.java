@@ -15,21 +15,21 @@
  */
 package org.apache.pdfbox.multipdf;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.awt.image.BufferedImage;
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
-import junit.framework.TestCase;
 
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSArray;
@@ -55,6 +55,10 @@ import org.apache.pdfbox.pdmodel.interactive.documentnavigation.destination.PDPa
 import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
 import org.apache.pdfbox.pdmodel.interactive.form.PDField;
 import org.apache.pdfbox.rendering.PDFRenderer;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 /**
  * Test suite for PDFMergerUtility.
@@ -62,26 +66,19 @@ import org.apache.pdfbox.rendering.PDFRenderer;
  * @author Maruan Sahyoun (PDF files)
  * @author Tilman Hausherr (code)
  */
-public class PDFMergerUtilityTest extends TestCase
+@Execution(ExecutionMode.CONCURRENT)
+class PDFMergerUtilityTest
 {
-    final String SRCDIR = "src/test/resources/input/merge/";
-    final String TARGETTESTDIR = "target/test-output/merge/";
+    private static final String SRCDIR = "src/test/resources/input/merge/";
+    private static final String TARGETTESTDIR = "target/test-output/merge/";
     private static final File TARGETPDFDIR = new File("target/pdfs");
-    final int DPI = 96;
+    private static final int DPI = 96;
 
-    @Override
-    protected void setUp() throws Exception
+    @BeforeAll
+    static void setUp()
     {
-        super.setUp();
-
         new File(TARGETTESTDIR).mkdirs();
-        if (!new File(TARGETTESTDIR).exists())
-        {
-            throw new IOException("could not create output directory");
-        }
     }
-    
-    
 
     /**
      * Tests whether the merge of two PDF files with identically named but
@@ -93,11 +90,12 @@ public class PDFMergerUtilityTest extends TestCase
      *
      * @throws IOException if something goes wrong.
      */
-    public void testPDFMergerUtility() throws IOException
+    @Test
+    void testPDFMergerUtility() throws IOException
     {
         checkMergeIdentical("PDFBox.GlobalResourceMergeTest.Doc01.decoded.pdf",
                 "PDFBox.GlobalResourceMergeTest.Doc02.decoded.pdf",
-                "GlobalResourceMergeTestResult.pdf", 
+                "GlobalResourceMergeTestResult1.pdf", 
                 MemoryUsageSetting.setupMainMemoryOnly());
         
         // once again, with scratch file
@@ -107,6 +105,22 @@ public class PDFMergerUtilityTest extends TestCase
                 MemoryUsageSetting.setupTempFileOnly());
     }
 
+    // see PDFBOX-2893
+    @Test
+    void testPDFMergerUtility2() throws IOException
+    {
+        checkMergeIdentical("PDFBox.GlobalResourceMergeTest.Doc01.pdf",
+                "PDFBox.GlobalResourceMergeTest.Doc02.pdf",
+                "GlobalResourceMergeTestResult3.pdf",
+                MemoryUsageSetting.setupMainMemoryOnly());
+
+        // once again, with scratch file
+        checkMergeIdentical("PDFBox.GlobalResourceMergeTest.Doc01.pdf",
+                "PDFBox.GlobalResourceMergeTest.Doc02.pdf",
+                "GlobalResourceMergeTestResult4.pdf",
+                MemoryUsageSetting.setupTempFileOnly());
+    }
+    
     /**
      * Tests whether the merge of two PDF files with JPEG and CCITT works. A few revisions before
      * 1704911 this test failed because the clone utility attempted to decode and re-encode the
@@ -114,7 +128,8 @@ public class PDFMergerUtilityTest extends TestCase
      *
      * @throws IOException if something goes wrong.
      */
-    public void testJpegCcitt() throws IOException
+    @Test
+    void testJpegCcitt() throws IOException
     {
         checkMergeIdentical("jpegrgb.pdf",
                 "multitiff.pdf",
@@ -128,27 +143,13 @@ public class PDFMergerUtilityTest extends TestCase
                 MemoryUsageSetting.setupTempFileOnly());
     }
 
-    // see PDFBOX-2893
-    public void testPDFMergerUtility2() throws IOException
-    {
-        checkMergeIdentical("PDFBox.GlobalResourceMergeTest.Doc01.pdf",
-                "PDFBox.GlobalResourceMergeTest.Doc02.pdf",
-                "GlobalResourceMergeTestResult.pdf",
-                MemoryUsageSetting.setupMainMemoryOnly());
-
-        // once again, with scratch file
-        checkMergeIdentical("PDFBox.GlobalResourceMergeTest.Doc01.pdf",
-                "PDFBox.GlobalResourceMergeTest.Doc02.pdf",
-                "GlobalResourceMergeTestResult2.pdf",
-                MemoryUsageSetting.setupTempFileOnly());
-    }
-    
     /**
      * PDFBOX-3972: Test that OpenAction page destination isn't lost after merge.
      * 
      * @throws IOException 
      */
-    public void testPDFMergerOpenAction() throws IOException
+    @Test
+    void testPDFMergerOpenAction() throws IOException
     {
         try (PDDocument doc1 = new PDDocument())
         {
@@ -191,7 +192,8 @@ public class PDFMergerUtilityTest extends TestCase
      * 
      * @throws IOException 
      */
-    public void testStructureTreeMerge() throws IOException
+    @Test
+    void testStructureTreeMerge() throws IOException
     {
         PDFMergerUtility pdfMergerUtility = new PDFMergerUtility();
         PDDocument src = Loader
@@ -230,7 +232,8 @@ public class PDFMergerUtilityTest extends TestCase
      *
      * @throws IOException
      */
-    public void testStructureTreeMerge2() throws IOException
+    @Test
+    void testStructureTreeMerge2() throws IOException
     {
         PDFMergerUtility pdfMergerUtility = new PDFMergerUtility();
         PDDocument doc = Loader
@@ -278,7 +281,8 @@ public class PDFMergerUtilityTest extends TestCase
      *
      * @throws IOException
      */
-    public void testStructureTreeMerge3() throws IOException
+    @Test
+    void testStructureTreeMerge3() throws IOException
     {
         PDFMergerUtility pdfMergerUtility = new PDFMergerUtility();
         PDDocument src = Loader.loadPDF(new File(TARGETPDFDIR, "PDFBOX-4408.pdf"));
@@ -316,7 +320,8 @@ public class PDFMergerUtilityTest extends TestCase
      *
      * @throws IOException
      */
-    public void testStructureTreeMerge4() throws IOException
+    @Test
+    void testStructureTreeMerge4() throws IOException
     {
         PDFMergerUtility pdfMergerUtility = new PDFMergerUtility();
         PDDocument src = Loader.loadPDF(new File(SRCDIR, "PDFBOX-4417-001031.pdf"));
@@ -353,7 +358,8 @@ public class PDFMergerUtilityTest extends TestCase
      *
      * @throws IOException 
      */
-    public void testStructureTreeMerge5() throws IOException
+    @Test
+    void testStructureTreeMerge5() throws IOException
     {
         PDFMergerUtility pdfMergerUtility = new PDFMergerUtility();
         PDDocument src = Loader.loadPDF(new File(SRCDIR, "PDFBOX-4417-054080.pdf"));
@@ -388,7 +394,8 @@ public class PDFMergerUtilityTest extends TestCase
      * 
      * @throws IOException 
      */
-    public void testStructureTreeMerge6() throws IOException
+    @Test
+    void testStructureTreeMerge6() throws IOException
     {
         PDFMergerUtility pdfMergerUtility = new PDFMergerUtility();
         PDDocument src = Loader.loadPDF(new File(TARGETPDFDIR, "PDFBOX-4418-000671.pdf"));
@@ -438,7 +445,8 @@ public class PDFMergerUtilityTest extends TestCase
      * 
      * @throws IOException 
      */
-    public void testStructureTreeMerge7() throws IOException
+    @Test
+    void testStructureTreeMerge7() throws IOException
     {
         PDFMergerUtility pdfMergerUtility = new PDFMergerUtility();
         PDDocument src = Loader.loadPDF(new File(TARGETPDFDIR, "PDFBOX-4423-000746.pdf"));
@@ -477,7 +485,8 @@ public class PDFMergerUtilityTest extends TestCase
     /**
      * PDFBOX-4009: Test that ParentTreeNextKey is recalculated correctly.
      */
-    public void testMissingParentTreeNextKey() throws IOException
+    @Test
+    void testMissingParentTreeNextKey() throws IOException
     {
         PDFMergerUtility pdfMergerUtility = new PDFMergerUtility();
         PDDocument src = Loader.loadPDF(new File(TARGETPDFDIR, "PDFBOX-4418-000314.pdf"));
@@ -504,7 +513,8 @@ public class PDFMergerUtilityTest extends TestCase
      *
      * @throws IOException 
      */
-    public void testStructureTreeMergeIDTree() throws IOException
+    @Test
+    void testStructureTreeMergeIDTree() throws IOException
     {
         PDFMergerUtility pdfMergerUtility = new PDFMergerUtility();
         PDDocument src = Loader.loadPDF(new File(SRCDIR, "PDFBOX-4417-001031.pdf"));
@@ -547,19 +557,20 @@ public class PDFMergerUtilityTest extends TestCase
      *
      * @throws IOException
      */
-    public void testMergeBogusStructParents1() throws IOException
+    @Test
+    void testMergeBogusStructParents1() throws IOException
     {
         PDFMergerUtility pdfMergerUtility = new PDFMergerUtility();
-        PDDocument src = Loader.loadPDF(new File(TARGETPDFDIR, "PDFBOX-4408.pdf"));
-        PDDocument dst = Loader.loadPDF(new File(TARGETPDFDIR, "PDFBOX-4408.pdf"));
-        dst.getDocumentCatalog().setStructureTreeRoot(null);
-        dst.getPage(0).setStructParents(9999);
-        dst.getPage(0).getAnnotations().get(0).setStructParent(9998);
-        pdfMergerUtility.appendDocument(dst, src);
-        checkWithNumberTree(dst);
-        checkForPageOrphans(dst);
-        src.close();
-        dst.close();
+        try (PDDocument src = Loader.loadPDF(new File(TARGETPDFDIR, "PDFBOX-4408.pdf"));
+             PDDocument dst = Loader.loadPDF(new File(TARGETPDFDIR, "PDFBOX-4408.pdf")))
+        {
+            dst.getDocumentCatalog().setStructureTreeRoot(null);
+            dst.getPage(0).setStructParents(9999);
+            dst.getPage(0).getAnnotations().get(0).setStructParent(9998);
+            pdfMergerUtility.appendDocument(dst, src);
+            checkWithNumberTree(dst);
+            checkForPageOrphans(dst);
+        }
     }
 
     /**
@@ -568,19 +579,20 @@ public class PDFMergerUtilityTest extends TestCase
      *
      * @throws IOException
      */
-    public void testMergeBogusStructParents2() throws IOException
+    @Test
+    void testMergeBogusStructParents2() throws IOException
     {
         PDFMergerUtility pdfMergerUtility = new PDFMergerUtility();
-        PDDocument src = Loader.loadPDF(new File(TARGETPDFDIR, "PDFBOX-4408.pdf"));
-        PDDocument dst = Loader.loadPDF(new File(TARGETPDFDIR, "PDFBOX-4408.pdf"));
-        src.getDocumentCatalog().setStructureTreeRoot(null);
-        src.getPage(0).setStructParents(9999);
-        src.getPage(0).getAnnotations().get(0).setStructParent(9998);
-        pdfMergerUtility.appendDocument(dst, src);
-        checkWithNumberTree(dst);
-        checkForPageOrphans(dst);
-        src.close();
-        dst.close();
+        try (PDDocument src = Loader.loadPDF(new File(TARGETPDFDIR, "PDFBOX-4408.pdf"));
+             PDDocument dst = Loader.loadPDF(new File(TARGETPDFDIR, "PDFBOX-4408.pdf")))
+        {
+            src.getDocumentCatalog().setStructureTreeRoot(null);
+            src.getPage(0).setStructParents(9999);
+            src.getPage(0).getAnnotations().get(0).setStructParent(9998);
+            pdfMergerUtility.appendDocument(dst, src);
+            checkWithNumberTree(dst);
+            checkForPageOrphans(dst);
+        }
     }
 
     /**
@@ -589,38 +601,31 @@ public class PDFMergerUtilityTest extends TestCase
      *
      * @throws IOException
      */
-    public void testParentTree() throws IOException
+    @Test
+    void testParentTree() throws IOException
     {
-        PDDocument doc = Loader
-                .loadPDF(new File(TARGETPDFDIR, "PDFBOX-3999-GeneralForbearance.pdf"));
-        PDStructureTreeRoot structureTreeRoot = doc.getDocumentCatalog().getStructureTreeRoot();
-        PDNumberTreeNode parentTree = structureTreeRoot.getParentTree();
-        parentTree.getValue(0);
-        Map<Integer, COSObjectable> numberTreeAsMap = PDFMergerUtility.getNumberTreeAsMap(parentTree);
-        assertEquals(31, numberTreeAsMap.size());
-        assertEquals(31, Collections.max(numberTreeAsMap.keySet()) + 1);
-        assertEquals(0, (int) Collections.min(numberTreeAsMap.keySet()));
-        assertEquals(31, structureTreeRoot.getParentTreeNextKey());
-        doc.close();
+        try (PDDocument doc = Loader
+                .loadPDF(new File(TARGETPDFDIR, "PDFBOX-3999-GeneralForbearance.pdf")))
+        {
+            PDStructureTreeRoot structureTreeRoot = doc.getDocumentCatalog().getStructureTreeRoot();
+            PDNumberTreeNode parentTree = structureTreeRoot.getParentTree();
+            parentTree.getValue(0);
+            Map<Integer, COSObjectable> numberTreeAsMap = PDFMergerUtility.getNumberTreeAsMap(parentTree);
+            assertEquals(31, numberTreeAsMap.size());
+            assertEquals(31, Collections.max(numberTreeAsMap.keySet()) + 1);
+            assertEquals(0, (int) Collections.min(numberTreeAsMap.keySet()));
+            assertEquals(31, structureTreeRoot.getParentTreeNextKey());
+        }
     }
 
     // PDFBOX-4417: check for multiple /StructTreeRoot entries that was due to
     // incorrect merging of /K entries
     private void checkStructTreeRootCount(File file) throws IOException
     {
-        int count = 0;
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file))))
+        try (PDDocument pdf = Loader.loadPDF(file))
         {
-            String line;
-            while ((line = br.readLine()) != null)
-            {
-                if (line.equals("/Type /StructTreeRoot"))
-                {
-                    ++count;
-                }
-            }
+            assertEquals(1, pdf.getDocument().getObjectsByType(COSName.STRUCT_TREE_ROOT).size());
         }
-        assertEquals(1, count);
     }
 
     /**
@@ -644,9 +649,9 @@ public class PDFMergerUtilityTest extends TestCase
                 {
                     if (widget.getStructParent() >= 0)
                     {
-                        assertTrue("field '" + field.getFullyQualifiedName() + "' /StructParent " +
-                                   widget.getStructParent() + " missing in /ParentTree",
-                                   keySet.contains(widget.getStructParent()));
+                        assertTrue(keySet.contains(widget.getStructParent()),
+                                "field '" + field.getFullyQualifiedName() + "' /StructParent "
+                                        + widget.getStructParent() + " missing in /ParentTree");
                     }
                 }
             }
@@ -661,8 +666,8 @@ public class PDFMergerUtilityTest extends TestCase
             {
                 if (ann.getStructParent() >= 0)
                 {
-                    assertTrue("/StructParent " + ann.getStructParent() + " missing in /ParentTree",
-                               keySet.contains(ann.getStructParent()));
+                    assertTrue(keySet.contains(ann.getStructParent()),
+                            "/StructParent " + ann.getStructParent() + " missing in /ParentTree");
                 }
             }
         }
@@ -675,7 +680,8 @@ public class PDFMergerUtilityTest extends TestCase
      *
      * @throws IOException 
      */
-    public void testFileDeletion() throws IOException
+    @Test
+    void testFileDeletion() throws IOException
     {
         File outFile = new File(TARGETTESTDIR, "PDFBOX-4383-result.pdf");
 
@@ -746,7 +752,7 @@ public class PDFMergerUtilityTest extends TestCase
     private class ElementCounter
     {
         int cnt = 0;
-        Set<COSBase> set = new HashSet<>();
+        final Set<COSBase> set = new HashSet<>();
 
         void walk(COSBase base)
         {
@@ -837,12 +843,14 @@ public class PDFMergerUtilityTest extends TestCase
                             COSBase item = kdict.getItem(COSName.OBJ);
                             if (item instanceof COSObject)
                             {
-                                assertTrue("Annotation page is not in the page tree: " + item, pageTree.indexOf(page) != -1);
+                                assertNotEquals(-1, pageTree.indexOf(page),
+                                        "Annotation page is not in the page tree: " + item);
                             }
                             else
                             {
                                 // don't display because of stack overflow
-                                assertTrue("Annotation page is not in the page tree", pageTree.indexOf(page) != -1);
+                                assertNotEquals(-1, pageTree.indexOf(page),
+                                        "Annotation page is not in the page tree");
                             }
                         }
                     }
@@ -934,7 +942,7 @@ public class PDFMergerUtilityTest extends TestCase
         PDPage page = structureElement.getPage();
         if (page != null)
         {
-            assertTrue("Page is not in the page tree", pageTree.indexOf(page) != -1);
+            assertNotEquals(-1, pageTree.indexOf(page), "Page is not in the page tree");
         }
     }
 }

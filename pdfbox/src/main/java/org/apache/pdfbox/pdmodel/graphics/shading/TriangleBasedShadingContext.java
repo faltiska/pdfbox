@@ -15,7 +15,6 @@
  */
 package org.apache.pdfbox.pdmodel.graphics.shading;
 
-import java.awt.PaintContext;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.geom.AffineTransform;
@@ -25,8 +24,7 @@ import java.awt.image.WritableRaster;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+
 import org.apache.pdfbox.util.Matrix;
 
 /**
@@ -36,16 +34,8 @@ import org.apache.pdfbox.util.Matrix;
  * @author Shaola Ren
  * @author Tilman Hausherr
  */
-abstract class TriangleBasedShadingContext extends ShadingContext implements PaintContext
+abstract class TriangleBasedShadingContext extends ShadingContext
 {
-    private static final Log LOG = LogFactory.getLog(TriangleBasedShadingContext.class);
-
-    protected int bitsPerCoordinate;
-    protected int bitsPerColorComponent;
-    protected int numberOfColorComponents;
-    
-    private final boolean hasFunction;
-
     // map of pixels within triangles to their RGB color
     private Map<Point, Integer> pixelTable;
 
@@ -62,14 +52,6 @@ abstract class TriangleBasedShadingContext extends ShadingContext implements Pai
                                        Matrix matrix) throws IOException
     {
         super(shading, cm, xform, matrix);
-        PDTriangleBasedShadingType triangleBasedShadingType = (PDTriangleBasedShadingType) shading;
-        hasFunction = shading.getFunction() != null;
-        bitsPerCoordinate = triangleBasedShadingType.getBitsPerCoordinate();
-        LOG.debug("bitsPerCoordinate: " + (Math.pow(2, bitsPerCoordinate) - 1));
-        bitsPerColorComponent = triangleBasedShadingType.getBitsPerComponent();
-        LOG.debug("bitsPerColorComponent: " + bitsPerColorComponent);
-        numberOfColorComponents = hasFunction ? 1 : getShadingColorSpace().getNumberOfComponents();
-        LOG.debug("numberOfColorComponents: " + numberOfColorComponents);
     }
 
     /**
@@ -111,6 +93,7 @@ abstract class TriangleBasedShadingContext extends ShadingContext implements Pai
                 boundary[1] = Math.min(boundary[1], deviceBounds.x + deviceBounds.width);
                 boundary[2] = Math.max(boundary[2], deviceBounds.y);
                 boundary[3] = Math.min(boundary[3], deviceBounds.y + deviceBounds.height);
+
                 for (int x = boundary[0]; x <= boundary[1]; x++)
                 {
                     for (int y = boundary[2]; y <= boundary[3]; y++)
@@ -156,7 +139,7 @@ abstract class TriangleBasedShadingContext extends ShadingContext implements Pai
      */
     private int evalFunctionAndConvertToRGB(float[] values) throws IOException
     {
-        if (hasFunction)
+        if (getShading().getFunction() != null)
         {
             values = getShading().evalFunction(values);
         }
@@ -167,18 +150,6 @@ abstract class TriangleBasedShadingContext extends ShadingContext implements Pai
      * Returns true if the shading has an empty data stream.
      */
     abstract boolean isDataEmpty();
-
-    @Override
-    public final ColorModel getColorModel()
-    {
-        return super.getColorModel();
-    }
-
-    @Override
-    public void dispose()
-    {
-        super.dispose();
-    }
 
     @Override
     public final Raster getRaster(int x, int y, int w, int h)

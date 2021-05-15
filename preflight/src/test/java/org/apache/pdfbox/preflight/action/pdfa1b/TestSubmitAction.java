@@ -21,14 +21,13 @@
 
 package org.apache.pdfbox.preflight.action.pdfa1b;
 
-import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.pdmodel.common.filespecification.PDFileSpecification;
 import org.apache.pdfbox.preflight.PreflightConstants;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class TestSubmitAction extends AbstractTestAction
+class TestSubmitAction extends AbstractTestAction
 {
 
     protected COSDictionary createSubmitAction()
@@ -38,7 +37,8 @@ public class TestSubmitAction extends AbstractTestAction
         action.setItem(COSName.S, COSName.getPDFName("SubmitForm"));
         action.setItem(COSName.F, new PDFileSpecification()
         {
-            public COSBase getCOSObject()
+            @Override
+            public COSName getCOSObject()
             {
                 return COSName.getPDFName("value");
             }
@@ -58,14 +58,14 @@ public class TestSubmitAction extends AbstractTestAction
     }
 
     @Test
-    public void test() throws Exception
+    void test() throws Exception
     {
         COSDictionary action = createSubmitAction();
         valid(action, true);
     }
 
     @Test
-    public void testMissngF() throws Exception
+    void testMissngF() throws Exception
     {
         COSDictionary action = createSubmitAction();
         action.removeItem(COSName.F);

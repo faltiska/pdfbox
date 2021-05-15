@@ -16,7 +16,6 @@
  */
 package org.apache.pdfbox.pdmodel.graphics.shading;
 
-import java.awt.PaintContext;
 import java.awt.Rectangle;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.NoninvertibleTransformException;
@@ -38,7 +37,7 @@ import org.apache.pdfbox.util.Matrix;
  *
  * @author Shaola Ren
  */
-public class RadialShadingContext extends ShadingContext implements PaintContext
+public class RadialShadingContext extends ShadingContext
 {
     private static final Log LOG = LogFactory.getLog(RadialShadingContext.class);
 
@@ -169,12 +168,6 @@ public class RadialShadingContext extends ShadingContext implements PaintContext
     }
 
     @Override
-    public ColorModel getColorModel()
-    {
-        return super.getColorModel();
-    }
-
-    @Override
     public Raster getRaster(int x, int y, int w, int h)
     {
         // create writable raster
@@ -182,11 +175,13 @@ public class RadialShadingContext extends ShadingContext implements PaintContext
         float inputValue = -1;
         boolean useBackground;
         int[] data = new int[w * h * 4];
+        float[] values = new float[2];
         for (int j = 0; j < h; j++)
         {
             for (int i = 0; i < w; i++)
             {
-                float[] values = new float[] { x + i, y + j };
+                values[0] = x + i;
+                values[1] = y + j;
                 rat.transform(values, 0, values, 0, 1);
                 useBackground = false;
                 float[] inputValues = calculateInputValues(values[0], values[1]);

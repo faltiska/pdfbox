@@ -16,26 +16,28 @@
  */
 package org.apache.fontbox.cmap;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.io.IOException;
 
 import org.apache.fontbox.ttf.CmapLookup;
 import org.apache.fontbox.ttf.TTFParser;
 import org.apache.fontbox.ttf.TrueTypeFont;
-
-import junit.framework.TestCase;
+import org.junit.jupiter.api.Test;
 
 /**
  * This will test the CMap implementation.
  *
  */
-public class TestCMap extends TestCase 
+class TestCMap
 {
 
     /**
      * Check whether the mapping is working correct.
      * @throws IOException If something went wrong during adding a mapping
      */
-    public void testLookup() throws IOException
+    @Test
+    void testLookup() throws IOException
     {
         byte[] bs = new byte[] { (byte) 200 };
         CMap cMap = new CMap();
@@ -49,7 +51,8 @@ public class TestCMap extends TestCase
      *
      * @throws IOException
      */
-    public void testPDFBox3997() throws IOException
+    @Test
+    void testPDFBox3997() throws IOException
     {
         try (TrueTypeFont ttf = new TTFParser().parse("target/pdfs/NotoEmoji-Regular.ttf"))
         {

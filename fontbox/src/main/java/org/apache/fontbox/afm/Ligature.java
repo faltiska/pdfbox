@@ -23,23 +23,21 @@ package org.apache.fontbox.afm;
  */
 public class Ligature
 {
-    private String successor;
-    private String ligature;
+    private final String successor;
+    private final String liga;
+
+    public Ligature(String successor, String ligature)
+    {
+        this.successor = successor;
+        this.liga = ligature;
+    }
 
     /** Getter for property ligature.
      * @return Value of property ligature.
      */
     public String getLigature()
     {
-        return ligature;
-    }
-
-    /** Setter for property ligature.
-     * @param lig New value of property ligature.
-     */
-    public void setLigature(String lig)
-    {
-        ligature = lig;
+        return liga;
     }
 
     /** Getter for property successor.
@@ -48,14 +46,6 @@ public class Ligature
     public String getSuccessor()
     {
         return successor;
-    }
-
-    /** Setter for property successor.
-     * @param successorValue New value of property successor.
-     */
-    public void setSuccessor(String successorValue)
-    {
-        successor = successorValue;
     }
 
 }

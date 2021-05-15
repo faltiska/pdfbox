@@ -16,19 +16,25 @@
  */
 package org.apache.fontbox.cmap;
 
-import junit.framework.TestCase;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
+import org.junit.jupiter.api.Test;
 
 /**
  * This will test the CodeSpaceRange implementation.
  *
  */
-public class TestCodespaceRange extends TestCase
+class TestCodespaceRange
 {
 
     /**
      * Check whether the code length calculation works.
      */
-    public void testCodeLength()
+    @Test
+    void testCodeLength()
     {
         byte[] startBytes1 = new byte[] { 0x00 };
         byte[] endBytes1 = new byte[] { 0x20 };
@@ -44,13 +50,20 @@ public class TestCodespaceRange extends TestCase
     /**
      * Check whether the constructor checks the length of the start and end bytes
      */
-    public void testConstructor()
+    @Test
+    void testConstructor()
     {
+        // PDFBOX-4923 "1 begincodespacerange <00> <ffff> endcodespacerange" case is accepted
         byte[] startBytes1 = new byte[] { 0x00 };
-        byte[] endBytes2 = new byte[] { 0x01, 0x20 };
+        byte[] endBytes2 = new byte[] { -1, -1 };
+        new CodespaceRange(startBytes1, endBytes2);
+
+        // other cases of different lengths are not
+        byte[] startBytes3 = new byte[] { 0x01 };
+        byte[] endBytes4 = new byte[] { 0x01, 0x20 };
         try
         {
-            new CodespaceRange(startBytes1, endBytes2);
+            new CodespaceRange(startBytes3, endBytes4);
             fail("The constructor should have thrown an IllegalArgumentException exception.");
         }
         catch (IllegalArgumentException exception)
@@ -59,7 +72,8 @@ public class TestCodespaceRange extends TestCase
         }
     }
 
-    public void testMatches()
+    @Test
+    void testMatches()
     {
         byte[] startBytes1 = new byte[] { 0x00 };
         byte[] endBytes1 = new byte[] { (byte) 0xA0 };

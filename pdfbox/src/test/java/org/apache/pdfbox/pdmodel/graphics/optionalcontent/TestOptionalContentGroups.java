@@ -16,6 +16,14 @@
  */
 package org.apache.pdfbox.pdmodel.graphics.optionalcontent;
 
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
@@ -24,10 +32,10 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.imageio.ImageIO;
-
-import junit.framework.TestCase;
 
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSName;
@@ -38,23 +46,26 @@ import org.apache.pdfbox.pdmodel.PDResources;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.PDPageContentStream.AppendMode;
 import org.apache.pdfbox.pdmodel.PageMode;
+import org.apache.pdfbox.pdmodel.documentinterchange.markedcontent.PDMarkedContent;
 import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.apache.pdfbox.pdmodel.graphics.optionalcontent.PDOptionalContentProperties.BaseState;
 import org.apache.pdfbox.rendering.PDFRenderer;
-import org.junit.Assert;
+import org.apache.pdfbox.text.PDFMarkedContentExtractor;
+import org.apache.pdfbox.text.TextPosition;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests optional content group functionality (also called layers).
  */
-public class TestOptionalContentGroups extends TestCase
+class TestOptionalContentGroups
 {
-    private final File testResultsDir = new File("target/test-output");
+    private static final File testResultsDir = new File("target/test-output");
 
-    @Override
-    protected void setUp() throws Exception
+    @BeforeAll
+    static void setUp()
     {
-        super.setUp();
         testResultsDir.mkdirs();
     }
 
@@ -62,10 +73,10 @@ public class TestOptionalContentGroups extends TestCase
      * Tests OCG generation.
      * @throws Exception if an error occurs
      */
-    public void testOCGGeneration() throws Exception
+    @Test
+    void testOCGGeneration() throws Exception
     {
-        PDDocument doc = new PDDocument();
-        try
+        try (PDDocument doc = new PDDocument())
         {
             //Create new page
             PDPage page = new PDPage();
@@ -102,52 +113,48 @@ public class TestOptionalContentGroups extends TestCase
             assertFalse(ocprops.isGroupEnabled("disabled"));
 
             //Setup page content stream and paint background/title
-            PDPageContentStream contentStream = new PDPageContentStream(doc, page, AppendMode.OVERWRITE, false);
-            PDFont font = PDType1Font.HELVETICA_BOLD;
-            contentStream.beginMarkedContent(COSName.OC, background);
-            contentStream.beginText();
-            contentStream.setFont(font, 14);
-            contentStream.newLineAtOffset(80, 700);
-            contentStream.showText("PDF 1.5: Optional Content Groups");
-            contentStream.endText();
-            font = PDType1Font.HELVETICA;
-            contentStream.beginText();
-            contentStream.setFont(font, 12);
-            contentStream.newLineAtOffset(80, 680);
-            contentStream.showText("You should see a green textline, but no red text line.");
-            contentStream.endText();
-            contentStream.endMarkedContent();
-
-            //Paint enabled layer
-            contentStream.beginMarkedContent(COSName.OC, enabled);
-            contentStream.setNonStrokingColor(Color.GREEN);
-            contentStream.beginText();
-            contentStream.setFont(font, 12);
-            contentStream.newLineAtOffset(80, 600);
-            contentStream.showText(
-                    "This is from an enabled layer. If you see this, that's good.");
-            contentStream.endText();
-            contentStream.endMarkedContent();
-
-            //Paint disabled layer
-            contentStream.beginMarkedContent(COSName.OC, disabled);
-            contentStream.setNonStrokingColor(Color.RED);
-            contentStream.beginText();
-            contentStream.setFont(font, 12);
-            contentStream.newLineAtOffset(80, 500);
-            contentStream.showText(
-                    "This is from a disabled layer. If you see this, that's NOT good!");
-            contentStream.endText();
-            contentStream.endMarkedContent();
-
-            contentStream.close();
+            try (PDPageContentStream contentStream = new PDPageContentStream(doc, page, AppendMode.OVERWRITE, false))
+            {
+                PDFont font = PDType1Font.HELVETICA_BOLD;
+                contentStream.beginMarkedContent(COSName.OC, background);
+                contentStream.beginText();
+                contentStream.setFont(font, 14);
+                contentStream.newLineAtOffset(80, 700);
+                contentStream.showText("PDF 1.5: Optional Content Groups");
+                contentStream.endText();
+                font = PDType1Font.HELVETICA;
+                contentStream.beginText();
+                contentStream.setFont(font, 12);
+                contentStream.newLineAtOffset(80, 680);
+                contentStream.showText("You should see a green textline, but no red text line.");
+                contentStream.endText();
+                contentStream.endMarkedContent();
+                
+                //Paint enabled layer
+                contentStream.beginMarkedContent(COSName.OC, enabled);
+                contentStream.setNonStrokingColor(Color.GREEN);
+                contentStream.beginText();
+                contentStream.setFont(font, 12);
+                contentStream.newLineAtOffset(80, 600);
+                contentStream.showText(
+                        "This is from an enabled layer. If you see this, that's good.");
+                contentStream.endText();
+                contentStream.endMarkedContent();
+                
+                //Paint disabled layer
+                contentStream.beginMarkedContent(COSName.OC, disabled);
+                contentStream.setNonStrokingColor(Color.RED);
+                contentStream.beginText();
+                contentStream.setFont(font, 12);
+                contentStream.newLineAtOffset(80, 500);
+                contentStream.showText(
+                        "This is from a disabled layer. If you see this, that's NOT good!");
+                contentStream.endText();
+                contentStream.endMarkedContent();
+            }
 
             File targetFile = new File(testResultsDir, "ocg-generation.pdf");
             doc.save(targetFile.getAbsolutePath());
-        }
-        finally
-        {
-            doc.close();
         }
     }
 
@@ -155,7 +162,8 @@ public class TestOptionalContentGroups extends TestCase
      * Tests OCG functions on a loaded PDF.
      * @throws Exception if an error occurs
      */
-    public void testOCGConsumption() throws Exception
+    @Test
+    void testOCGConsumption() throws Exception
     {
         File pdfFile = new File(testResultsDir, "ocg-generation.pdf");
         if (!pdfFile.exists())
@@ -163,10 +171,9 @@ public class TestOptionalContentGroups extends TestCase
             testOCGGeneration();
         }
 
-        PDDocument doc = Loader.loadPDF(pdfFile);
-        try
+        try (PDDocument doc = Loader.loadPDF(pdfFile))
         {
-            assertEquals(1.5f, doc.getVersion());
+            assertEquals(1.6f, doc.getVersion());
             PDDocumentCatalog catalog = doc.getDocumentCatalog();
 
             PDPage page = doc.getPage(0);
@@ -198,22 +205,47 @@ public class TestOptionalContentGroups extends TestCase
 
             Collection<PDOptionalContentGroup> coll = ocgs.getOptionalContentGroups();
             assertEquals(3, coll.size());
-            Set<String> nameSet = new HashSet<>();
-            for (PDOptionalContentGroup ocg2 : coll)
-            {
-                nameSet.add(ocg2.getName());
-            }
+            HashSet<String> nameSet = coll.stream().map(PDOptionalContentGroup::getName).
+                    collect(Collectors.toCollection(HashSet::new));
             assertTrue(nameSet.contains("background"));
             assertTrue(nameSet.contains("enabled"));
             assertTrue(nameSet.contains("disabled"));
-        }
-        finally
-        {
-            doc.close();
+
+            PDFMarkedContentExtractor extractor = new PDFMarkedContentExtractor();
+            extractor.processPage(page);
+            List<PDMarkedContent> markedContents = extractor.getMarkedContents();
+            assertEquals("oc1", markedContents.get(0).getTag());
+            assertEquals("PDF 1.5: Optional Content Groups"
+                    + "You should see a green textline, but no red text line.",
+                    textPositionListToString(markedContents.get(0).getContents()));
+            assertEquals("oc2", markedContents.get(1).getTag());
+            assertEquals("This is from an enabled layer. If you see this, that's good.",
+                    textPositionListToString(markedContents.get(1).getContents()));
+            assertEquals("oc3", markedContents.get(2).getTag());
+            assertEquals("This is from a disabled layer. If you see this, that's NOT good!",
+                    textPositionListToString(markedContents.get(2).getContents()));
         }
     }
 
-    public void testOCGsWithSameNameCanHaveDifferentVisibility() throws Exception
+    /**
+     * Convert a list of TextPosition objects to a string.
+     * 
+     * @param contents list of TextPosition objects.
+     * @return 
+     */
+    private String textPositionListToString(List<Object> contents)
+    {
+        StringBuilder sb = new StringBuilder();
+        for (Object o : contents)
+        {
+            TextPosition tp = (TextPosition) o;
+            sb.append(tp.getUnicode());
+        }
+        return sb.toString();
+    }
+
+    @Test
+    void testOCGsWithSameNameCanHaveDifferentVisibility() throws Exception
     {
         try (PDDocument doc = new PDDocument())
         {
@@ -287,7 +319,8 @@ public class TestOptionalContentGroups extends TestCase
      *
      * @throws IOException
      */
-    public void testOCGGenerationSameNameCanHaveSameVisibilityOff() throws IOException
+    @Test
+    void testOCGGenerationSameNameCanHaveSameVisibilityOff() throws IOException
     {
         BufferedImage expectedImage;
         BufferedImage actualImage;
@@ -431,6 +464,6 @@ public class TestOptionalContentGroups extends TestCase
         // compare images
         DataBufferInt expectedData = (DataBufferInt) expectedImage.getRaster().getDataBuffer();
         DataBufferInt actualData = (DataBufferInt) actualImage.getRaster().getDataBuffer();
-        Assert.assertArrayEquals(expectedData.getData(), actualData.getData());
+        assertArrayEquals(expectedData.getData(), actualData.getData());
     }
 }

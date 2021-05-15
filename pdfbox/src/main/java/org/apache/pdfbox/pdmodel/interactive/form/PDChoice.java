@@ -26,7 +26,6 @@ import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.cos.COSString;
-import org.apache.pdfbox.pdmodel.common.COSArrayList;
 import org.apache.pdfbox.pdmodel.interactive.form.FieldUtils.KeyValue;
 
 /**
@@ -114,7 +113,8 @@ public abstract class PDChoice extends PDVariableText
             {
                 Collections.sort(displayValues);
             }
-            getCOSObject().setItem(COSName.OPT, COSArrayList.convertStringListToCOSStringCOSArray(displayValues));
+            getCOSObject().setItem(COSName.OPT,
+                    COSArray.ofCOSStrings(displayValues));
         }
         else
         {
@@ -223,12 +223,8 @@ public abstract class PDChoice extends PDVariableText
      */
     public List<Integer> getSelectedOptionsIndex()
     {
-        COSBase value = getCOSObject().getDictionaryObject(COSName.I);
-        if (value instanceof COSArray)
-        {
-            return COSArrayList.convertIntegerCOSArrayToList((COSArray) value);
-        }
-        return Collections.emptyList();
+        COSArray value = getCOSObject().getCOSArray(COSName.I);
+        return value != null ? value.toCOSNumberIntegerList() : Collections.emptyList();
     }
 
     /**
@@ -253,7 +249,7 @@ public abstract class PDChoice extends PDVariableText
                 throw new IllegalArgumentException(
                         "Setting the indices is not allowed for choice fields not allowing multiple selections.");
             }
-            getCOSObject().setItem(COSName.I, COSArrayList.converterToCOSArray(values));
+            getCOSObject().setItem(COSName.I, COSArray.ofCOSIntegers(values));
         }
         else
         {
@@ -413,7 +409,8 @@ public abstract class PDChoice extends PDVariableText
             {
                 throw new IllegalArgumentException("The values are not contained in the selectable options.");
             }
-            getCOSObject().setItem(COSName.V, COSArrayList.convertStringListToCOSStringCOSArray(values));
+            getCOSObject().setItem(COSName.V,
+                    COSArray.ofCOSStrings(values));
             updateSelectedOptionsIndex(values);
         }
         else
@@ -454,13 +451,11 @@ public abstract class PDChoice extends PDVariableText
         COSBase value = getCOSObject().getDictionaryObject(name);
         if (value instanceof COSString)
         {
-            List<String> array = new ArrayList<>();
-            array.add(((COSString) value).getString());
-            return array;
+            return Collections.singletonList(((COSString) value).getString());
         }
         else if (value instanceof COSArray)
         {
-            return COSArrayList.convertCOSStringCOSArrayToList((COSArray)value);
+            return ((COSArray) value).toCOSStringStringList();
         }
         return Collections.emptyList();
     }

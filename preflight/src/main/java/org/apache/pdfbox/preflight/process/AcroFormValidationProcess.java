@@ -54,7 +54,7 @@ public class AcroFormValidationProcess extends AbstractProcess
         PDDocumentCatalog catalog = ctx.getDocument().getDocumentCatalog();
         if (catalog != null)
         {
-            PDAcroForm acroForm = catalog.getAcroForm();
+            PDAcroForm acroForm = catalog.getAcroForm(null);
             if (acroForm != null)
             {
                 checkNeedAppearences(ctx, acroForm);
@@ -84,7 +84,7 @@ public class AcroFormValidationProcess extends AbstractProcess
      */
     protected void checkNeedAppearences(PreflightContext ctx, PDAcroForm acroForm)
     {
-        if (acroForm.getCOSObject().getBoolean(COSName.NEED_APPEARANCES, false))
+        if (acroForm.getNeedAppearances())
         {
             addValidationError(ctx, new ValidationError(ERROR_SYNTAX_DICT_INVALID,
                     "NeedAppearance is present with the value \"true\""));

@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSBase;
@@ -41,6 +43,8 @@ import org.apache.pdfbox.util.Vector;
  */
 public abstract class PDCIDFont implements COSObjectable, PDFontLike, PDVectorFont
 {
+    private static final Log LOG = LogFactory.getLog(PDCIDFont.class);
+
     protected final PDType0Font parent;
 
     private Map<Integer, Float> widths;
@@ -49,7 +53,7 @@ public abstract class PDCIDFont implements COSObjectable, PDFontLike, PDVectorFo
 
     private final Map<Integer, Float> verticalDisplacementY = new HashMap<>(); // w1y
     private final Map<Integer, Vector> positionVectors = new HashMap<>();     // v
-    private float[] dw2 = new float[] { 880, -1000 };
+    private final float[] dw2 = new float[] { 880, -1000 };
 
     protected final COSDictionary dict;
     private PDFontDescriptor fontDescriptor;
@@ -70,15 +74,20 @@ public abstract class PDCIDFont implements COSObjectable, PDFontLike, PDVectorFo
     private void readWidths()
     {
         widths = new HashMap<>();
-        COSBase wBase = dict.getDictionaryObject(COSName.W);
-        if (wBase instanceof COSArray)
+        COSArray wArray = dict.getCOSArray(COSName.W);
+        if (wArray != null)
         {
-            COSArray wArray = (COSArray) wBase;
             int size = wArray.size();
             int counter = 0;
             while (counter < size)
             {
-                COSNumber firstCode = (COSNumber) wArray.getObject(counter++);
+                COSBase firstCodeBase = wArray.getObject(counter++);
+                if (!(firstCodeBase instanceof COSNumber))
+                {
+                    LOG.warn("Expected a number array member, got " + firstCodeBase);
+                    continue;
+                }
+                COSNumber firstCode = (COSNumber) firstCodeBase;
                 COSBase next = wArray.getObject(counter++);
                 if (next instanceof COSArray)
                 {
@@ -87,14 +96,29 @@ public abstract class PDCIDFont implements COSObjectable, PDFontLike, PDVectorFo
                     int arraySize = array.size();
                     for (int i = 0; i < arraySize; i++)
                     {
-                        COSNumber width = (COSNumber) array.getObject(i);
-                        widths.put(startRange + i, width.floatValue());
+                        COSBase widthBase = array.getObject(i);
+                        if (widthBase instanceof COSNumber)
+                        {
+                            COSNumber width = (COSNumber) widthBase;
+                            widths.put(startRange + i, width.floatValue());
+                        }
+                        else
+                        {
+                            LOG.warn("Expected a number array member, got " + widthBase);
+                        }
                     }
                 }
                 else
                 {
-                    COSNumber secondCode = (COSNumber) next;
-                    COSNumber rangeWidth = (COSNumber) wArray.getObject(counter++);
+                    COSBase secondCodeBase = next;
+                    COSBase rangeWidthBase = wArray.getObject(counter++);
+                    if (!(secondCodeBase instanceof COSNumber) || !(rangeWidthBase instanceof COSNumber))
+                    {
+                        LOG.warn("Expected two numbers, got " + secondCodeBase + " and " + rangeWidthBase);
+                        continue;
+                    }
+                    COSNumber secondCode = (COSNumber) secondCodeBase;
+                    COSNumber rangeWidth = (COSNumber) rangeWidthBase;
                     int startRange = firstCode.intValue();
                     int endRange = secondCode.intValue();
                     float width = rangeWidth.floatValue();
@@ -110,10 +134,9 @@ public abstract class PDCIDFont implements COSObjectable, PDFontLike, PDVectorFo
     private void readVerticalDisplacements()
     {
         // default position vector and vertical displacement vector
-        COSBase dw2Base = dict.getDictionaryObject(COSName.DW2);
-        if (dw2Base instanceof COSArray)
+        COSArray dw2Array = dict.getCOSArray(COSName.DW2);
+        if (dw2Array != null)
         {
-            COSArray dw2Array = (COSArray) dw2Base;
             COSBase base0 = dw2Array.getObject(0);
             COSBase base1 = dw2Array.getObject(1);
             if (base0 instanceof COSNumber && base1 instanceof COSNumber)
@@ -124,10 +147,9 @@ public abstract class PDCIDFont implements COSObjectable, PDFontLike, PDVectorFo
         }
 
         // vertical metrics for individual CIDs.
-        COSBase w2Base = dict.getDictionaryObject(COSName.W2);
-        if (w2Base instanceof COSArray)
+        COSArray w2Array = dict.getCOSArray(COSName.W2);
+        if (w2Array != null)
         {
-            COSArray w2Array = (COSArray) w2Base;
             for (int i = 0; i < w2Array.size(); i++)
             {
                 COSNumber c = (COSNumber) w2Array.getObject(i);
@@ -189,7 +211,7 @@ public abstract class PDCIDFont implements COSObjectable, PDFontLike, PDVectorFo
     {
         if (fontDescriptor == null)
         {
-            COSDictionary fd = (COSDictionary) dict.getDictionaryObject(COSName.FONT_DESC);
+            COSDictionary fd = dict.getCOSDictionary(COSName.FONT_DESC);
             if (fd != null)
             {
                 fontDescriptor = new PDFontDescriptor(fd);
@@ -313,7 +335,10 @@ public abstract class PDCIDFont implements COSObjectable, PDFontLike, PDVectorFo
                     }
                 }
             }
-            averageWidth = totalWidths / characterCount;
+            if (characterCount != 0)
+            {
+                averageWidth = totalWidths / characterCount;
+            }
             if (averageWidth <= 0 || Float.isNaN(averageWidth))
             {
                 averageWidth = getDefaultWidth();
@@ -327,12 +352,8 @@ public abstract class PDCIDFont implements COSObjectable, PDFontLike, PDVectorFo
      */
     public PDCIDSystemInfo getCIDSystemInfo()
     {
-        COSBase base = dict.getDictionaryObject(COSName.CIDSYSTEMINFO);
-        if (base instanceof COSDictionary)
-        {
-            return new PDCIDSystemInfo((COSDictionary) base);
-        }
-        return null;
+        COSDictionary cidSystemInfo = dict.getCOSDictionary(COSName.CIDSYSTEMINFO);
+        return cidSystemInfo != null ? new PDCIDSystemInfo(cidSystemInfo) : null;
     }
     
     /**
@@ -369,11 +390,9 @@ public abstract class PDCIDFont implements COSObjectable, PDFontLike, PDVectorFo
     final int[] readCIDToGIDMap() throws IOException
     {
         int[] cid2gid = null;
-        COSBase map = dict.getDictionaryObject(COSName.CID_TO_GID_MAP);
-        if (map instanceof COSStream)
+        COSStream stream = dict.getCOSStream(COSName.CID_TO_GID_MAP);
+        if (stream != null)
         {
-            COSStream stream = (COSStream) map;
-
             InputStream is = stream.createInputStream();
             byte[] mapAsBytes = IOUtils.toByteArray(is);
             IOUtils.closeQuietly(is);

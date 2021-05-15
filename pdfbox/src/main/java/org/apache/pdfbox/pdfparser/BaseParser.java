@@ -213,7 +213,12 @@ public abstract class BaseParser
             }
             else if (c == '/')
             {
-                parseCOSDictionaryNameValuePair(obj);
+                // something went wrong, most likely the dictionary is corrupted
+                // stop immediately and return everything read so far
+                if (!parseCOSDictionaryNameValuePair(obj))
+                {
+                    return obj;
+                }
             }
             else
             {
@@ -275,33 +280,19 @@ public abstract class BaseParser
         {
             return true;
         }
-        source.unread(c);
+        source.rewind(1);
         return false;
     }
 
-    private void parseCOSDictionaryNameValuePair(COSDictionary obj) throws IOException
+    private boolean parseCOSDictionaryNameValuePair(COSDictionary obj) throws IOException
     {
         COSName key = parseCOSName();
         COSBase value = parseCOSDictionaryValue();
         skipSpaces();
-        if (((char) source.peek()) == 'd')
-        {
-            // if the next string is 'def' then we are parsing a cmap stream
-            // and want to ignore it, otherwise throw an exception.
-            String potentialDEF = readString();
-            if (!potentialDEF.equals(DEF))
-            {
-                source.unread(potentialDEF.getBytes(StandardCharsets.ISO_8859_1));
-            }
-            else
-            {
-                skipSpaces();
-            }
-        }
-
         if (value == null)
         {
             LOG.warn("Bad dictionary declaration at offset " + source.getPosition());
+            return false;
         }
         else
         {
@@ -309,6 +300,7 @@ public abstract class BaseParser
             value.setDirect(true);
             obj.setItem(key, value);
         }
+        return true;
     }
 
     protected void skipWhiteSpaces() throws IOException
@@ -331,7 +323,7 @@ public abstract class BaseParser
             whitespace = source.read();
             if (ASCII_LF != whitespace)
             {
-                source.unread(whitespace);
+                source.rewind(1);
                 //The spec says this is invalid but it happens in the real
                 //world so we must support it.
             }
@@ -341,7 +333,7 @@ public abstract class BaseParser
             //we are in an error.
             //but again we will do a lenient parsing and just assume that everything
             //is fine
-            source.unread(whitespace);
+            source.rewind(1);
         }
     }
 
@@ -382,7 +374,7 @@ public abstract class BaseParser
         }
         if (amountRead > 0)
         {
-            source.unread(nextThreeBytes, 0, amountRead);
+            source.rewind(amountRead);
         }
         return braces;
     }
@@ -487,7 +479,6 @@ public abstract class BaseParser
                     case '5':
                     case '6':
                     case '7':
-                    {
                         StringBuilder octal = new StringBuilder();
                         octal.append( next );
                         c = source.read();
@@ -522,13 +513,10 @@ public abstract class BaseParser
                         }
                         out.write(character);
                         break;
-                    }
                     default:
-                    {
                         // dropping the backslash
                         // see 7.3.4.2 Literal Strings for further information
                         out.write(next);
-                    }
                 }
             }
             else
@@ -546,7 +534,7 @@ public abstract class BaseParser
         }
         if (c != -1)
         {
-            source.unread(c);
+            source.rewind(1);
         }
         return new COSString(out.toByteArray());
     }
@@ -666,13 +654,18 @@ public abstract class BaseParser
             else
             {
                 //it could be a bad object in the array which is just skipped
-                LOG.warn("Corrupt object reference at offset " +
-                        source.getPosition() + ", start offset: " + startPosition);
-
+                LOG.warn("Corrupt array element at offset " + source.getPosition()
+                        + ", start offset: " + startPosition);
+                String isThisTheEnd = readString();
+                // return immediately if a corrupt element is followed by another array
+                // to avoid a possible infinite recursion as most likely the whole array is corrupted
+                if (isThisTheEnd.isEmpty() && source.peek() == '[')
+                {
+                    return po;
+                }
+                source.rewind(isThisTheEnd.getBytes(StandardCharsets.ISO_8859_1).length);
                 // This could also be an "endobj" or "endstream" which means we can assume that
                 // the array has ended.
-                String isThisTheEnd = readString();
-                source.unread(isThisTheEnd.getBytes(StandardCharsets.ISO_8859_1));
                 if(ENDOBJ_STRING.equals(isThisTheEnd) || ENDSTREAM_STRING.equals(isThisTheEnd))
                 {
                     return po;
@@ -696,7 +689,7 @@ public abstract class BaseParser
     {
         return ch == ASCII_SPACE || ch == ASCII_CR || ch == ASCII_LF || ch == 9 || ch == '>' ||
                ch == '<' || ch == '[' || ch =='/' || ch ==']' || ch ==')' || ch =='(' || 
-               ch == 0 || ch == '\f';
+               ch == 0 || ch == '\f' || ch == '%';
     }
 
     /**
@@ -745,7 +738,7 @@ public abstract class BaseParser
                         c = -1;
                         break;
                     }
-                    source.unread(ch2);
+                    source.rewind(1);
                     c = ch1;
                     buffer.write(ch);
                 }
@@ -762,7 +755,7 @@ public abstract class BaseParser
         }
         if (c != -1)
         {
-            source.unread(c);
+            source.rewind(1);
         }
         
         byte[] bytes = buffer.toByteArray();
@@ -805,118 +798,87 @@ public abstract class BaseParser
      */
     protected COSBase parseDirObject() throws IOException
     {
-        COSBase retval = null;
-
         skipSpaces();
-        int nextByte = source.peek();
-        char c = (char)nextByte;
+        char c = (char) source.peek();
         switch(c)
         {
         case '<':
-        {
             // pull off first left bracket
-            int leftBracket = source.read();
+            source.read();
             // check for second left bracket
             c = (char) source.peek();
-            source.unread(leftBracket);
-            if(c == '<')
-            {
-
-                retval = parseCOSDictionary();
-                skipSpaces();
-            }
-            else
-            {
-                retval = parseCOSString();
-            }
-            break;
-        }
+            source.rewind(1);
+            return c == '<' ? parseCOSDictionary() : parseCOSString();
         case '[':
-        {
             // array
-            retval = parseCOSArray();
-            break;
-        }
+            return parseCOSArray();
         case '(':
-            retval = parseCOSString();
-            break;
+            return parseCOSString();
         case '/':   
             // name
-            retval = parseCOSName();
-            break;
+            return parseCOSName();
         case 'n':   
-        {
             // null
             readExpectedString(NULL, false);
-            retval = COSNull.NULL;
-            break;
-        }
+            return COSNull.NULL;
         case 't':
-        {
             readExpectedString(TRUE, false);
-            retval = COSBoolean.TRUE;
-            break;
-        }
+            return COSBoolean.TRUE;
         case 'f':
-        {
             readExpectedString(FALSE, false);
-            retval = COSBoolean.FALSE;
-            break;
-        }
+            return COSBoolean.FALSE;
         case 'R':
             source.read();
-            retval = new COSObject(null);
-            break;
+            return new COSObject(null);
         case (char)-1:
             return null;
         default:
-        {
             if( Character.isDigit(c) || c == '-' || c == '+' || c == '.')
             {
-                StringBuilder buf = new StringBuilder();
-                int ic = source.read();
-                c = (char)ic;
-                while( Character.isDigit( c )||
-                        c == '-' ||
-                        c == '+' ||
-                        c == '.' ||
-                        c == 'E' ||
-                        c == 'e' )
-                {
-                    buf.append( c );
-                    ic = source.read();
-                    c = (char)ic;
-                }
-                if( ic != -1 )
-                {
-                    source.unread(ic);
-                }
-                retval = COSNumber.get( buf.toString() );
+                return parseCOSNumber();
+            }
+            // This is not suppose to happen, but we will allow for it
+            // so we are more compatible with POS writers that don't
+            // follow the spec
+            String badString = readString();
+            if (badString.isEmpty())
+            {
+                int peek = source.peek();
+                // we can end up in an infinite loop otherwise
+                throw new IOException("Unknown dir object c='" + c + "' cInt=" + (int) c + " peek='"
+                        + (char) peek + "' peekInt=" + peek + " at offset " + source.getPosition());
+            }
+
+            // if it's an endstream/endobj, we want to put it back so the caller will see it
+            if (ENDOBJ_STRING.equals(badString) || ENDSTREAM_STRING.equals(badString))
+            {
+                source.rewind(badString.getBytes(StandardCharsets.ISO_8859_1).length);
             }
             else
             {
-                //This is not suppose to happen, but we will allow for it
-                //so we are more compatible with POS writers that don't
-                //follow the spec
-                String badString = readString();
-                if (badString.isEmpty())
-                {
-                    int peek = source.peek();
-                    // we can end up in an infinite loop otherwise
-                    throw new IOException( "Unknown dir object c='" + c +
-                            "' cInt=" + (int)c + " peek='" + (char)peek 
-                            + "' peekInt=" + peek + " at offset " + source.getPosition());
-                }
-
-                // if it's an endstream/endobj, we want to put it back so the caller will see it
-                if(ENDOBJ_STRING.equals(badString) || ENDSTREAM_STRING.equals(badString))
-                {
-                    source.unread(badString.getBytes(StandardCharsets.ISO_8859_1));
-                }
+                LOG.warn("Skipped unexpected dir object = '" + badString + "' at offset "
+                        + source.getPosition());
             }
         }
+        return null;
+    }
+
+    private COSNumber parseCOSNumber() throws IOException
+    {
+        StringBuilder buf = new StringBuilder();
+        int ic = source.read();
+        char c = (char) ic;
+        while (Character.isDigit(c) || c == '-' || c == '+' || c == '.' || c == 'E' || c == 'e')
+        {
+            buf.append(c);
+            ic = source.read();
+            c = (char) ic;
         }
-        return retval;
+        if (ic != -1)
+        {
+            source.rewind(1);
+        }
+        return COSNumber.get(buf.toString());
     }
 
     /**
@@ -938,7 +900,7 @@ public abstract class BaseParser
         }
         if (c != -1)
         {
-            source.unread(c);
+            source.rewind(1);
         }
         return buffer.toString();
     }
@@ -1011,7 +973,7 @@ public abstract class BaseParser
         }
         if (c != -1)
         {
-            source.unread(c);
+            source.rewind(1);
         }
         return buffer.toString();
     }
@@ -1216,7 +1178,7 @@ public abstract class BaseParser
         }
         if (c != -1)
         {
-            source.unread(c);
+            source.rewind(1);
         }
     }
 
@@ -1274,7 +1236,7 @@ public abstract class BaseParser
         }
         catch( NumberFormatException e )
         {
-            source.unread(intBuffer.toString().getBytes(StandardCharsets.ISO_8859_1));
+            source.rewind(intBuffer.toString().getBytes(StandardCharsets.ISO_8859_1).length);
             throw new IOException("Error: Expected an integer type at offset " +
                     source.getPosition() +
                                   ", instead got '" + intBuffer + "'", e);
@@ -1303,7 +1265,7 @@ public abstract class BaseParser
         }
         catch( NumberFormatException e )
         {
-            source.unread(longBuffer.toString().getBytes(StandardCharsets.ISO_8859_1));
+            source.rewind(longBuffer.toString().getBytes(StandardCharsets.ISO_8859_1).length);
             throw new IOException( "Error: Expected a long type at offset "
                     + source.getPosition() + ", instead got '" + longBuffer + "'", e);
         }
@@ -1332,7 +1294,7 @@ public abstract class BaseParser
         }
         if( lastByte != -1 )
         {
-            source.unread(lastByte);
+            source.rewind(1);
         }
         return buffer;
     }

@@ -23,13 +23,13 @@ package org.apache.xmpbox;
 
 import org.apache.xmpbox.schema.AdobePDFSchema;
 import org.apache.xmpbox.schema.DublinCoreSchema;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class SaveMetadataHelperTest
+class SaveMetadataHelperTest
 {
 
     @Test
-    public void testSchemaParsing() throws Exception
+    void testSchemaParsing() throws Exception
     {
         DublinCoreSchema dc = new DublinCoreSchema(XMPMetadata.createXMPMetadata());
         dc.setCoverage("coverage");
@@ -39,7 +39,7 @@ public class SaveMetadataHelperTest
     }
 
     @Test
-    public void testMetadataParsing() throws Exception
+    void testMetadataParsing() throws Exception
     {
         XMPMetadata meta = XMPMetadata.createXMPMetadata();
 

@@ -21,56 +21,62 @@
 
 package org.apache.xmpbox.schema;
 
-import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collection;
-import java.util.List;
+import java.util.stream.Stream;
 
 import org.apache.xmpbox.XMPMetadata;
 import org.apache.xmpbox.type.Cardinality;
 import org.apache.xmpbox.type.PropertyType;
 import org.apache.xmpbox.type.Types;
-import org.junit.Before;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RunWith(Parameterized.class)
-public class XMPBasicTest extends AbstractXMPSchemaTest
+class XMPBasicTest
 {
+    private XMPMetadata metadata;
+    private XMPSchema schema;
+    private Class<?> schemaClass;
 
-    public XMPBasicTest(String prop, PropertyType type, Object val)
-    {
-        super(prop, type, val);
-    }
-
-    @Before
-    public void initTempMetaData() throws Exception
+    @BeforeEach
+    void initMetadata()
     {
         metadata = XMPMetadata.createXMPMetadata();
         schema = metadata.createAndAddXMPBasicSchema();
         schemaClass = XMPBasicSchema.class;
     }
-
-    @Parameters
-    public static Collection<Object[]> initializeParameters() throws Exception
+    
+    @ParameterizedTest
+    @MethodSource("initializeParameters")
+    void testElementValue(String property, PropertyType type, Object value) throws Exception
     {
-        List<Object[]> data = new ArrayList<>();
-
-        data.add(wrapProperty("Advisory", Types.XPath, Cardinality.Bag, new String[] { "xpath1", "xpath2" }));
-        data.add(wrapProperty("BaseURL", Types.URL, "URL"));
-        data.add(wrapProperty("CreateDate", Types.Date, Calendar.getInstance()));
-        data.add(wrapProperty("CreatorTool", Types.AgentName, "CreatorTool"));
-        data.add(wrapProperty("Identifier", Types.Text, Cardinality.Bag, new String[] { "id1", "id2" }));
-        data.add(wrapProperty("Label", Types.Text, "label"));
-        data.add(wrapProperty("MetadataDate", Types.Date, Calendar.getInstance()));
-        data.add(wrapProperty("ModifyDate", Types.Date, Calendar.getInstance()));
-        data.add(wrapProperty("Nickname", Types.Text, "nick name"));
-        data.add(wrapProperty("Rating", Types.Integer, 7));
-
-        data.add(wrapProperty("Thumbnails", Types.Thumbnail, Cardinality.Alt, null));
-
-        return data;
+        XMPSchemaTester xmpSchemaTester = new XMPSchemaTester(metadata, schema, schemaClass, property, type, value);
+        xmpSchemaTester.testGetSetValue();
     }
 
+    @ParameterizedTest
+    @MethodSource("initializeParameters")
+    void testElementProperty(String property, PropertyType type, Object value) throws Exception
+    {
+        XMPSchemaTester xmpSchemaTester = new XMPSchemaTester(metadata, schema, schemaClass, property, type, value);
+        xmpSchemaTester.testGetSetProperty();
+    }
+
+    static Stream<Arguments> initializeParameters() throws Exception
+    {
+        return Stream.of(
+            Arguments.of("Advisory", XMPSchemaTester.createPropertyType(Types.XPath, Cardinality.Bag), new String[] { "xpath1", "xpath2" }),
+            Arguments.of("BaseURL", XMPSchemaTester.createPropertyType(Types.URL), "URL"),
+            Arguments.of("CreateDate", XMPSchemaTester.createPropertyType(Types.Date), Calendar.getInstance()),
+            Arguments.of("CreatorTool", XMPSchemaTester.createPropertyType(Types.AgentName), "CreatorTool"),
+            Arguments.of("Identifier", XMPSchemaTester.createPropertyType(Types.Text, Cardinality.Bag), new String[] { "id1", "id2" }),
+            Arguments.of("Label", XMPSchemaTester.createPropertyType(Types.Text), "label"),
+            Arguments.of("MetadataDate", XMPSchemaTester.createPropertyType(Types.Date), Calendar.getInstance()),
+            Arguments.of("ModifyDate", XMPSchemaTester.createPropertyType(Types.Date), Calendar.getInstance()),
+            Arguments.of("Nickname", XMPSchemaTester.createPropertyType(Types.Text), "nick name"),
+            Arguments.of("Rating", XMPSchemaTester.createPropertyType(Types.Integer), 7),
+            Arguments.of("Thumbnails", XMPSchemaTester.createPropertyType(Types.Thumbnail, Cardinality.Alt), null)
+        );
+    }
 }

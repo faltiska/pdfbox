@@ -25,18 +25,18 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map.Entry;
 import org.apache.fontbox.util.autodetect.FontFileFinder;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 /**
  *
  * @author Tilman Hausherr
  */
-public class TTFSubsetterTest
+class TTFSubsetterTest
 {
 
     /**
@@ -45,7 +45,7 @@ public class TTFSubsetterTest
      * @throws java.io.IOException
      */
     @Test
-    public void testEmptySubset() throws IOException
+    void testEmptySubset() throws IOException
     {
         TrueTypeFont x = new TTFParser().parse("src/test/resources/ttf/LiberationSans-Regular.ttf");
         TTFSubsetter ttfSubsetter = new TTFSubsetter(x);
@@ -66,7 +66,7 @@ public class TTFSubsetterTest
      * @throws java.io.IOException
      */
     @Test
-    public void testEmptySubset2() throws IOException
+    void testEmptySubset2() throws IOException
     {
         TrueTypeFont x = new TTFParser().parse("src/test/resources/ttf/LiberationSans-Regular.ttf");
         // List copied from TrueTypeEmbedder.java
@@ -99,7 +99,7 @@ public class TTFSubsetterTest
      * @throws java.io.IOException
      */
     @Test
-    public void testNonEmptySubset() throws IOException
+    void testNonEmptySubset() throws IOException
     {
         TrueTypeFont full = new TTFParser().parse("src/test/resources/ttf/LiberationSans-Regular.ttf");
         TTFSubsetter ttfSubsetter = new TTFSubsetter(full);
@@ -128,7 +128,7 @@ public class TTFSubsetterTest
      * @throws java.io.IOException
      */
     @Test
-    public void testPDFBox3319() throws IOException
+    void testPDFBox3319() throws IOException
     {
         System.out.println("Searching for SimHei font...");
         FontFileFinder fontFileFinder = new FontFileFinder();
@@ -196,7 +196,7 @@ public class TTFSubsetterTest
      * @throws java.io.IOException
      */
     @Test
-    public void testPDFBox3379() throws IOException
+    void testPDFBox3379() throws IOException
     {
         TrueTypeFont full = new TTFParser().parse("target/pdfs/DejaVuSansMono.ttf");
         TTFSubsetter ttfSubsetter = new TTFSubsetter(full);
@@ -230,7 +230,7 @@ public class TTFSubsetterTest
      * @throws java.io.IOException
      */
     @Test
-    public void testPDFBox3757() throws IOException
+    void testPDFBox3757() throws IOException
     {
         final File testFile = new File("src/test/resources/ttf/LiberationSans-Regular.ttf");
         TrueTypeFont ttf = new TTFParser().parse(testFile);
@@ -256,8 +256,10 @@ public class TTFSubsetterTest
             assertEquals("uni200A", pst.getName(3));
             assertEquals("dieresis.uc", pst.getName(4));
             
-            assertTrue("Hair space path should be empty", subset.getPath("uni200A").getBounds2D().isEmpty());
-            assertFalse("UC dieresis path should not be empty", subset.getPath("dieresis.uc").getBounds2D().isEmpty());
+            assertTrue(subset.getPath("uni200A").getBounds2D().isEmpty(),
+                    "Hair space path should be empty");
+            assertFalse(subset.getPath("dieresis.uc").getBounds2D().isEmpty(),
+                    "UC dieresis path should not be empty");
         }
     }
 }

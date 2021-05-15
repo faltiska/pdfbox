@@ -22,12 +22,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
-import java.util.Map.Entry;
 import java.util.function.BiConsumer;
 
 import org.apache.commons.logging.Log;
@@ -320,27 +317,15 @@ public class COSDictionary extends COSBase implements COSUpdateInfo
     }
 
     /**
-     * Set the value of a date entry in the dictionary.
-     *
-     * @param embedded The embedded dictionary.
-     * @param key The key to the date value.
-     * @param date The date value.
-     */
-    public void setEmbeddedDate(String embedded, String key, Calendar date)
-    {
-        setEmbeddedDate(embedded, COSName.getPDFName(key), date);
-    }
-
-    /**
      * Set the date object.
      *
      * @param embedded The embedded dictionary.
      * @param key The key to the date.
      * @param date The date to set.
      */
-    public void setEmbeddedDate(String embedded, COSName key, Calendar date)
+    public void setEmbeddedDate(COSName embedded, COSName key, Calendar date)
     {
-        COSDictionary dic = (COSDictionary) getDictionaryObject(embedded);
+        COSDictionary dic = getCOSDictionary(embedded);
         if (dic == null && date != null)
         {
             dic = new COSDictionary();
@@ -389,22 +374,9 @@ public class COSDictionary extends COSBase implements COSUpdateInfo
      * @param key The key to the object,
      * @param value The string value for the name.
      */
-    public void setEmbeddedString(String embedded, String key, String value)
+    public void setEmbeddedString(COSName embedded, COSName key, String value)
     {
-        setEmbeddedString(embedded, COSName.getPDFName(key), value);
-    }
-
-    /**
-     * This is a convenience method that will convert the value to a COSString object. If it is null then the object
-     * will be removed.
-     *
-     * @param embedded The embedded dictionary to set the item in.
-     * @param key The key to the object,
-     * @param value The string value for the name.
-     */
-    public void setEmbeddedString(String embedded, COSName key, String value)
-    {
-        COSDictionary dic = (COSDictionary) getDictionaryObject(embedded);
+        COSDictionary dic = getCOSDictionary(embedded);
         if (dic == null && value != null)
         {
             dic = new COSDictionary();
@@ -468,21 +440,9 @@ public class COSDictionary extends COSBase implements COSUpdateInfo
      * @param key The key to the object,
      * @param value The int value for the name.
      */
-    public void setEmbeddedInt(String embeddedDictionary, String key, int value)
+    public void setEmbeddedInt(COSName embeddedDictionary, COSName key, int value)
     {
-        setEmbeddedInt(embeddedDictionary, COSName.getPDFName(key), value);
-    }
-
-    /**
-     * This is a convenience method that will convert the value to a COSInteger object.
-     *
-     * @param embeddedDictionary The embedded dictionary.
-     * @param key The key to the object,
-     * @param value The int value for the name.
-     */
-    public void setEmbeddedInt(String embeddedDictionary, COSName key, int value)
-    {
-        COSDictionary embedded = (COSDictionary) getDictionaryObject(embeddedDictionary);
+        COSDictionary embedded = getCOSDictionary(embeddedDictionary);
         if (embedded == null)
         {
             embedded = new COSDictionary();
@@ -790,20 +750,7 @@ public class COSDictionary extends COSBase implements COSUpdateInfo
      * @param key The key to the item in the dictionary.
      * @return The name converted to a string.
      */
-    public String getEmbeddedString(String embedded, String key)
-    {
-        return getEmbeddedString(embedded, COSName.getPDFName(key), null);
-    }
-
-    /**
-     * This is a convenience method that will get the dictionary object that is expected to be a name and convert it to
-     * a string. Null is returned if the entry does not exist in the dictionary.
-     *
-     * @param embedded The embedded dictionary.
-     * @param key The key to the item in the dictionary.
-     * @return The name converted to a string.
-     */
-    public String getEmbeddedString(String embedded, COSName key)
+    public String getEmbeddedString(COSName embedded, COSName key)
     {
         return getEmbeddedString(embedded, key, null);
     }
@@ -817,29 +764,10 @@ public class COSDictionary extends COSBase implements COSUpdateInfo
      * @param defaultValue The default value to return.
      * @return The name converted to a string.
      */
-    public String getEmbeddedString(String embedded, String key, String defaultValue)
+    public String getEmbeddedString(COSName embedded, COSName key, String defaultValue)
     {
-        return getEmbeddedString(embedded, COSName.getPDFName(key), defaultValue);
-    }
-
-    /**
-     * This is a convenience method that will get the dictionary object that is expected to be a name and convert it to
-     * a string.
-     *
-     * @param embedded The embedded dictionary.
-     * @param key The key to the item in the dictionary.
-     * @param defaultValue The default value to return.
-     * @return The name converted to a string.
-     */
-    public String getEmbeddedString(String embedded, COSName key, String defaultValue)
-    {
-        String retval = defaultValue;
-        COSBase base = getDictionaryObject(embedded);
-        if (base instanceof COSDictionary)
-        {
-            retval = ((COSDictionary) base).getString(key, defaultValue);
-        }
-        return retval;
+        COSDictionary eDic = getCOSDictionary(embedded);
+        return eDic != null ? eDic.getString(key, defaultValue) : defaultValue;
     }
 
     /**
@@ -908,20 +836,7 @@ public class COSDictionary extends COSBase implements COSUpdateInfo
      * @param key The key to the item in the dictionary.
      * @return The name converted to a string.
      */
-    public Calendar getEmbeddedDate(String embedded, String key)
-    {
-        return getEmbeddedDate(embedded, COSName.getPDFName(key), null);
-    }
-
-    /**
-     * This is a convenience method that will get the dictionary object that is expected to be a name and convert it to
-     * a string. Null is returned if the entry does not exist in the dictionary.
-     *
-     * @param embedded The embedded dictionary to get.
-     * @param key The key to the item in the dictionary.
-     * @return The name converted to a string.
-     */
-    public Calendar getEmbeddedDate(String embedded, COSName key)
+    public Calendar getEmbeddedDate(COSName embedded, COSName key)
     {
         return getEmbeddedDate(embedded, key, null);
     }
@@ -931,31 +846,14 @@ public class COSDictionary extends COSBase implements COSUpdateInfo
      *
      * @param embedded The embedded dictionary to get.
      * @param key The key to the item in the dictionary.
-     * @param defaultValue The default value to return if the entry does not exist in the dictionary or if the date was invalid.
+     * @param defaultValue The default value to return if the entry does not exist in the dictionary or if the date was
+     * invalid.
      * @return The name converted to a string.
      */
-    public Calendar getEmbeddedDate(String embedded, String key, Calendar defaultValue)
+    public Calendar getEmbeddedDate(COSName embedded, COSName key, Calendar defaultValue)
     {
-        return getEmbeddedDate(embedded, COSName.getPDFName(key), defaultValue);
-    }
-
-    /**
-     * This is a convenience method that will get the dictionary object that is expected to be a date.
-     *
-     * @param embedded The embedded dictionary to get.
-     * @param key The key to the item in the dictionary.
-     * @param defaultValue The default value to return if the entry does not exist in the dictionary or if the date was invalid.
-     * @return The name converted to a string.
-     */
-    public Calendar getEmbeddedDate(String embedded, COSName key, Calendar defaultValue)
-    {
-        Calendar retval = defaultValue;
-        COSDictionary eDic = (COSDictionary) getDictionaryObject(embedded);
-        if (eDic != null)
-        {
-            retval = eDic.getDate(key, defaultValue);
-        }
-        return retval;
+        COSDictionary eDic = getCOSDictionary(embedded);
+        return eDic != null ? eDic.getDate(key, defaultValue) : defaultValue;
     }
 
     /**
@@ -1002,7 +900,7 @@ public class COSDictionary extends COSBase implements COSUpdateInfo
         COSBase bool = getDictionaryObject(firstKey, secondKey);
         if (bool instanceof COSBoolean)
         {
-            retval = ((COSBoolean) bool).getValue();
+            retval = bool == COSBoolean.TRUE;
         }
         return retval;
     }
@@ -1015,20 +913,7 @@ public class COSDictionary extends COSBase implements COSUpdateInfo
      *
      * @return The value of the embedded integer.
      */
-    public int getEmbeddedInt(String embeddedDictionary, String key)
-    {
-        return getEmbeddedInt(embeddedDictionary, COSName.getPDFName(key));
-    }
-
-    /**
-     * Get an integer from an embedded dictionary. Useful for 1-1 mappings. default:-1
-     *
-     * @param embeddedDictionary The name of the embedded dictionary.
-     * @param key The key in the embedded dictionary.
-     *
-     * @return The value of the embedded integer.
-     */
-    public int getEmbeddedInt(String embeddedDictionary, COSName key)
+    public int getEmbeddedInt(COSName embeddedDictionary, COSName key)
     {
         return getEmbeddedInt(embeddedDictionary, key, -1);
     }
@@ -1042,29 +927,10 @@ public class COSDictionary extends COSBase implements COSUpdateInfo
      *
      * @return The value of the embedded integer.
      */
-    public int getEmbeddedInt(String embeddedDictionary, String key, int defaultValue)
+    public int getEmbeddedInt(COSName embeddedDictionary, COSName key, int defaultValue)
     {
-        return getEmbeddedInt(embeddedDictionary, COSName.getPDFName(key), defaultValue);
-    }
-
-    /**
-     * Get an integer from an embedded dictionary. Useful for 1-1 mappings.
-     *
-     * @param embeddedDictionary The name of the embedded dictionary.
-     * @param key The key in the embedded dictionary.
-     * @param defaultValue The value if there is no embedded dictionary or it does not contain the key.
-     *
-     * @return The value of the embedded integer.
-     */
-    public int getEmbeddedInt(String embeddedDictionary, COSName key, int defaultValue)
-    {
-        int retval = defaultValue;
-        COSDictionary embedded = (COSDictionary) getDictionaryObject(embeddedDictionary);
-        if (embedded != null)
-        {
-            retval = embedded.getInt(key, defaultValue);
-        }
-        return retval;
+        COSDictionary embedded = getCOSDictionary(embeddedDictionary);
+        return embedded != null ? embedded.getInt(key, defaultValue) : defaultValue;
     }
 
     /**
@@ -1403,24 +1269,14 @@ public class COSDictionary extends COSBase implements COSUpdateInfo
     }
 
     /**
-     * This will add all of the dictionaries keys/values to this dictionary.
-     * Only called when adding keys to a trailer that already exists.
+     * This will add all of the dictionaries keys/values to this dictionary. Existing key/value pairs will be
+     * overwritten.
      *
-     * @param dic The dictionaries to get the keys from.
+     * @param dic The dictionaries to get the key/value pairs from.
      */
     public void addAll(COSDictionary dic)
     {
-        dic.forEach((key, value) ->
-        {
-            /*
-             * If we're at a second trailer, we have a linearized pdf file, meaning that the first Size entry represents
-             * all of the objects so we don't need to grab the second.
-             */
-            if (!COSName.SIZE.equals(key) || !items.containsKey(COSName.SIZE))
-            {
-                setItem(key, value);
-            }
-        });
+        dic.forEach(this::setItem);
     }
 
     /**
@@ -1485,64 +1341,6 @@ public class COSDictionary extends COSBase implements COSUpdateInfo
      * {@inheritDoc}
      */
     @Override
-    public boolean equals(Object o) {
-        if (o == this)
-        {
-            return true;
-        }
-
-        if (o == null || !(o.getClass() == COSDictionary.class))
-        {
-            return false;
-        }
-
-        COSDictionary toBeCompared = (COSDictionary) o;
-
-        if (toBeCompared.size() != size())
-        {
-            return false;
-        }
-
-        Iterator<Entry<COSName, COSBase>> iter = entrySet().iterator();
-        while (iter.hasNext())
-        {
-            Entry<COSName, COSBase> entry = iter.next();
-            COSName key = entry.getKey();
-            COSBase value = entry.getValue();
-
-            if (!toBeCompared.containsKey(key)) 
-            {
-                return false;
-            }
-            else if (value == null)
-            {
-                if (toBeCompared.getItem(key) != null)
-                {
-                    return false;
-                }
-            }
-            else if (!value.equals(toBeCompared.getItem(key)))
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int hashCode() {
-        return Objects.hash(items, needToBeUpdated);
-    }
-    
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public String toString()
     {
         try
@@ -1570,8 +1368,7 @@ public class COSDictionary extends COSBase implements COSUpdateInfo
         objs.add(base);
         if (base instanceof COSDictionary)
         {
-            StringBuilder sb = new StringBuilder();
-            sb.append("COSDictionary{");
+            StringBuilder sb = new StringBuilder("COSDictionary{");
             for (Map.Entry<COSName, COSBase> x : ((COSDictionary) base).entrySet())
             {
                 sb.append(x.getKey());
@@ -1592,9 +1389,8 @@ public class COSDictionary extends COSBase implements COSUpdateInfo
         }
         if (base instanceof COSArray)
         {
-            StringBuilder sb = new StringBuilder();
-            sb.append("COSArray{");
-            for (COSBase x : ((COSArray) base).toList())
+            StringBuilder sb = new StringBuilder("COSArray{");
+            for (COSBase x : (COSArray) base)
             {
                 sb.append(getDictionaryString(x, objs));
                 sb.append(";");

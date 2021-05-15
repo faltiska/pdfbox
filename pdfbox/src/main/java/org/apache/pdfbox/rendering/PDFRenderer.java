@@ -67,6 +67,8 @@ public class PDFRenderer
 
     private static boolean kcmsLogged = false;
 
+    private float imageDownscalingOptimizationThreshold = 0.5f;
+
     /**
      * Creates a new PDFRenderer.
      * @param document the document to render
@@ -171,6 +173,29 @@ public class PDFRenderer
     }
 
     /**
+     *
+     * @return get the image downscaling optimization threshold. See
+     * {@link #getImageDownscalingOptimizationThreshold()} for details.
+     */
+    public float getImageDownscalingOptimizationThreshold()
+    {
+        return imageDownscalingOptimizationThreshold;
+    }
+
+    /**
+     * Set the image downscaling optimization threshold. This must be a value between 0 and 1. When
+     * rendering downscaled images and rendering hints are set to bicubic+quality and the scaling is
+     * smaller than the threshold, a more quality-optimized but slower method will be used. The
+     * default is 0.5 which is a good compromise.
+     *
+     * @param imageDownscalingOptimizationThreshold
+     */
+    public void setImageDownscalingOptimizationThreshold(float imageDownscalingOptimizationThreshold)
+    {
+        this.imageDownscalingOptimizationThreshold = imageDownscalingOptimizationThreshold;
+    }
+
+    /**
      * Returns the given page as an RGB image at 72 DPI
      * @param pageIndex the zero-based index of the page to be converted.
      * @return the rendered page image
@@ -260,8 +285,8 @@ public class PDFRenderer
         // PDFBOX-4518 the maximum size (w*h) of a buffered image is limited to Integer.MAX_VALUE
         if ((long) widthPx * (long) heightPx > Integer.MAX_VALUE)
         {
-            throw new IOException("Maximum size of image exceeded (w * h * scale) = "//
-                    + widthPt + " * " + heightPt + " * " + scale + " > " + Integer.MAX_VALUE);
+            throw new IOException("Maximum size of image exceeded (w * h * scale ^ 2) = "//
+                    + widthPt + " * " + heightPt + " * " + scale + " ^ 2 > " + Integer.MAX_VALUE);
         }
 
         int rotationAngle = page.getRotation();
@@ -306,8 +331,9 @@ public class PDFRenderer
         // the end-user may provide a custom PageDrawer
         RenderingHints actualRenderingHints =
                 renderingHints == null ? createDefaultRenderingHints(g) : renderingHints;
-        PageDrawerParameters parameters = new PageDrawerParameters(this, page, subsamplingAllowed,
-                                                                   destination, actualRenderingHints);
+        PageDrawerParameters parameters =
+                new PageDrawerParameters(this, page, subsamplingAllowed, destination,
+                        actualRenderingHints, imageDownscalingOptimizationThreshold);
         PageDrawer drawer = createPageDrawer(parameters);
         drawer.drawPage(g, page.getCropBox());       
         
@@ -416,8 +442,9 @@ public class PDFRenderer
         // the end-user may provide a custom PageDrawer
         RenderingHints actualRenderingHints =
                 renderingHints == null ? createDefaultRenderingHints(graphics) : renderingHints;
-        PageDrawerParameters parameters = new PageDrawerParameters(this, page, subsamplingAllowed,
-                                                                   destination, actualRenderingHints);
+        PageDrawerParameters parameters =
+                new PageDrawerParameters(this, page, subsamplingAllowed, destination,
+                        actualRenderingHints, imageDownscalingOptimizationThreshold);
         PageDrawer drawer = createPageDrawer(parameters);
         drawer.drawPage(graphics, cropBox);
     }
@@ -440,10 +467,9 @@ public class PDFRenderer
 
         // TODO should we be passing the scale to PageDrawer rather than messing with Graphics?
         int rotationAngle = page.getRotation();
-        PDRectangle cropBox = page.getCropBox();
-
         if (rotationAngle != 0)
         {
+            PDRectangle cropBox = page.getCropBox();
             float translateX = 0;
             float translateY = 0;
             switch (rotationAngle)

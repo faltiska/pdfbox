@@ -16,7 +16,7 @@
  */
 package org.apache.pdfbox.pdmodel;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 
@@ -24,18 +24,18 @@ import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDDocumentOutline;
 import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlineItem;
 
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * @author Andrea Vacondio
  *
  */
-public class TestPDPageTree
+class TestPDPageTree
 {
     private PDDocument doc;
 
-    @After
+    @AfterEach
     public void tearDown() throws IOException
     {
         if (doc != null)
@@ -45,7 +45,7 @@ public class TestPDPageTree
     }
 
     @Test
-    public void indexOfPageFromOutlineDestination() throws IOException
+    void indexOfPageFromOutlineDestination() throws IOException
     {
         doc = Loader.loadPDF(TestPDPageTree.class.getResourceAsStream("with_outline.pdf"));
         PDDocumentOutline outline = doc.getDocumentCatalog().getDocumentOutline();
@@ -59,7 +59,7 @@ public class TestPDPageTree
     }
 
     @Test
-    public void positiveSingleLevel() throws IOException
+    void positiveSingleLevel() throws IOException
     {
         doc = Loader.loadPDF(TestPDPageTree.class.getResourceAsStream("with_outline.pdf"));
         for (int i = 0; i < doc.getNumberOfPages(); i++)
@@ -69,7 +69,7 @@ public class TestPDPageTree
     }
 
     @Test
-    public void positiveMultipleLevel() throws IOException
+    void positiveMultipleLevel() throws IOException
     {
         doc = Loader
                 .loadPDF(TestPDPageTree.class.getResourceAsStream("page_tree_multiple_levels.pdf"));
@@ -80,14 +80,15 @@ public class TestPDPageTree
     }
 
     @Test
-    public void negative() throws IOException
+    void negative() throws IOException
     {
         doc = Loader.loadPDF(TestPDPageTree.class.getResourceAsStream("with_outline.pdf"));
         assertEquals(-1, doc.getPages().indexOf(new PDPage()));
     }
 
     @Test
-    public void testInsertBeforeBlankPage() throws Exception {
+    void testInsertBeforeBlankPage() throws Exception
+    {
         try (PDDocument document = new PDDocument()) {
             PDPage pageOne = new PDPage();
             PDPage pageTwo = new PDPage();
@@ -97,14 +98,16 @@ public class TestPDPageTree
             document.addPage(pageTwo);
             document.getPages().insertBefore(pageThree, pageTwo);
 
-            assertEquals("Page one should be placed at index 0.", 0,(document.getPages().indexOf(pageOne)));
-            assertEquals("Page two should be placed at index 2.", 2,(document.getPages().indexOf(pageTwo)));
-            assertEquals("Page three should be placed at index 1.", 1,(document.getPages().indexOf(pageThree)));
+            assertEquals(0, (document.getPages().indexOf(pageOne)),
+                    "Page one should be placed at index 0.");
+            assertEquals(2,(document.getPages().indexOf(pageTwo)),"Page two should be placed at index 2.");
+            assertEquals(1,(document.getPages().indexOf(pageThree)),"Page three should be placed at index 1.");
         }
     }
 
     @Test
-    public void testInsertAfterBlankPage() throws Exception {
+    void testInsertAfterBlankPage() throws Exception
+    {
         try (PDDocument document = new PDDocument()) {
             PDPage pageOne = new PDPage();
             PDPage pageTwo = new PDPage();
@@ -114,9 +117,12 @@ public class TestPDPageTree
             document.addPage(pageTwo);
             document.getPages().insertAfter(pageThree, pageTwo);
 
-            assertEquals("Page one should be placed at index 0.", 0,(document.getPages().indexOf(pageOne)));
-            assertEquals("Page two should be placed at index 1.", 1,(document.getPages().indexOf(pageTwo)));
-            assertEquals("Page three should be placed at index 2.", 2,(document.getPages().indexOf(pageThree)));
+            assertEquals(0, (document.getPages().indexOf(pageOne)),
+                    "Page one should be placed at index 0.");
+            assertEquals(1, (document.getPages().indexOf(pageTwo)),
+                    "Page two should be placed at index 1.");
+            assertEquals(2, (document.getPages().indexOf(pageThree)),
+                    "Page three should be placed at index 2.");
         }
     }
 }

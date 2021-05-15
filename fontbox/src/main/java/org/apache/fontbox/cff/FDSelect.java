@@ -17,20 +17,8 @@
 
 package org.apache.fontbox.cff;
 
-public abstract class FDSelect
+public interface FDSelect
 {
-    protected final CFFCIDFont owner;
-
-    /**
-     * Constructor.
-     *
-     * @param owner the owner of the FDSelect data.
-     */
-    public FDSelect(CFFCIDFont owner)
-    {
-        this.owner = owner;
-    }
-
     /**
      * Returns the Font DICT index for the given GID.
      * 

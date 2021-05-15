@@ -34,6 +34,7 @@ public class COSObject extends COSBase implements COSUpdateInfo
     private int generationNumber;
     private boolean needToBeUpdated;
     private ICOSParser parser;
+    private boolean isDereferenced = false;
 
     private static final Log LOG = LogFactory.getLog(COSObject.class);
 
@@ -45,7 +46,19 @@ public class COSObject extends COSBase implements COSUpdateInfo
      */
     public COSObject(COSBase object)
     {
-        this(object, null);
+        baseObject = object;
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param object The object that this encapsulates.
+     * @param objectKey The COSObjectKey of the encapsulated object
+     */
+    public COSObject(COSBase object, COSObjectKey objectKey)
+    {
+        this(objectKey, null);
+        baseObject = object;
     }
 
     /**
@@ -73,6 +86,7 @@ public class COSObject extends COSBase implements COSUpdateInfo
         this.parser = parser;
         objectNumber = key.getNumber();
         generationNumber = key.getGeneration();
+        setKey(key);
     }
 
     /**
@@ -92,27 +106,29 @@ public class COSObject extends COSBase implements COSUpdateInfo
      */
     public COSBase getObject()
     {
-        if ((baseObject == null || baseObject instanceof COSNull) && parser != null)
+        if (!isDereferenced && parser != null)
         {
             try
             {
+                // mark as dereferenced to avoid endless recursions
+                isDereferenced = true;
                 baseObject = parser.dereferenceCOSObject(this);
-                if (baseObject != null)
-                {
-                    // remove parser to avoid endless recursions
-                    parser = null;
-                }
             }
             catch (IOException e)
             {
-                // remove parser to avoid endless recursions
-                parser = null;
                 LOG.error("Can't dereference " + this, e);
+            }
+            finally
+            {
+                parser = null;
             }
         }
         return baseObject;
     }
 
+    /**
+     * Sets the referenced object to COSNull and removes the initially assigned parser.
+     */
     public final void setToNull()
     {
         baseObject = COSNull.NULL;
@@ -125,7 +141,7 @@ public class COSObject extends COSBase implements COSUpdateInfo
     @Override
     public String toString()
     {
-        return "COSObject{" + Long.toString(objectNumber) + ", " + Integer.toString(generationNumber) + "}";
+        return "COSObject{" + objectNumber + ", " + generationNumber + "}";
     }
 
     /** 

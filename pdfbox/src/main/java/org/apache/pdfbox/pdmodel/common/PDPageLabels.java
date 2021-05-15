@@ -42,9 +42,9 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 public class PDPageLabels implements COSObjectable
 {
 
-    private Map<Integer, PDPageLabelRange> labels;
+    private final Map<Integer, PDPageLabelRange> labels;
 
-    private PDDocument doc;
+    private final PDDocument doc;
 
     /**
      * Creates an empty page label dictionary for the given document.
@@ -99,23 +99,27 @@ public class PDPageLabels implements COSObjectable
     
     private void findLabels(PDNumberTreeNode node) throws IOException 
     {
+        List<PDNumberTreeNode> kids = node.getKids();
         if (node.getKids() != null) 
         {
-            List<PDNumberTreeNode> kids = node.getKids();
             for (PDNumberTreeNode kid : kids) 
             {
                 findLabels(kid);
             }
         }
-        else if (node.getNumbers() != null)
+        else
         {
-            node.getNumbers().forEach((key, pageLabelRange) ->
+            Map<Integer,COSObjectable> numbers = node.getNumbers();
+            if (numbers != null)
             {
-                if (key >= 0)
+                numbers.forEach((key, pageLabelRange) ->
                 {
-                    labels.put(key, (PDPageLabelRange) pageLabelRange);
-                }
-            });
+                    if (key >= 0)
+                    {
+                        labels.put(key, (PDPageLabelRange) pageLabelRange);
+                    }
+                });
+            }
         }
     }
 

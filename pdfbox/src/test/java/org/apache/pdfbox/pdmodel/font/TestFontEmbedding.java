@@ -17,12 +17,17 @@
 
 package org.apache.pdfbox.pdmodel.font;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
-import junit.framework.TestCase;
+
+import org.apache.fontbox.ttf.OS2WindowsMetricsTable;
+import org.apache.fontbox.ttf.TTFParser;
+import org.apache.fontbox.ttf.TrueTypeFont;
 
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSArray;
@@ -32,8 +37,21 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.PDPageContentStream.AppendMode;
 import org.apache.pdfbox.rendering.TestPDFToImage;
 import org.apache.pdfbox.text.PDFTextStripper;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
+
+import org.mockito.Mockito;
+import static org.mockito.BDDMockito.given;
 
 /**
  * Tests font embedding.
@@ -41,12 +59,13 @@ import org.apache.pdfbox.text.PDFTextStripper;
  * @author John Hewson
  * @author Tilman Hausherr
  */
-public class TestFontEmbedding extends TestCase
+@Execution(ExecutionMode.CONCURRENT)
+class TestFontEmbedding
 {
     private static final File OUT_DIR = new File("target/test-output");
 
-    @Override
-    protected void setUp()
+    @BeforeAll
+    static void setUp()
     {
         OUT_DIR.mkdirs();
     }
@@ -56,7 +75,8 @@ public class TestFontEmbedding extends TestCase
      * 
      * @throws IOException
      */
-    public void testCIDFontType2() throws IOException
+    @Test
+    void testCIDFontType2() throws IOException
     {
         validateCIDFontType2(false);
     }
@@ -66,7 +86,8 @@ public class TestFontEmbedding extends TestCase
      * 
      * @throws IOException
      */
-    public void testCIDFontType2Subset() throws IOException
+    @Test
+    void testCIDFontType2Subset() throws IOException
     {
         validateCIDFontType2(true);
     }
@@ -76,7 +97,8 @@ public class TestFontEmbedding extends TestCase
      *
      * @throws IOException
      */
-    public void testCIDFontType2VerticalSubsetMonospace() throws IOException
+    @Test
+    void testCIDFontType2VerticalSubsetMonospace() throws IOException
     {
         String text = "「ABC」";
         String expectedExtractedtext = "「\nA\nB\nC\n」";
@@ -124,7 +146,8 @@ public class TestFontEmbedding extends TestCase
      *
      * @throws IOException
      */
-    public void testCIDFontType2VerticalSubsetProportional() throws IOException
+    @Test
+    void testCIDFontType2VerticalSubsetProportional() throws IOException
     {
         String text = "「ABC」";
         String expectedExtractedtext = "「\nA\nB\nC\n」";
@@ -175,7 +198,8 @@ public class TestFontEmbedding extends TestCase
         assertEquals(expectedExtractedtext, extracted.replaceAll("\r", "").trim());
     }
 
-    public void testBengali() throws IOException
+    @Test
+    void testBengali() throws IOException
     {
         String BANGLA_TEXT_1 = "আমি কোন পথে ক্ষীরের লক্ষ্মী ষন্ড পুতুল রুপো গঙ্গা ঋষি";
         String BANGLA_TEXT_2 = "দ্রুত গাঢ় শেয়াল অলস কুকুর জুড়ে জাম্প ধুর্ত  হঠাৎ ভাঙেনি মৌলিক ঐশি দৈ";
@@ -227,7 +251,8 @@ public class TestFontEmbedding extends TestCase
      *
      * @throws java.io.IOException
      */
-    public void testMaxEntries() throws IOException
+    @Test
+    void testMaxEntries() throws IOException
     {
         File file;
         String text;
@@ -286,7 +311,7 @@ public class TestFontEmbedding extends TestCase
                 stream.showText(text);
                 stream.endText();
             }
-            file = new File(OUT_DIR, "CIDFontType2.pdf");
+            file = new File(OUT_DIR, "CIDFontType2" + (useSubset ? "-useSubset" : "") + ".pdf");
             document.save(file);
         }
 
@@ -297,8 +322,174 @@ public class TestFontEmbedding extends TestCase
 
     private String getUnicodeText(File file) throws IOException
     {
-        PDDocument document = Loader.loadPDF(file);
-        PDFTextStripper stripper = new PDFTextStripper();
-        return stripper.getText(document);
+        try (PDDocument document = Loader.loadPDF(file))
+        {
+            PDFTextStripper stripper = new PDFTextStripper();
+            return stripper.getText(document);
+        }
+    }
+
+    /**
+     * Test that an embedded and subsetted font can be reused.
+     * 
+     * @throws IOException 
+     */
+    @Test
+    void testReuseEmbeddedSubsettedFont() throws IOException
+    {
+        String text1 = "The quick brown fox";
+        String text2 = "xof nworb kciuq ehT";
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (PDDocument document = new PDDocument())
+        {
+            PDPage page = new PDPage();
+            document.addPage(page);
+            InputStream input = PDFont.class.getResourceAsStream(
+                    "/org/apache/pdfbox/resources/ttf/LiberationSans-Regular.ttf");
+            PDType0Font font = PDType0Font.load(document, input);
+            try (PDPageContentStream stream = new PDPageContentStream(document, page))
+            {
+                stream.beginText();
+                stream.setFont(font, 20);
+                stream.newLineAtOffset(50, 600);
+                stream.showText(text1);
+                stream.endText();
+            }
+            document.save(baos);
+        }
+        // Append, while reusing the font subset
+        try (PDDocument document = Loader.loadPDF(baos.toByteArray()))
+        {
+            PDPage page = document.getPage(0);
+            PDFont font = page.getResources().getFont(COSName.getPDFName("F1"));
+            try (PDPageContentStream stream = new PDPageContentStream(document, page, AppendMode.APPEND, true))
+            {
+                stream.beginText();
+                stream.setFont(font, 20);
+                stream.newLineAtOffset(250, 600);
+                stream.showText(text2);
+                stream.endText();
+            }
+            baos.reset();
+            document.save(baos);
+        }
+        // Test that both texts are there
+        try (PDDocument document = Loader.loadPDF(baos.toByteArray()))
+        {
+            PDFTextStripper stripper = new PDFTextStripper();
+            String extractedText = stripper.getText(document);
+            assertEquals(text1 + " " + text2, extractedText.trim());
+        }
+    }
+
+    private class TrueTypeEmbedderTester extends TrueTypeEmbedder
+    {
+
+        /**
+         * Common functionality for testing the TrueTypeFontEmbedder
+         *
+         */
+        TrueTypeEmbedderTester(PDDocument document, COSDictionary dict, TrueTypeFont ttf, boolean embedSubset)
+                throws IOException
+        {
+            super(document, dict, ttf, embedSubset);
+        }
+
+        @Override
+        protected void buildSubset(InputStream ttfSubset, String tag, Map<Integer, Integer> gidToCid)
+                throws IOException
+        {
+            // no-op.  Need to define method to extend abstract class, but
+            // this method is not currently needed for testing
+        }
+    }
+
+    /**
+     * Test that we validate embedding permissions properly for all legal permissions combinations
+     *
+     * @throws IOException
+     */
+    @Test
+    void testIsEmbeddingPermittedMultipleVersions() throws IOException
+    {
+        // SETUP
+        PDDocument doc = new PDDocument();
+        COSDictionary cosDictionary = new COSDictionary();
+        InputStream input = PDFont.class.getResourceAsStream("/org/apache/pdfbox/resources/ttf/LiberationSans-Regular.ttf");
+        TrueTypeFont ttf = new TTFParser().parseEmbedded(input);
+        TrueTypeEmbedderTester tester = new TrueTypeEmbedderTester(doc, cosDictionary, ttf, true);
+        TrueTypeFont mockTtf = Mockito.mock(TrueTypeFont.class);
+        OS2WindowsMetricsTable mockOS2 = Mockito.mock(OS2WindowsMetricsTable.class);
+        given(mockTtf.getOS2Windows()).willReturn(mockOS2);
+        Boolean embeddingIsPermitted;
+
+        // TEST 1: 0000 -- Installable embedding versions 0-3+
+        given(mockTtf.getOS2Windows().getFsType()).willReturn((short) 0x0000);
+        embeddingIsPermitted = tester.isEmbeddingPermitted(mockTtf);
+
+        // VERIFY
+        assertTrue(embeddingIsPermitted);
+
+        // no test for 0001, since bit 0 is permanently reserved, and its use is deprecated
+        // TEST 2: 0010 -- Restricted License embedding versions 0-3+
+        given(mockTtf.getOS2Windows().getFsType()).willReturn((short) 0x0002);
+        embeddingIsPermitted = tester.isEmbeddingPermitted(mockTtf);
+
+        // VERIFY
+        assertFalse(embeddingIsPermitted);
+
+        // no test for 0011
+        // TEST 3: 0100 -- Preview & Print embedding versions 0-3+
+        given(mockTtf.getOS2Windows().getFsType()).willReturn((short) 0x0004);
+        embeddingIsPermitted = tester.isEmbeddingPermitted(mockTtf);
+
+        // VERIFY
+        assertTrue(embeddingIsPermitted);
+
+        // no test for 0101
+        // TEST 4: 0110 -- Restricted License embedding AND Preview & Print embedding versions 0-2
+        //              -- illegal permissions combination for versions 3+
+        given(mockTtf.getOS2Windows().getFsType()).willReturn((short) 0x0006);
+        embeddingIsPermitted = tester.isEmbeddingPermitted(mockTtf);
+
+        // VERIFY
+        assertTrue(embeddingIsPermitted);
+
+        // no test for 0111
+        // TEST 5: 1000 -- Editable embedding versions 0-3+
+        given(mockTtf.getOS2Windows().getFsType()).willReturn((short) 0x0008);
+        embeddingIsPermitted = tester.isEmbeddingPermitted(mockTtf);
+
+        // VERIFY
+        assertTrue(embeddingIsPermitted);
+
+        // no test for 1001
+        // TEST 6: 1010 -- Restricted License embedding AND Editable embedding versions 0-2
+        //              -- illegal permissions combination for versions 3+
+        given(mockTtf.getOS2Windows().getFsType()).willReturn((short) 0x000A);
+        embeddingIsPermitted = tester.isEmbeddingPermitted(mockTtf);
+
+        // VERIFY
+        assertTrue(embeddingIsPermitted);
+
+        // no test for 1011
+        // TEST 7: 1100 -- Editable embedding AND Preview & Print embedding versions 0-2
+        //              -- illegal permissions combination for versions 3+
+        given(mockTtf.getOS2Windows().getFsType()).willReturn((short) 0x000C);
+        embeddingIsPermitted = tester.isEmbeddingPermitted(mockTtf);
+
+        // VERIFY
+        assertTrue(embeddingIsPermitted);
+
+        // no test for 1101
+        // TEST 8: 1110 Editable embedding AND Preview & Print embedding AND Restricted License embedding versions 0-2
+        //              -- illegal permissions combination for versions 3+
+        given(mockTtf.getOS2Windows().getFsType()).willReturn((short) 0x000E);
+        embeddingIsPermitted = tester.isEmbeddingPermitted(mockTtf);
+
+        // VERIFY
+        assertTrue(embeddingIsPermitted);
+
+        // no test for 1111
     }
 }

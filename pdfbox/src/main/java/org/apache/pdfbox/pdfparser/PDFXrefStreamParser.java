@@ -18,9 +18,9 @@ package org.apache.pdfbox.pdfparser;
 
 import java.io.IOException;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
-import java.util.List;
+import java.util.NoSuchElementException;
 
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSBase;
@@ -28,7 +28,6 @@ import org.apache.pdfbox.cos.COSDocument;
 import org.apache.pdfbox.cos.COSInteger;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.cos.COSStream;
-import org.apache.pdfbox.io.InputStreamRandomAccessRead;
 import org.apache.pdfbox.cos.COSObjectKey;
 
 /**
@@ -40,7 +39,7 @@ import org.apache.pdfbox.cos.COSObjectKey;
 public class PDFXrefStreamParser extends BaseParser
 {
     private final int[] w = new int[3];
-    private final List<Long> objNums = new ArrayList<>();
+    private ObjectNumbers objectNumbers = null;
 
     /**
      * Constructor.
@@ -53,7 +52,7 @@ public class PDFXrefStreamParser extends BaseParser
     public PDFXrefStreamParser(COSStream stream, COSDocument document)
             throws IOException
     {
-        super(new InputStreamRandomAccessRead(stream.createInputStream()));
+        super(stream.createView());
         this.document = document;
         try
         {
@@ -72,9 +71,18 @@ public class PDFXrefStreamParser extends BaseParser
         {
             throw new IOException("/W array is missing in Xref stream");
         }
+        if (wArray.size() != 3)
+        {
+            throw new IOException(
+                    "Wrong number of values for /W array in XRef: " + Arrays.toString(w));
+        }
         for (int i = 0; i < 3; i++)
         {
             w[i] = wArray.getInt(i, 0);
+        }
+        if (w[0] < 0 || w[1] < 0 || w[2] < 0)
+        {
+            throw new IOException("Incorrect /W array in XRef: " + Arrays.toString(w));
         }
 
         COSArray indexArray = stream.getCOSArray(COSName.INDEX);
@@ -85,34 +93,13 @@ public class PDFXrefStreamParser extends BaseParser
             indexArray.add(COSInteger.ZERO);
             indexArray.add(COSInteger.get(stream.getInt(COSName.SIZE, 0)));
         }
-
-        /*
-         * Populates objNums with all object numbers available
-         */
-        Iterator<COSBase> indexIter = indexArray.iterator();
-        while (indexIter.hasNext())
+        if (indexArray.size() % 2 == 1)
         {
-            COSBase base = indexIter.next();
-            if (!(base instanceof COSInteger))
-            {
-                throw new IOException("Xref stream must have integer in /Index array");
-            }
-            long objID = ((COSInteger) base).longValue();
-            if (!indexIter.hasNext())
-            {
-                break;
-            }
-            base = indexIter.next();
-            if (!(base instanceof COSInteger))
-            {
-                throw new IOException("Xref stream must have integer in /Index array");
-            }
-            int size = ((COSInteger) base).intValue();
-            for (int i = 0; i < size; i++)
-            {
-                objNums.add(objID + i);
-            }
+            throw new IOException(
+                    "Wrong number of values for /Index array in XRef: " + Arrays.toString(w));
         }
+        // create an Iterator for all object numbers using the index array
+        objectNumbers = new ObjectNumbers(indexArray);
     }
 
     private void close() throws IOException
@@ -122,7 +109,7 @@ public class PDFXrefStreamParser extends BaseParser
             source.close();
         }
         document = null;
-        objNums.clear();
+        objectNumbers = null;
     }
 
     /**
@@ -134,14 +121,11 @@ public class PDFXrefStreamParser extends BaseParser
     public void parse(XrefTrailerResolver resolver) throws IOException
     {
         byte[] currLine = new byte[w[0] + w[1] + w[2]];
-        Iterator<Long> objIter = objNums.iterator();
-        while (!isEOF() && objIter.hasNext())
+        while (!isEOF() && objectNumbers.hasNext())
         {
             source.read(currLine);
-
             // get the current objID
-            Long objID = objIter.next();
-
+            long objID = objectNumbers.next();
             // default value is 1 if w[0] == 0, otherwise parse first field
             int type = w[0] == 0 ? 1 : (int) parseValue(currLine, 0, w[0]);
             // Skip free objects (type 0) and invalid types
@@ -177,6 +161,70 @@ public class PDFXrefStreamParser extends BaseParser
             value += ((long) data[i + start] & 0x00ff) << ((length - i - 1) * 8);
         }
         return value;
+    }
+
+    private static class ObjectNumbers implements Iterator<Long>
+    {
+        private final long[] start;
+        private final long[] end;
+        private int currentRange = 0;
+        private long currentEnd = 0;
+        private long currentNumber = 0;
+        private long maxValue = 0;
+
+        private ObjectNumbers(COSArray indexArray) throws IOException
+        {
+            start = new long[indexArray.size() / 2];
+            end = new long[start.length];
+            int counter = 0;
+            Iterator<COSBase> indexIter = indexArray.iterator();
+            while (indexIter.hasNext())
+            {
+                COSBase base = indexIter.next();
+                if (!(base instanceof COSInteger))
+                {
+                    throw new IOException("Xref stream must have integer in /Index array");
+                }
+                long startValue = ((COSInteger) base).longValue();
+                if (!indexIter.hasNext())
+                {
+                    break;
+                }
+                base = indexIter.next();
+                if (!(base instanceof COSInteger))
+                {
+                    throw new IOException("Xref stream must have integer in /Index array");
+                }
+                long sizeValue = ((COSInteger) base).longValue();
+                start[counter] = startValue;
+                end[counter++] = startValue + sizeValue;
+            }
+            currentNumber = start[0];
+            currentEnd = end[0];
+            maxValue = end[counter - 1];
+        }
+
+        @Override
+        public boolean hasNext()
+        {
+            return currentNumber < maxValue;
+        }
+
+        @Override
+        public Long next()
+        {
+            if (currentNumber >= maxValue)
+            {
+                throw new NoSuchElementException();
+            }
+            if (currentNumber < currentEnd)
+            {
+                return currentNumber++;
+            }
+            currentNumber = start[++currentRange];
+            currentEnd = end[currentRange];
+            return currentNumber++;
+        }
     }
 
 }

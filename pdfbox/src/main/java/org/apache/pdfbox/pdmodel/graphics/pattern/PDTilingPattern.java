@@ -20,10 +20,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import org.apache.pdfbox.contentstream.PDContentStream;
 import org.apache.pdfbox.cos.COSArray;
-import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.cos.COSStream;
+import org.apache.pdfbox.io.RandomAccessRead;
 import org.apache.pdfbox.pdmodel.PDResources;
 import org.apache.pdfbox.pdmodel.ResourceCache;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
@@ -181,6 +181,17 @@ public class PDTilingPattern extends PDAbstractPattern implements PDContentStrea
         return null;
     }
 
+    @Override
+    public RandomAccessRead getContentsForRandomAccess() throws IOException
+    {
+        COSDictionary dict = getCOSObject();
+        if (dict instanceof COSStream)
+        {
+            return ((COSStream) getCOSObject()).createView();
+        }
+        return null;
+    }
+
     /**
      * This will get the resources for this pattern.
      * This will return null if no resources are available at this level.
@@ -189,13 +200,8 @@ public class PDTilingPattern extends PDAbstractPattern implements PDContentStrea
     @Override
     public PDResources getResources()
     {
-        PDResources retval = null;
-        COSBase base = getCOSObject().getDictionaryObject(COSName.RESOURCES);
-        if (base instanceof COSDictionary)
-        {
-            retval = new PDResources((COSDictionary) base, resourceCache);
-        }
-        return retval;
+        COSDictionary resources = getCOSObject().getCOSDictionary(COSName.RESOURCES);
+        return resources != null ? new PDResources(resources, resourceCache) : null;
     }
 
     /**
@@ -217,13 +223,8 @@ public class PDTilingPattern extends PDAbstractPattern implements PDContentStrea
     @Override
     public PDRectangle getBBox()
     {
-        PDRectangle retval = null;
-        COSBase base = getCOSObject().getDictionaryObject(COSName.BBOX);
-        if (base instanceof COSArray)
-        {
-            retval = new PDRectangle((COSArray) base);
-        }
-        return retval;
+        COSArray bbox = getCOSObject().getCOSArray(COSName.BBOX);
+        return bbox != null ? new PDRectangle(bbox) : null;
     }
 
     /**

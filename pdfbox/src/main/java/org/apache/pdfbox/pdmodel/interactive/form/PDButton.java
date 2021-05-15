@@ -21,10 +21,8 @@ import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.cos.COSString;
-import org.apache.pdfbox.pdmodel.common.COSArrayList;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -63,7 +61,7 @@ public abstract class PDButton extends PDTerminalField
      *
      * @param acroForm The acroform.
      */
-    public PDButton(PDAcroForm acroForm)
+    PDButton(PDAcroForm acroForm)
     {
         super(acroForm);
         getCOSObject().setItem(COSName.FT, COSName.BTN);
@@ -92,16 +90,6 @@ public abstract class PDButton extends PDTerminalField
     }
 
     /**
-     * Set the push button bit.
-     *
-     * @param pushbutton if true the button field is treated as a push button field.
-     */
-    public void setPushButton(boolean pushbutton)
-    {
-        getCOSObject().setFlag(COSName.FF, FLAG_PUSHBUTTON, pushbutton);
-    }
-
-    /**
      * Determines if radio button bit is set.
      * 
      * @return true if type of button field is a radio button.
@@ -109,16 +97,6 @@ public abstract class PDButton extends PDTerminalField
     public boolean isRadioButton()
     {
         return getCOSObject().getFlag(COSName.FF, FLAG_RADIO);
-    }
-
-    /**
-     * Set the radio button bit.
-     *
-     * @param radiobutton if true the button field is treated as a radio button field.
-     */
-    public void setRadioButton(boolean radiobutton)
-    {
-        getCOSObject().setFlag(COSName.FF, FLAG_RADIO, radiobutton);
     }
     
     /**
@@ -134,7 +112,24 @@ public abstract class PDButton extends PDTerminalField
         COSBase value = getInheritableAttribute(COSName.V);
         if (value instanceof COSName)
         {
-            return ((COSName)value).getName();
+            String stringValue = ((COSName)value).getName();
+            List<String> exportValues = getExportValues();
+            if (!exportValues.isEmpty())
+            {
+                try
+                {
+                    int idx = Integer.parseInt(stringValue, 10);
+                    if (idx >= 0 && idx < exportValues.size())
+                    {
+                        return exportValues.get(idx);
+                    }
+                }
+                catch (NumberFormatException nfe)
+                {
+                    return stringValue;
+                }
+            }
+            return stringValue;
         }
         else
         {
@@ -158,9 +153,7 @@ public abstract class PDButton extends PDTerminalField
         
         // if there are export values/an Opt entry there is a different 
         // approach to setting the value
-        boolean hasExportValues = getExportValues().size() > 0;
-
-        if (hasExportValues) {
+        if (!getExportValues().isEmpty()) {
             updateByOption(value);
         }
         else
@@ -168,6 +161,30 @@ public abstract class PDButton extends PDTerminalField
             updateByValue(value);
         }
         
+        applyChange();
+    }
+
+    /**
+     * Set the selected option given its index, and try to update the visual appearance.
+     * 
+     * NOTE: this method is only usable if there are export values and used for 
+     * radio buttons with FLAG_RADIOS_IN_UNISON not set.
+     * 
+     * @param index index of option to be selected
+     * @throws IOException if the value could not be set
+     * @throws IllegalArgumentException if the index provided is not a valid index.
+     */
+    public void setValue(int index) throws IOException
+    {
+        if (getExportValues().isEmpty() || index < 0 || index >= getExportValues().size())
+        {
+            throw new IllegalArgumentException("index '" + index
+                    + "' is not a valid index for the field " + getFullyQualifiedName()
+                    + ", valid indices are from 0 to " + (getExportValues().size() - 1));
+        }
+
+        updateByValue(String.valueOf(index));
+                
         applyChange();
     }
     
@@ -234,13 +251,11 @@ public abstract class PDButton extends PDTerminalField
         
         if (value instanceof COSString)
         {
-            List<String> array = new ArrayList<>();
-            array.add(((COSString) value).getString());
-            return array;
+            return Collections.singletonList(((COSString) value).getString());
         }
         else if (value instanceof COSArray)
         {
-            return COSArrayList.convertCOSStringCOSArrayToList((COSArray)value);
+            return ((COSArray) value).toCOSStringStringList();
         }
         return Collections.emptyList();
     }
@@ -256,7 +271,7 @@ public abstract class PDButton extends PDTerminalField
         COSArray cosValues;
         if (values != null && !values.isEmpty())
         {
-            cosValues = COSArrayList.convertStringListToCOSStringCOSArray(values);
+            cosValues = COSArray.ofCOSStrings(values);
             getCOSObject().setItem(COSName.OPT, cosValues);
         }
         else
@@ -269,7 +284,7 @@ public abstract class PDButton extends PDTerminalField
     void constructAppearances() throws IOException
     {
         List<String> exportValues = getExportValues();
-        if (exportValues.size() > 0)
+        if (!exportValues.isEmpty())
         {
             // the value is the index value of the option. So we need to get that
             // and use it to set the value
@@ -307,7 +322,7 @@ public abstract class PDButton extends PDTerminalField
         // we need a set as the field can appear multiple times
         Set<String> onValues = new LinkedHashSet<>();
         
-        if (getExportValues().size() > 0)
+        if (!getExportValues().isEmpty())
         {
             onValues.addAll(getExportValues());
             return onValues;

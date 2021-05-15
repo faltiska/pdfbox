@@ -24,9 +24,9 @@ package org.apache.pdfbox.preflight.action.pdfa1b;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.preflight.PreflightConstants;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class TestHideAction extends AbstractTestAction
+class TestHideAction extends AbstractTestAction
 {
 
     protected COSDictionary createHideAction()
@@ -40,14 +40,14 @@ public class TestHideAction extends AbstractTestAction
     }
 
     @Test
-    public void testHideAction() throws Exception
+    void testHideAction() throws Exception
     {
         COSDictionary action = createHideAction();
         valid(action, true);
     }
 
     @Test
-    public void testHideAction_InvalideH() throws Exception
+    void testHideAction_InvalideH() throws Exception
     {
         COSDictionary action = createHideAction();
         action.setBoolean(COSName.H, true);
@@ -55,7 +55,7 @@ public class TestHideAction extends AbstractTestAction
     }
 
     @Test
-    public void testHideAction_InvalideT() throws Exception
+    void testHideAction_InvalideT() throws Exception
     {
         COSDictionary action = createHideAction();
         action.setBoolean(COSName.T, true);
@@ -63,7 +63,7 @@ public class TestHideAction extends AbstractTestAction
     }
 
     @Test
-    public void testHideAction_MissingT() throws Exception
+    void testHideAction_MissingT() throws Exception
     {
         COSDictionary action = createHideAction();
         action.removeItem(COSName.T);

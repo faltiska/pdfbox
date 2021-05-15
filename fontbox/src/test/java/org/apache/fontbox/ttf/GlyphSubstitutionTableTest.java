@@ -16,9 +16,9 @@
  */
 package org.apache.fontbox.ttf;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -35,9 +35,9 @@ import org.apache.fontbox.ttf.model.GsubData;
 import org.apache.fontbox.ttf.model.Language;
 import org.apache.fontbox.ttf.model.MapBackedScriptFeature;
 import org.apache.fontbox.ttf.model.ScriptFeature;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class GlyphSubstitutionTableTest
+class GlyphSubstitutionTableTest
 {
 
     static final int DATA_POSITION_FOR_GSUB_TABLE = 120544;
@@ -46,7 +46,7 @@ public class GlyphSubstitutionTableTest
             "blwf", "blws", "half", "haln", "init", "nukt", "pres", "pstf", "rphf", "vatu");
 
     @Test
-    public void testGetGsubData() throws IOException
+    void testGetGsubData() throws IOException
     {
         // given
         MemoryTTFDataStream memoryTTFDataStream = new MemoryTTFDataStream(
@@ -87,7 +87,7 @@ public class GlyphSubstitutionTableTest
         Map<List<Integer>, Integer> gsubData = new HashMap<>();
 
         try (BufferedReader br = new BufferedReader(
-                new InputStreamReader(TestTTFParser.class.getResourceAsStream(pathToResource)));)
+             new InputStreamReader(TestTTFParser.class.getResourceAsStream(pathToResource))))
         {
             while (true)
             {
@@ -121,12 +121,9 @@ public class GlyphSubstitutionTableTest
                 }
 
                 Integer newGlyphId = Integer.valueOf(lineSplittedByKeyValue[1]);
-
                 gsubData.put(oldGlyphIds, newGlyphId);
-
             }
         }
-
         return gsubData;
     }
 

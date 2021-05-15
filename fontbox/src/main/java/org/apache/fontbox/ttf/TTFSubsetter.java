@@ -272,7 +272,7 @@ public final class TTFSubsetter
     {
         return nr.getPlatformId() == NameRecord.PLATFORM_WINDOWS
                 && nr.getPlatformEncodingId() == NameRecord.ENCODING_WINDOWS_UNICODE_BMP
-                && nr.getLanguageId() == NameRecord.LANGUGAE_WINDOWS_EN_US
+                && nr.getLanguageId() == NameRecord.LANGUAGE_WINDOWS_EN_US
                 && nr.getNameId() >= 0 && nr.getNameId() < 7;
     }
 
@@ -732,8 +732,8 @@ public final class TTFSubsetter
 
         // +1 because .notdef is missing in uniToGID
         int[] startCode = new int[uniToGID.size()+1];
-        int[] endCode = new int[uniToGID.size()+1];
-        int[] idDelta = new int[uniToGID.size()+1];
+        int[] endCode = new int[startCode.length];
+        int[] idDelta = new int[startCode.length];
         int segCount = 0;
         while(it.hasNext())
         {

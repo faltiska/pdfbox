@@ -72,8 +72,6 @@ public class COSDocument extends COSBase implements Closeable
      */
     private COSDictionary trailer;
     
-    private boolean warnMissingClose = true;
-    
     /** 
      * Signal that document is already decrypted. 
      */
@@ -92,7 +90,7 @@ public class COSDocument extends COSBase implements Closeable
      */
     private long highestXRefObjectNumber;
 
-    private ICOSParser parser;
+    private final ICOSParser parser;
 
     /**
      * Constructor. Uses main memory to buffer PDF streams.
@@ -109,20 +107,39 @@ public class COSDocument extends COSBase implements Closeable
      */
     public COSDocument(ICOSParser parser)
     {
-        this(ScratchFile.getMainMemoryOnlyInstance(), parser);
+        this(MemoryUsageSetting.setupMainMemoryOnly(), parser);
     }
 
     /**
-     * Constructor that will use the provide memory settings for storage of the PDF streams.
+     * Constructor that will use the provided memory settings for storage of the PDF streams.
      *
      * @param memUsageSetting defines how memory is used for buffering PDF streams
      * 
      */
     public COSDocument(MemoryUsageSetting memUsageSetting)
     {
+        this(memUsageSetting, null);
+    }
+
+    /**
+     * Constructor that will use the provided memory settings for storage of the PDF streams.
+     *
+     * @param memUsageSetting defines how memory is used for buffering PDF streams
+     * @param parser Parser to be used to parse the document on demand
+     * 
+     */
+    public COSDocument(MemoryUsageSetting memUsageSetting, ICOSParser parser)
+    {
         try
         {
-            scratchFile = new ScratchFile(memUsageSetting);
+            if (memUsageSetting != null)
+            {
+                scratchFile = new ScratchFile(memUsageSetting);
+            }
+            else
+            {
+                scratchFile = ScratchFile.getMainMemoryOnlyInstance();
+            }
         }
         catch (IOException ioe)
         {
@@ -131,19 +148,6 @@ public class COSDocument extends COSBase implements Closeable
 
             scratchFile = ScratchFile.getMainMemoryOnlyInstance();
         }
-    }
-
-    /**
-     * Constructor that will use the provide memory handler for storage of the PDF streams.
-     *
-     * @param scratchFile memory handler for buffering of PDF streams
-     * @param parser Parser to be used to parse the document on demand
-     * 
-     */
-    public COSDocument(ScratchFile scratchFile, ICOSParser parser)
-    {
-        this.scratchFile = scratchFile != null ? scratchFile
-                : ScratchFile.getMainMemoryOnlyInstance();
         this.parser = parser;
     }
 
@@ -227,7 +231,7 @@ public class COSDocument extends COSBase implements Closeable
      * This will get all dictionaries objects by type.
      *
      * @param type1 The first possible type of the object, mandatory.
-     * @param type2 The second possible type of the object, usally an abreviation, optional.
+     * @param type2 The second possible type of the object, usually an abbreviation, optional.
      *
      * @return This will return all objects with the specified type(s).
      */
@@ -295,12 +299,7 @@ public class COSDocument extends COSBase implements Closeable
      */
     public boolean isEncrypted()
     {
-        boolean encrypted = false;
-        if (trailer != null)
-        {
-            encrypted = trailer.getDictionaryObject(COSName.ENCRYPT) instanceof COSDictionary;
-        }
-        return encrypted;
+        return trailer != null && trailer.getCOSDictionary(COSName.ENCRYPT) != null;
     }
 
     /**
@@ -459,37 +458,6 @@ public class COSDocument extends COSBase implements Closeable
     public boolean isClosed()
     {
         return closed;
-    }
-
-    /**
-     * Warn the user in the finalizer if he didn't close the PDF document. The method also
-     * closes the document just in case, to avoid abandoned temporary files. It's still a good
-     * idea for the user to close the PDF document at the earliest possible to conserve resources.
-     * @throws IOException if an error occurs while closing the temporary files
-     */
-    @Override
-    protected void finalize() throws IOException
-    {
-        if (!closed) 
-        {
-            if (warnMissingClose) 
-            {
-                LOG.warn( "Warning: You did not close a PDF Document" );
-            }
-            close();
-        }
-    }
-
-    /**
-     * Controls whether this instance shall issue a warning if the PDF document wasn't closed
-     * properly through a call to the {@link #close()} method. If the PDF document is held in
-     * a cache governed by soft references it is impossible to reliably close the document
-     * before the warning is raised. By default, the warning is enabled.
-     * @param warn true enables the warning, false disables it.
-     */
-    public void setWarnMissingClose(boolean warn)
-    {
-        this.warnMissingClose = warn;
     }
 
     /**

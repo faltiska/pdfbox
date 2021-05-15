@@ -21,6 +21,10 @@
 
 package org.apache.xmpbox.parser;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.util.List;
@@ -35,19 +39,17 @@ import org.apache.xmpbox.type.ThumbnailType;
 import org.apache.xmpbox.xml.DomXmpParser;
 import org.apache.xmpbox.xml.XmpParsingException;
 import org.apache.xmpbox.xml.XmpParsingException.ErrorType;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.apache.xmpbox.xml.XmpSerializer;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
 
-public class DeserializationTest
-{
+class DeserializationTest {
 
     protected ByteArrayOutputStream bos;
 
     protected XmpSerializer serializer;
 
-    @Before
+    @BeforeEach
     public void init() throws Exception
     {
         bos = new ByteArrayOutputStream();
@@ -55,7 +57,7 @@ public class DeserializationTest
     }
 
     @Test
-    public void testStructuredRecursive() throws Exception
+    void testStructuredRecursive() throws Exception
     {
         InputStream fis = DomXmpParser.class.getResourceAsStream("/org/apache/xmpbox/parser/structured_recursive.xml");
 
@@ -66,7 +68,7 @@ public class DeserializationTest
     }
 
     @Test
-    public void testEmptyLi() throws Exception
+    void testEmptyLi() throws Exception
     {
         InputStream fis = DomXmpParser.class.getResourceAsStream("/org/apache/xmpbox/parser/empty_list.xml");
 
@@ -77,7 +79,7 @@ public class DeserializationTest
     }
 
     @Test
-    public void testEmptyLi2() throws Exception
+    void testEmptyLi2() throws Exception
     {
         InputStream fis = DomXmpParser.class.getResourceAsStream("/validxmp/emptyli.xml");
 
@@ -89,7 +91,7 @@ public class DeserializationTest
     }
 
     @Test
-    public void testGetTitle() throws Exception
+    void testGetTitle() throws Exception
     {
         InputStream fis = DomXmpParser.class.getResourceAsStream("/validxmp/emptyli.xml");
 
@@ -98,11 +100,11 @@ public class DeserializationTest
         XMPMetadata meta = xdb.parse(fis);
         DublinCoreSchema dc = meta.getDublinCoreSchema();
         String s = dc.getTitle(null);
-        Assert.assertEquals("title value", s);
+        assertEquals("title value", s);
     }
 
     @Test
-    public void testAltBagSeq() throws Exception
+    void testAltBagSeq() throws Exception
     {
         InputStream fis = DomXmpParser.class.getResourceAsStream("/org/apache/xmpbox/parser/AltBagSeqTest.xml");
 
@@ -114,7 +116,7 @@ public class DeserializationTest
     }
 
     @Test
-    public void testIsartorStyleWithThumbs() throws Exception
+    void testIsartorStyleWithThumbs() throws Exception
     {
 
         InputStream fis = DomXmpParser.class.getResourceAsStream("/org/apache/xmpbox/parser/ThumbisartorStyle.xml");
@@ -124,40 +126,40 @@ public class DeserializationTest
         XMPMetadata metadata = xdb.parse(fis);
 
         // <xmpMM:DocumentID>
-        Assert.assertEquals("uuid:09C78666-2F91-3A9C-92AF-3691A6D594F7", metadata.getXMPMediaManagementSchema()
+        assertEquals("uuid:09C78666-2F91-3A9C-92AF-3691A6D594F7", metadata.getXMPMediaManagementSchema()
                 .getDocumentID());
 
         // <xmp:CreateDate>
         // <xmp:ModifyDate>
         // <xmp:MetadataDate>
-        Assert.assertEquals(DateConverter.toCalendar("2008-01-18T16:59:54+01:00"), metadata.getXMPBasicSchema()
+        assertEquals(DateConverter.toCalendar("2008-01-18T16:59:54+01:00"), metadata.getXMPBasicSchema()
                 .getCreateDate());
-        Assert.assertEquals(DateConverter.toCalendar("2008-01-18T16:59:54+01:00"), metadata.getXMPBasicSchema()
+        assertEquals(DateConverter.toCalendar("2008-01-18T16:59:54+01:00"), metadata.getXMPBasicSchema()
                 .getModifyDate());
-        Assert.assertEquals(DateConverter.toCalendar("2008-01-18T16:59:54+01:00"), metadata.getXMPBasicSchema()
+        assertEquals(DateConverter.toCalendar("2008-01-18T16:59:54+01:00"), metadata.getXMPBasicSchema()
                 .getMetadataDate());
 
         // THUMBNAILS TEST
         List<ThumbnailType> thumbs = metadata.getXMPBasicSchema().getThumbnailsProperty();
-        Assert.assertNotNull(thumbs);
-        Assert.assertEquals(2, thumbs.size());
+        assertNotNull(thumbs);
+        assertEquals(2, thumbs.size());
 
         ThumbnailType thumb = thumbs.get(0);
-        Assert.assertEquals(Integer.valueOf(162), thumb.getHeight());
-        Assert.assertEquals(Integer.valueOf(216), thumb.getWidth());
-        Assert.assertEquals("JPEG", thumb.getFormat());
-        Assert.assertEquals("/9j/4AAQSkZJRgABAgEASABIAAD", thumb.getImage());
+        assertEquals(Integer.valueOf(162), thumb.getHeight());
+        assertEquals(Integer.valueOf(216), thumb.getWidth());
+        assertEquals("JPEG", thumb.getFormat());
+        assertEquals("/9j/4AAQSkZJRgABAgEASABIAAD", thumb.getImage());
 
         thumb = thumbs.get(1);
-        Assert.assertEquals(Integer.valueOf(162), thumb.getHeight());
-        Assert.assertEquals(Integer.valueOf(216), thumb.getWidth());
-        Assert.assertEquals("JPEG", thumb.getFormat());
-        Assert.assertEquals("/9j/4AAQSkZJRgABAgEASABIAAD", thumb.getImage());
+        assertEquals(Integer.valueOf(162), thumb.getHeight());
+        assertEquals(Integer.valueOf(216), thumb.getWidth());
+        assertEquals("JPEG", thumb.getFormat());
+        assertEquals("/9j/4AAQSkZJRgABAgEASABIAAD", thumb.getImage());
 
     }
 
     @Test
-    public void testWithNoXPacketStart() throws Exception
+    void testWithNoXPacketStart() throws Exception
     {
         InputStream fis = DomXmpParser.class.getResourceAsStream("/invalidxmp/noxpacket.xml");
 
@@ -165,16 +167,16 @@ public class DeserializationTest
         try
         {
             xdb.parse(fis);
-            Assert.fail("Should fail during parse");
+            fail("Should fail during parse");
         }
         catch (XmpParsingException e)
         {
-            Assert.assertEquals(ErrorType.XpacketBadStart, e.getErrorType());
+            assertEquals(ErrorType.XpacketBadStart, e.getErrorType());
         }
     }
 
     @Test
-    public void testWithNoXPacketEnd() throws Exception
+    void testWithNoXPacketEnd() throws Exception
     {
         InputStream fis = DomXmpParser.class.getResourceAsStream("/invalidxmp/noxpacketend.xml");
 
@@ -182,16 +184,16 @@ public class DeserializationTest
         try
         {
             xdb.parse(fis);
-            Assert.fail("Should fail during parse");
+            fail("Should fail during parse");
         }
         catch (XmpParsingException e)
         {
-            Assert.assertEquals(ErrorType.XpacketBadEnd, e.getErrorType());
+            assertEquals(ErrorType.XpacketBadEnd, e.getErrorType());
         }
     }
 
     @Test
-    public void testWithNoRDFElement() throws Exception
+    void testWithNoRDFElement() throws Exception
     {
         InputStream fis = DomXmpParser.class.getResourceAsStream("/invalidxmp/noroot.xml");
 
@@ -199,16 +201,16 @@ public class DeserializationTest
         try
         {
             xdb.parse(fis);
-            Assert.fail("Should fail during parse");
+            fail("Should fail during parse");
         }
         catch (XmpParsingException e)
         {
-            Assert.assertEquals(ErrorType.Format, e.getErrorType());
+            assertEquals(ErrorType.Format, e.getErrorType());
         }
     }
 
     @Test
-    public void testWithTwoRDFElement() throws Exception
+    void testWithTwoRDFElement() throws Exception
     {
         InputStream fis = DomXmpParser.class.getResourceAsStream("/invalidxmp/tworoot.xml");
 
@@ -216,16 +218,16 @@ public class DeserializationTest
         try
         {
             xdb.parse(fis);
-            Assert.fail("Should fail during parse");
+            fail("Should fail during parse");
         }
         catch (XmpParsingException e)
         {
-            Assert.assertEquals(ErrorType.Format, e.getErrorType());
+            assertEquals(ErrorType.Format, e.getErrorType());
         }
     }
 
     @Test
-    public void testWithInvalidRDFElementPrefix() throws Exception
+    void testWithInvalidRDFElementPrefix() throws Exception
     {
         InputStream fis = DomXmpParser.class.getResourceAsStream("/invalidxmp/invalidroot2.xml");
 
@@ -233,16 +235,16 @@ public class DeserializationTest
         try
         {
             xdb.parse(fis);
-            Assert.fail("Should fail during parse");
+            fail("Should fail during parse");
         }
         catch (XmpParsingException e)
         {
-            Assert.assertEquals(ErrorType.Format, e.getErrorType());
+            assertEquals(ErrorType.Format, e.getErrorType());
         }
     }
 
     @Test
-    public void testWithRDFRootAsText() throws Exception
+    void testWithRDFRootAsText() throws Exception
     {
         InputStream fis = DomXmpParser.class.getResourceAsStream("/invalidxmp/invalidroot.xml");
 
@@ -250,16 +252,16 @@ public class DeserializationTest
         try
         {
             xdb.parse(fis);
-            Assert.fail("Should fail during parse");
+            fail("Should fail during parse");
         }
         catch (XmpParsingException e)
         {
-            Assert.assertEquals(ErrorType.Format, e.getErrorType());
+            assertEquals(ErrorType.Format, e.getErrorType());
         }
     }
 
     @Test
-    public void testUndefinedSchema() throws Exception
+    void testUndefinedSchema() throws Exception
     {
         InputStream fis = DomXmpParser.class.getResourceAsStream("/invalidxmp/undefinedschema.xml");
 
@@ -267,16 +269,16 @@ public class DeserializationTest
         try
         {
             xdb.parse(fis);
-            Assert.fail("Should fail during parse");
+            fail("Should fail during parse");
         }
         catch (XmpParsingException e)
         {
-            Assert.assertEquals(ErrorType.NoSchema, e.getErrorType());
+            assertEquals(ErrorType.NoSchema, e.getErrorType());
         }
     }
 
     @Test
-    public void testUndefinedPropertyWithDefinedSchema() throws Exception
+    void testUndefinedPropertyWithDefinedSchema() throws Exception
     {
         InputStream fis = DomXmpParser.class.getResourceAsStream("/invalidxmp/undefinedpropertyindefinedschema.xml");
 
@@ -284,16 +286,16 @@ public class DeserializationTest
         try
         {
             xdb.parse(fis);
-            Assert.fail("Should fail during parse");
+            fail("Should fail during parse");
         }
         catch (XmpParsingException e)
         {
-            Assert.assertEquals(ErrorType.NoType, e.getErrorType());
+            assertEquals(ErrorType.NoType, e.getErrorType());
         }
     }
 
     @Test
-    public void testUndefinedStructuredWithDefinedSchema() throws Exception
+    void testUndefinedStructuredWithDefinedSchema() throws Exception
     {
         InputStream fis = DomXmpParser.class.getResourceAsStream("/invalidxmp/undefinedstructuredindefinedschema.xml");
 
@@ -301,16 +303,16 @@ public class DeserializationTest
         try
         {
             xdb.parse(fis);
-            Assert.fail("Should fail during parse");
+            fail("Should fail during parse");
         }
         catch (XmpParsingException e)
         {
-            Assert.assertEquals(ErrorType.NoValueType, e.getErrorType());
+            assertEquals(ErrorType.NoValueType, e.getErrorType());
         }
     }
 
     @Test
-    public void testRdfAboutFound() throws Exception
+    void testRdfAboutFound() throws Exception
     {
         InputStream fis = DomXmpParser.class.getResourceAsStream("/validxmp/emptyli.xml");
         DomXmpParser xdb = new DomXmpParser();
@@ -318,30 +320,30 @@ public class DeserializationTest
         List<XMPSchema> schemas = meta.getAllSchemas();
         for (XMPSchema xmpSchema : schemas)
         {
-            Assert.assertNotNull(xmpSchema.getAboutAttribute());
+            assertNotNull(xmpSchema.getAboutAttribute());
         }
     }
 
     @Test
-    public void testWihtAttributesAsProperties() throws Exception
+    void testWihtAttributesAsProperties() throws Exception
     {
         InputStream fis = DomXmpParser.class.getResourceAsStream("/validxmp/attr_as_props.xml");
         DomXmpParser xdb = new DomXmpParser();
         XMPMetadata meta = xdb.parse(fis);
 
         AdobePDFSchema pdf = meta.getAdobePDFSchema();
-        Assert.assertEquals("GPL Ghostscript 8.64", pdf.getProducer());
+        assertEquals("GPL Ghostscript 8.64", pdf.getProducer());
 
         DublinCoreSchema dc = meta.getDublinCoreSchema();
-        Assert.assertEquals("application/pdf", dc.getFormat());
+        assertEquals("application/pdf", dc.getFormat());
 
         XMPBasicSchema basic = meta.getXMPBasicSchema();
-        Assert.assertNotNull(basic.getCreateDate());
+        assertNotNull(basic.getCreateDate());
 
     }
 
     @Test
-    public void testSpaceTextValues() throws Exception
+    void testSpaceTextValues() throws Exception
     {
         // check values with spaces at start or end
         // in this case, the value should not be trimmed
@@ -349,9 +351,9 @@ public class DeserializationTest
         DomXmpParser xdb = new DomXmpParser();
         XMPMetadata meta = xdb.parse(is);
         // check producer
-        Assert.assertEquals(" ", meta.getAdobePDFSchema().getProducer());
+        assertEquals(" ", meta.getAdobePDFSchema().getProducer());
         // check creator tool
-        Assert.assertEquals("Canon ",meta.getXMPBasicSchema().getCreatorTool());
+        assertEquals("Canon ",meta.getXMPBasicSchema().getCreatorTool());
 
     }
 }

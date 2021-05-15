@@ -112,8 +112,10 @@ public final class AddAnnotations
             // Now add the markup annotation, a highlight to PDFBox text
             PDAnnotationHighlight txtHighlight = new PDAnnotationHighlight();
             txtHighlight.setColor(new PDColor(new float[] { 0, 1, 1 }, PDDeviceRGB.INSTANCE));
-            // 20% transparent
-            txtHighlight.setConstantOpacity((float)0.2); 
+
+            // remove line below if PDF/A-2b (and possibly other PDF-A flavours)
+            // also add txtMark.setPrinted(true)
+            txtHighlight.setConstantOpacity((float) 0.2);
 
             // Set the rectangle containing the markup
             float textWidth = font.getStringWidth("PDFBox") / 1000 * 18;
@@ -305,12 +307,15 @@ public final class AddAnnotations
                 dr = new PDResources();
                 acroForm.setDefaultResources(dr);
             }
-            dr.put(COSName.getPDFName("Helv"), PDType1Font.HELVETICA);
+            dr.put(COSName.HELV, PDType1Font.HELVETICA);
+            // If you want to use a specific font, add it here but make sure it is not subset
 
             // Create the appearance streams.
             // Adobe Reader will always display annotations without appearance streams nicely,
             // but other applications may not.
-            annotations.forEach(PDAnnotation::constructAppearances);
+            // Pass the PDDocument so that the appearance handler can look into the default resources
+            // for non-standard fonts.
+            annotations.forEach(ann -> ann.constructAppearances(document));
 
             showPageNo(document, page1, "Page 1");
             showPageNo(document, page2, "Page 2");

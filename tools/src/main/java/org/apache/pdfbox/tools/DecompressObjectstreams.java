@@ -17,9 +17,16 @@ package org.apache.pdfbox.tools;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
+import java.util.concurrent.Callable;
 
 import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdfwriter.compress.CompressParameters;
 import org.apache.pdfbox.pdmodel.PDDocument;
+
+import picocli.CommandLine;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
 
 /**
  * This program will just save the loaded pdf without any changes. As PDFBox doesn't support writing compressed object
@@ -29,8 +36,21 @@ import org.apache.pdfbox.pdmodel.PDDocument;
  * 
  * @author Adam Nichols
  */
-public final class DecompressObjectstreams 
+@Command(name = "DecompressObjectstreams", header = "Decompresses object streams in a PDF file.")
+public final class DecompressObjectstreams implements Callable<Integer>
 {
+    // Expected for CLI app to write to System.out/System.err
+    @SuppressWarnings("squid:S106")
+    private static final PrintStream SYSERR = System.err;
+
+    @Option(names = {"-h", "--help"}, usageHelp = true, description = "display this help message")
+    boolean usageHelpRequested;
+    
+    @Option(names = {"-i", "--input"}, description = "the PDF file to decompress", required = true)
+    private File infile;
+
+    @Option(names = {"-o", "--output"}, description = "the decompressed PDF file. If omitted the original file is overwritten.")
+    private File outfile;
     
     /**
      * private constructor.
@@ -40,62 +60,35 @@ public final class DecompressObjectstreams
     }
 
     /**
-     * This is a very simple program, so everything is in the main method.
-     * @param args arguments to the program
+     * This is the entry point for the application.
+     *
+     * @param args The command-line arguments.
      */
     public static void main(String[] args)
     {
         // suppress the Dock icon on OS X
         System.setProperty("apple.awt.UIElement", "true");
 
-        if(args.length < 1)
-        {
-            usage();
-        }
-
-        String inputFilename = args[0];
-        String outputFilename;
-        if(args.length > 1)
-        {
-            outputFilename = args[1];
-        }
-        else
-        {
-            if(inputFilename.matches(".*\\.[pP][dD][fF]$"))
-            {
-                outputFilename = inputFilename.replaceAll("\\.[pP][dD][fF]$", ".unc.pdf");
-            }
-            else
-            {
-                outputFilename = inputFilename + ".unc.pdf";
-            }
-        }
-
-        try (PDDocument doc = Loader.loadPDF(new File(inputFilename)))
-        {
-            // It is sufficient to simply write the loaded pdf without further processing.
-            // As PDFBox doesn't support writing compressed object streams that streams will
-            // be simply omitted
-            doc.save(outputFilename);
-        }
-        catch (IOException e)
-        {
-            System.err.println("Error processing file: " + e.getMessage());
-        }
+        int exitCode = new CommandLine(new DecompressObjectstreams()).execute(args);
+        System.exit(exitCode);
     }
 
-    /**
-     * Explains how to use the program.
-     */
-    private static void usage()
+    public Integer call()
     {
-        String message = "Usage: java -cp pdfbox-app-x.y.z.jar "
-                + "org.apache.pdfbox.tools.DecompressObjectstreams <inputfile> [<outputfile>]\n"
-                + "\nOptions:\n"
-                + "  <inputfile>  : The PDF document to decompress\n"
-                + "  <outputfile> : The output filename (default is to replace .pdf with .unc.pdf)";
-        
-        System.err.println(message);
-        System.exit(1);
+        try (PDDocument doc = Loader.loadPDF(infile))
+        {
+            // overwrite inputfile if no outputfile was specified
+            if (outfile == null) {
+                outfile = infile;
+            }
+
+            doc.save(outfile, CompressParameters.NO_COMPRESSION);
+        }
+        catch (IOException ioe)
+        {
+            SYSERR.println("Error processing file [" + ioe.getClass().getSimpleName() + "]: " + ioe.getMessage());
+            return 4;
+        }
+        return 0;
     }
 }

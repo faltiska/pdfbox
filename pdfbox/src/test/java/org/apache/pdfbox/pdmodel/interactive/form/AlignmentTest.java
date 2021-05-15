@@ -22,11 +22,11 @@ import java.io.IOException;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.TestPDFToImage;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-public class AlignmentTest
+class AlignmentTest
 {
     private static final File OUT_DIR = new File("target/test-output");
     private static final File IN_DIR = new File("src/test/resources/org/apache/pdfbox/pdmodel/interactive/form");
@@ -37,7 +37,7 @@ public class AlignmentTest
     private PDDocument document;
     private PDAcroForm acroForm;
 
-    @Before
+    @BeforeEach
     public void setUp() throws IOException
     {
         document = Loader.loadPDF(new File(IN_DIR, NAME_OF_PDF));
@@ -46,7 +46,7 @@ public class AlignmentTest
     }
 
     @Test
-    public void fillFields() throws IOException
+    void fillFields() throws IOException
     {
         PDTextField field = (PDTextField) acroForm.getField("AlignLeft");
         field.setValue(TEST_VALUE);
@@ -113,7 +113,7 @@ public class AlignmentTest
         }       
     }
     
-    @After
+    @AfterEach
     public void tearDown() throws IOException
     {
         document.close();

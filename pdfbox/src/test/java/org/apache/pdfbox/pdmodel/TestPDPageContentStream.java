@@ -16,21 +16,24 @@
  */
 package org.apache.pdfbox.pdmodel;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.io.IOException;
 import java.util.List;
-import junit.framework.TestCase;
 import org.apache.pdfbox.contentstream.operator.Operator;
 import org.apache.pdfbox.contentstream.operator.OperatorName;
 import org.apache.pdfbox.cos.COSNumber;
 import org.apache.pdfbox.pdfparser.PDFStreamParser;
 import org.apache.pdfbox.pdmodel.PDPageContentStream.AppendMode;
+import org.junit.jupiter.api.Test;
 
 /**
  * @author Yegor Kozlov
  */
-public class TestPDPageContentStream extends TestCase
+class TestPDPageContentStream
 {
-    public void testSetCmykColors() throws IOException
+    @Test
+    void testSetCmykColors() throws IOException
     {
         try (PDDocument doc = new PDDocument())
         {
@@ -44,7 +47,7 @@ public class TestPDPageContentStream extends TestCase
             }
 
             // now read the PDF stream and verify that the CMYK values are correct
-            PDFStreamParser parser = new PDFStreamParser(page.getContents());
+            PDFStreamParser parser = new PDFStreamParser(page);
             List<Object> pageTokens = parser.parse();
             // expected five tokens :
             // [0] = COSFloat{0.1}
@@ -69,7 +72,7 @@ public class TestPDPageContentStream extends TestCase
             }
 
             // now read the PDF stream and verify that the CMYK values are correct
-            parser = new PDFStreamParser(page.getContents());
+            parser = new PDFStreamParser(page);
             pageTokens = parser.parse();
             // expected five tokens  :
             // [0] = COSFloat{0.5}
@@ -85,7 +88,8 @@ public class TestPDPageContentStream extends TestCase
         }
     }
 
-    public void testSetRGBandGColors() throws IOException
+    @Test
+    void testSetRGBandGColors() throws IOException
     {
         try (PDDocument doc = new PDDocument())
         {
@@ -100,7 +104,7 @@ public class TestPDPageContentStream extends TestCase
             }
 
             // now read the PDF stream and verify that the values are correct
-            PDFStreamParser parser = new PDFStreamParser(page.getContents());
+            PDFStreamParser parser = new PDFStreamParser(page);
             List<Object> pageTokens = parser.parse();
             assertEquals(0.1f, ((COSNumber) pageTokens.get(0)).floatValue());
             assertEquals(0.2f, ((COSNumber) pageTokens.get(1)).floatValue());
@@ -121,7 +125,7 @@ public class TestPDPageContentStream extends TestCase
             }
 
             // now read the PDF stream and verify that the values are correct
-            parser = new PDFStreamParser(page.getContents());
+            parser = new PDFStreamParser(page);
             pageTokens = parser.parse();
             assertEquals(0.5f, ((COSNumber) pageTokens.get(0)).floatValue());
             assertEquals(0.6f, ((COSNumber) pageTokens.get(1)).floatValue());
@@ -137,10 +141,11 @@ public class TestPDPageContentStream extends TestCase
      * 
      * @throws IOException 
      */
-    public void testMissingContentStream() throws IOException
+    @Test
+    void testMissingContentStream() throws IOException
     {
         PDPage page = new PDPage();
-        PDFStreamParser parser = new PDFStreamParser(page.getContents());
+        PDFStreamParser parser = new PDFStreamParser(page);
         List<Object> tokens = parser.parse();
         assertEquals(0, tokens.size());
     }
@@ -150,7 +155,8 @@ public class TestPDPageContentStream extends TestCase
      *
      * @throws IOException 
      */
-    public void testCloseContract() throws IOException
+    @Test
+    void testCloseContract() throws IOException
     {
         try (PDDocument doc = new PDDocument())
         {

@@ -25,7 +25,7 @@ import org.apache.pdfbox.cos.COSName;
 /**
  * A PDField factory.
  */
-final class PDFieldFactory
+public final class PDFieldFactory
 {
 
     private static final String FIELD_TYPE_TEXT = "Tx";
@@ -45,7 +45,7 @@ final class PDFieldFactory
      * @param parent the parent node of the node to be created 
      * @return the corresponding PDField instance
      */
-    static PDField createField(PDAcroForm form, COSDictionary field, PDNonTerminalField parent)
+    public static PDField createField(PDAcroForm form, COSDictionary field, PDNonTerminalField parent)
     {
         String fieldType = findFieldType(field);
         
@@ -55,7 +55,7 @@ final class PDFieldFactory
         // a field name (other than annotations)
         if (field.containsKey(COSName.KIDS))
         {
-            COSArray kids = (COSArray) field.getDictionaryObject(COSName.KIDS);
+            COSArray kids = field.getCOSArray(COSName.KIDS);
             if (kids != null && kids.size() > 0)
             {
                 for (int i = 0; i < kids.size(); i++)
@@ -132,11 +132,8 @@ final class PDFieldFactory
         String retval = dic.getNameAsString(COSName.FT);
         if (retval == null)
         {
-            COSBase base = dic.getDictionaryObject(COSName.PARENT, COSName.P);
-            if (base instanceof COSDictionary)
-            {
-                retval = findFieldType((COSDictionary) base);
-            }
+            COSDictionary base = dic.getCOSDictionary(COSName.PARENT, COSName.P);
+            return base != null ?  findFieldType(base):null;
         }
         return retval;
     }

@@ -27,7 +27,6 @@ import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.cos.COSNumber;
-import org.apache.pdfbox.cos.COSObject;
 import org.apache.pdfbox.cos.COSString;
 import org.apache.pdfbox.pdfparser.PDFStreamParser;
 import org.apache.pdfbox.pdmodel.PDResources;
@@ -75,7 +74,8 @@ class PDDefaultAppearanceString
     {
         if (defaultAppearance == null)
         {
-            throw new IllegalArgumentException("/DA is a required entry");
+            throw new IllegalArgumentException("/DA is a required entry. "
+                    + "Please set a default appearance first.");
         }
         
         if (defaultResources == null)
@@ -100,11 +100,7 @@ class PDDefaultAppearanceString
         Object token = parser.parseNextToken();
         while (token != null)
         {
-            if (token instanceof COSObject)
-            {
-                arguments.add(((COSObject) token).getObject());
-            }
-            else if (token instanceof Operator)
+            if (token instanceof Operator)
             {
                 processOperator((Operator) token, arguments);
                 arguments = new ArrayList<>();

@@ -24,7 +24,6 @@ import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSInteger;
 import org.apache.pdfbox.cos.COSName;
-import org.apache.pdfbox.pdmodel.common.COSArrayList;
 import org.apache.pdfbox.pdmodel.fdf.FDFField;
 import org.apache.pdfbox.pdmodel.interactive.action.PDFormFieldAdditionalActions;
 import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationWidget;
@@ -165,7 +164,7 @@ public abstract class PDTerminalField extends PDField
     public List<PDAnnotationWidget> getWidgets()
     {
         List<PDAnnotationWidget> widgets = new ArrayList<>();
-        COSArray kids = (COSArray)getCOSObject().getDictionaryObject(COSName.KIDS);
+        COSArray kids = getCOSObject().getCOSArray(COSName.KIDS);
         if (kids == null)
         {
             // the field itself is a widget
@@ -193,7 +192,7 @@ public abstract class PDTerminalField extends PDField
      */
     public void setWidgets(List<PDAnnotationWidget> children)
     {
-        COSArray kidsArray = COSArrayList.converterToCOSArray(children);
+        COSArray kidsArray = new COSArray(children);
         getCOSObject().setItem(COSName.KIDS, kidsArray);
         for (PDAnnotationWidget widget : children)
         {

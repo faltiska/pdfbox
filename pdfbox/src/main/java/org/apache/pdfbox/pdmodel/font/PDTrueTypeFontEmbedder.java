@@ -25,10 +25,10 @@ import java.util.List;
 import java.util.Map;
 import org.apache.fontbox.ttf.HorizontalMetricsTable;
 import org.apache.fontbox.ttf.TrueTypeFont;
+import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.common.COSArrayList;
 import org.apache.pdfbox.pdmodel.font.encoding.Encoding;
 import org.apache.pdfbox.pdmodel.font.encoding.GlyphList;
 
@@ -47,7 +47,7 @@ final class PDTrueTypeFontEmbedder extends TrueTypeEmbedder
      *
      * @param document The parent document
      * @param dict Font dictionary
-     * @param ttfStream TTF stream
+     * @param ttf TrueType font
      * @param encoding The PostScript encoding vector to be used for embedding.
      * @throws IOException if the TTF could not be read
      */
@@ -108,7 +108,7 @@ final class PDTrueTypeFontEmbedder extends TrueTypeEmbedder
 
         font.setInt(COSName.FIRST_CHAR, firstChar);
         font.setInt(COSName.LAST_CHAR, lastChar);
-        font.setItem(COSName.WIDTHS, COSArrayList.converterToCOSArray(widths));
+        font.setItem(COSName.WIDTHS, COSArray.ofCOSIntegers(widths));
     }
 
     /**

@@ -24,6 +24,8 @@ package org.apache.xmpbox;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -133,15 +135,8 @@ public final class DateConverter
                 int timeZonePos = 12;
                 if (date.length() - 12 > 5 || (date.length() - 12 == 3 && date.endsWith("Z")))
                 {
-                    if (date.length() >= 14)
-                    {
-                        second = Integer.parseInt(date.substring(12, 14));
-                    }
+                    second = Integer.parseInt(date.substring(12, 14));
                     timeZonePos = 14;
-                }
-                else
-                {
-                    second = 0;
                 }
 
                 if (date.length() >= (timeZonePos + 1))
@@ -292,31 +287,31 @@ public final class DateConverter
         StringBuilder retval = new StringBuilder();
 
         retval.append(cal.get(Calendar.YEAR));
-        retval.append("-");
+        retval.append('-');
         retval.append(String.format(Locale.US, "%02d", cal.get(Calendar.MONTH) + 1));
-        retval.append("-");
+        retval.append('-');
         retval.append(String.format(Locale.US, "%02d", cal.get(Calendar.DAY_OF_MONTH)));
-        retval.append("T");
+        retval.append('T');
         retval.append(String.format(Locale.US, "%02d", cal.get(Calendar.HOUR_OF_DAY)));
-        retval.append(":");
+        retval.append(':');
         retval.append(String.format(Locale.US, "%02d", cal.get(Calendar.MINUTE)));
-        retval.append(":");
+        retval.append(':');
         retval.append(String.format(Locale.US, "%02d", cal.get(Calendar.SECOND)));
         
         if (printMillis)
         {
-            retval.append(".");
+            retval.append('.');
             retval.append(String.format(Locale.US, "%03d", cal.get(Calendar.MILLISECOND)));
         }
 
         int timeZone = cal.get(Calendar.ZONE_OFFSET) + cal.get(Calendar.DST_OFFSET);
         if (timeZone < 0)
         {
-            retval.append("-");
+            retval.append('-');
         }
         else
         {
-            retval.append("+");
+            retval.append('+');
         }
         timeZone = Math.abs(timeZone);
         // milliseconds/1000 = seconds; seconds / 60 = minutes; minutes/60 = hours
@@ -324,15 +319,15 @@ public final class DateConverter
         int minutes = (timeZone - (hours * 1000 * 60 * 60)) / 1000 / 60;
         if (hours < 10)
         {
-            retval.append("0");
+            retval.append('0');
         }
-        retval.append(Integer.toString(hours));
-        retval.append(":");
+        retval.append(hours);
+        retval.append(':');
         if (minutes < 10)
         {
-            retval.append("0");
+            retval.append('0');
         }
-        retval.append(Integer.toString(minutes));
+        retval.append(minutes);
         return retval.toString();
     }
     
@@ -344,6 +339,8 @@ public final class DateConverter
      */
     private static Calendar fromISO8601(String dateString)
     {
+        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss[.SSS][XXX][zzz]");
+
         // Pattern to test for a time zone string
         Pattern timeZonePattern = Pattern.compile(
                     "[\\d-]*T?[\\d-\\.]([A-Z]{1,4})$|(.*\\d*)([A-Z][a-z]+\\/[A-Z][a-z]+)$"
@@ -373,11 +370,10 @@ public final class DateConverter
             {
                 toParse = dateString.substring(0, tzIndex) + ":00";
             }
-            Calendar cal = javax.xml.bind.DatatypeConverter.parseDateTime(toParse);
 
-            TimeZone z = TimeZone.getTimeZone(timeZoneString);
-            cal.setTimeZone(z);            
-            return cal;
+            ZonedDateTime zonedDateTime = ZonedDateTime.parse(toParse + timeZoneString, dateTimeFormatter);
+
+            return GregorianCalendar.from(zonedDateTime);
         }
         else
         {
@@ -385,21 +381,25 @@ public final class DateConverter
             int teeIndex = dateString.indexOf('T');
             if (teeIndex == -1)
             {
-                return javax.xml.bind.DatatypeConverter.parseDateTime(dateString);
+                ZonedDateTime zonedDateTime = ZonedDateTime.parse(dateString, dateTimeFormatter);
+                return GregorianCalendar.from(zonedDateTime);
             }
             int plusIndex = dateString.indexOf('+', teeIndex + 1);
             int minusIndex = dateString.indexOf('-', teeIndex + 1);
             if (plusIndex == -1 && minusIndex == -1)
             {
-                return javax.xml.bind.DatatypeConverter.parseDateTime(dateString);
+                ZonedDateTime zonedDateTime = ZonedDateTime.parse(dateString, dateTimeFormatter);
+                return GregorianCalendar.from(zonedDateTime);
             }
             plusIndex = Math.max(plusIndex, minusIndex);
             if (plusIndex - teeIndex == 6)
             {
                 String toParse = dateString.substring(0, plusIndex) + ":00" + dateString.substring(plusIndex);
-                return javax.xml.bind.DatatypeConverter.parseDateTime(toParse);
+                ZonedDateTime zonedDateTime = ZonedDateTime.parse(toParse, dateTimeFormatter);
+                return GregorianCalendar.from(zonedDateTime);
             }
-            return javax.xml.bind.DatatypeConverter.parseDateTime(dateString);
+            ZonedDateTime zonedDateTime = ZonedDateTime.parse(dateString, dateTimeFormatter);
+            return GregorianCalendar.from(zonedDateTime);
         }
     }
 }

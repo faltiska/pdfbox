@@ -16,26 +16,24 @@
  */
 package org.apache.pdfbox.pdmodel.graphics.blend;
 
-import static junit.framework.TestCase.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import org.apache.pdfbox.cos.COSName;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  *
  * @author Tilman Hausherr
  */
-public class BlendModeTest
+class BlendModeTest
 {
-    public BlendModeTest()
-    {
-    }
 
     /**
      * Check that BlendMode.* constant instances are not null. This could happen if the declaration
      * sequence is changed.
      */
     @Test
-    public void testInstances()
+    void testInstances()
     {
         assertEquals(BlendMode.NORMAL, BlendMode.getInstance(COSName.NORMAL));
         assertEquals(BlendMode.NORMAL, BlendMode.getInstance(COSName.COMPATIBLE));
@@ -61,7 +59,7 @@ public class BlendModeTest
      * happen if the declaration sequence is changed.
      */
     @Test
-    public void testCOSNames()
+    void testCOSNames()
     {
         assertEquals(COSName.NORMAL, BlendMode.getCOSName(BlendMode.NORMAL));
         assertEquals(COSName.NORMAL, BlendMode.getCOSName(BlendMode.COMPATIBLE));

@@ -32,7 +32,7 @@ import org.w3c.dom.Element;
  */
 public class FDFCatalog implements COSObjectable
 {
-    private COSDictionary catalog;
+    private final COSDictionary catalog;
 
     /**
      * Default constructor.
@@ -115,7 +115,7 @@ public class FDFCatalog implements COSObjectable
      */
     public FDFDictionary getFDF()
     {
-        COSDictionary fdf = (COSDictionary) catalog.getDictionaryObject(COSName.FDF);
+        COSDictionary fdf = catalog.getCOSDictionary(COSName.FDF);
         FDFDictionary retval;
         if (fdf != null)
         {
@@ -146,13 +146,8 @@ public class FDFCatalog implements COSObjectable
      */
     public PDSignature getSignature()
     {
-        PDSignature signature = null;
-        COSDictionary sig = (COSDictionary) catalog.getDictionaryObject(COSName.SIG);
-        if (sig != null)
-        {
-            signature = new PDSignature(sig);
-        }
-        return signature;
+        COSDictionary sig = catalog.getCOSDictionary(COSName.SIG);
+        return sig != null ? new PDSignature(sig) : null;
     }
 
     /**

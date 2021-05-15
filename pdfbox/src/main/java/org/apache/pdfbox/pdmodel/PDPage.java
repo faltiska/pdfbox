@@ -35,6 +35,9 @@ import org.apache.pdfbox.cos.COSFloat;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.cos.COSNumber;
 import org.apache.pdfbox.cos.COSStream;
+import org.apache.pdfbox.io.RandomAccessRead;
+import org.apache.pdfbox.io.RandomAccessReadBuffer;
+import org.apache.pdfbox.io.SequenceRandomAccessRead;
 import org.apache.pdfbox.pdmodel.common.COSArrayList;
 import org.apache.pdfbox.pdmodel.common.COSObjectable;
 import org.apache.pdfbox.pdmodel.common.PDMetadata;
@@ -175,6 +178,36 @@ public class PDPage implements COSObjectable, PDContentStream
             return new SequenceInputStream(Collections.enumeration(inputStreams));
         }
         return new ByteArrayInputStream(new byte[0]);
+    }
+
+    @Override
+    public RandomAccessRead getContentsForRandomAccess() throws IOException
+    {
+        COSBase base = page.getDictionaryObject(COSName.CONTENTS);
+        if (base instanceof COSStream)
+        {
+            return ((COSStream) base).createView();
+        }
+        else if (base instanceof COSArray && ((COSArray) base).size() > 0)
+        {
+            byte[] delimiter = new byte[] { '\n' };
+            COSArray streams = (COSArray) base;
+            List<RandomAccessRead> inputStreams = new ArrayList<>();
+            for (int i = 0; i < streams.size(); i++)
+            {
+                COSBase strm = streams.getObject(i);
+                if (strm instanceof COSStream)
+                {
+                    inputStreams.add(((COSStream) strm).createView());
+                    inputStreams.add(new RandomAccessReadBuffer(delimiter));
+                }
+            }
+            if (!inputStreams.isEmpty())
+            {
+                return new SequenceRandomAccessRead(inputStreams);
+            }
+        }
+        return new RandomAccessReadBuffer(new byte[0]);
     }
 
     /**
@@ -349,15 +382,8 @@ public class PDPage implements COSObjectable, PDContentStream
      */
     public PDRectangle getBleedBox()
     {
-        COSBase base = page.getDictionaryObject(COSName.BLEED_BOX);
-        if (base instanceof COSArray)
-        {
-            return clipToMediaBox(new PDRectangle((COSArray) base));
-        }
-        else
-        {
-            return getCropBox();
-        }
+        COSArray bleedBox = page.getCOSArray(COSName.BLEED_BOX);
+        return bleedBox != null ? clipToMediaBox(new PDRectangle(bleedBox)) : getCropBox();
     }
 
     /**
@@ -385,15 +411,8 @@ public class PDPage implements COSObjectable, PDContentStream
      */
     public PDRectangle getTrimBox()
     {
-        COSBase base = page.getDictionaryObject(COSName.TRIM_BOX);
-        if (base instanceof COSArray)
-        {
-            return clipToMediaBox(new PDRectangle((COSArray) base));
-        }
-        else
-        {
-            return getCropBox();
-        }
+        COSArray trimBox = page.getCOSArray(COSName.TRIM_BOX);
+        return trimBox != null ? clipToMediaBox(new PDRectangle(trimBox)) : null;
     }
 
     /**
@@ -422,15 +441,8 @@ public class PDPage implements COSObjectable, PDContentStream
      */
     public PDRectangle getArtBox()
     {
-        COSBase base = page.getDictionaryObject(COSName.ART_BOX);
-        if (base instanceof COSArray)
-        {
-            return clipToMediaBox(new PDRectangle((COSArray) base));
-        }
-        else
-        {
-            return getCropBox();
-        }
+        COSArray artBox = page.getCOSArray(COSName.ART_BOX);
+        return artBox != null ? clipToMediaBox(new PDRectangle(artBox)) : getCropBox();
     }
 
     /**
@@ -513,9 +525,7 @@ public class PDPage implements COSObjectable, PDContentStream
      */
     public void setContents(List<PDStream> contents)
     {
-        COSArray array = new COSArray();
-        contents.forEach(array::add);
-        page.setItem(COSName.CONTENTS, array);
+        page.setItem(COSName.CONTENTS, new COSArray(contents));
     }
 
     /**
@@ -527,12 +537,12 @@ public class PDPage implements COSObjectable, PDContentStream
      */
     public List<PDThreadBead> getThreadBeads()
     {
-        COSArray beads = (COSArray) page.getDictionaryObject(COSName.B);
+        COSArray beads = page.getCOSArray(COSName.B);
         if (beads == null)
         {
             beads = new COSArray();
         }
-        List<PDThreadBead> pdObjects = new ArrayList<>();
+        List<PDThreadBead> pdObjects = new ArrayList<>(beads.size());
         for (int i = 0; i < beads.size(); i++)
         {
             COSBase base = beads.getObject(i);
@@ -554,7 +564,7 @@ public class PDPage implements COSObjectable, PDContentStream
      */
     public void setThreadBeads(List<PDThreadBead> beads)
     {
-        page.setItem(COSName.B, COSArrayList.converterToCOSArray(beads));
+        page.setItem(COSName.B, new COSArray(beads));
     }
 
     /**
@@ -565,13 +575,8 @@ public class PDPage implements COSObjectable, PDContentStream
      */
     public PDMetadata getMetadata()
     {
-        PDMetadata retval = null;
-        COSBase base = page.getDictionaryObject(COSName.METADATA);
-        if (base instanceof COSStream)
-        {
-            retval = new PDMetadata((COSStream) base);
-        }
-        return retval;
+        COSStream metadata = page.getCOSStream(COSName.METADATA);
+        return metadata != null ? new PDMetadata(metadata) : null;
     }
 
     /**
@@ -591,13 +596,8 @@ public class PDPage implements COSObjectable, PDContentStream
      */
     public PDPageAdditionalActions getActions()
     {
-        COSDictionary addAct;
-        COSBase base = page.getDictionaryObject(COSName.AA);
-        if (base instanceof COSDictionary)
-        {
-            addAct = (COSDictionary) base;
-        }
-        else
+        COSDictionary addAct = page.getCOSDictionary(COSName.AA);
+        if (addAct == null)
         {
             addAct = new COSDictionary();
             page.setItem(COSName.AA, addAct);
@@ -620,8 +620,8 @@ public class PDPage implements COSObjectable, PDContentStream
      */
     public PDTransition getTransition()
     {
-        COSBase base = page.getDictionaryObject(COSName.TRANS);
-        return base instanceof COSDictionary ? new PDTransition((COSDictionary) base) : null;
+        COSDictionary transition = page.getCOSDictionary(COSName.TRANS);
+        return transition != null ? new PDTransition(transition) : null;
     }
 
     /**
@@ -669,10 +669,9 @@ public class PDPage implements COSObjectable, PDContentStream
      */
     public List<PDAnnotation> getAnnotations(AnnotationFilter annotationFilter) throws IOException
     {
-        COSBase base = page.getDictionaryObject(COSName.ANNOTS);
-        if (base instanceof COSArray)
+        COSArray annots = page.getCOSArray(COSName.ANNOTS);
+        if (annots != null)
         {
-            COSArray annots = (COSArray) base;
             List<PDAnnotation> actuals = new ArrayList<>();
             for (int i = 0; i < annots.size(); i++)
             {
@@ -699,7 +698,7 @@ public class PDPage implements COSObjectable, PDContentStream
      */
     public void setAnnotations(List<PDAnnotation> annotations)
     {
-        page.setItem(COSName.ANNOTS, COSArrayList.converterToCOSArray(annotations));
+        page.setItem(COSName.ANNOTS, new COSArray(annotations));
     }
 
     @Override
@@ -729,12 +728,11 @@ public class PDPage implements COSObjectable, PDContentStream
      */
     public List<PDViewportDictionary> getViewports()
     {
-        COSBase base = page.getDictionaryObject(COSName.VP);
-        if (!(base instanceof COSArray))
+        COSArray array = page.getCOSArray(COSName.VP);
+        if (array == null)
         {
             return null;
         }
-        COSArray array = (COSArray) base;
         List<PDViewportDictionary> viewports = new ArrayList<>();
         for (int i = 0; i < array.size(); ++i)
         {
@@ -763,9 +761,7 @@ public class PDPage implements COSObjectable, PDContentStream
             page.removeItem(COSName.VP);
             return;
         }
-        COSArray array = new COSArray();
-        viewports.forEach(array::add);
-        page.setItem(COSName.VP, array);
+        page.setItem(COSName.VP, new COSArray(viewports));
     }
 
     /**

@@ -270,7 +270,7 @@ class Type1Lexer
             buffer.reset();
             return null;
         }
-        else
+        else if (c != 'e' && c != 'E')
         {
             // integer
             buffer.position(buffer.position() -1);
@@ -283,7 +283,7 @@ class Type1Lexer
             sb.append(c);
             c = getChar();
         }
-        else
+        else if (c != 'e' && c != 'E')
         {
             // failure
             buffer.reset();
@@ -298,7 +298,7 @@ class Type1Lexer
         }
 
         // optional E
-        if (c == 'E')
+        if (c == 'E' || c == 'e')
         {
             sb.append(c);
             c = getChar();
@@ -366,12 +366,11 @@ class Type1Lexer
                 sb.append(c);
             }
         }
-        String regular = sb.toString();
-        if (regular.length() == 0)
+        if (sb.length() == 0)
         {
             return null;
         }
-        return regular;
+        return sb.toString();
     }
 
     /**
@@ -398,7 +397,7 @@ class Type1Lexer
     /**
      * Reads a (string).
      */
-    private Token readString()
+    private Token readString() throws IOException
     {
         StringBuilder sb = new StringBuilder();
 
@@ -442,8 +441,15 @@ class Type1Lexer
                     if (Character.isDigit(c1))
                     {
                         String num = String.valueOf(new char[] { c1, getChar(), getChar() });
-                        Integer code = Integer.parseInt(num, 8);
-                        sb.append((char)(int)code);
+                        try
+                        {
+                            int code = Integer.parseInt(num, 8);
+                            sb.append((char) code);
+                        }
+                        catch (NumberFormatException ex)
+                        {
+                            throw new IOException(ex);
+                        }
                     }
                     break;
                 case '\r':

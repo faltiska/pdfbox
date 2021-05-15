@@ -22,11 +22,14 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Callable;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.contentstream.PDFGraphicsStreamEngine;
 import org.apache.pdfbox.cos.COSName;
@@ -53,130 +56,76 @@ import org.apache.pdfbox.tools.imageio.ImageIOUtil;
 import org.apache.pdfbox.util.Matrix;
 import org.apache.pdfbox.util.Vector;
 
+import picocli.CommandLine;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
+
 /**
  * Extracts the images from a PDF file.
  *
  * @author Ben Litchfield
  */
-public final class ExtractImages
+@Command(name = "extractimages", header = "Extracts the images from a PDF document", versionProvider = Version.class, mixinStandardHelpOptions = true)
+public final class ExtractImages implements Callable<Integer>
 {
-    @SuppressWarnings({"squid:S2068"})
-    private static final String PASSWORD = "-password";
-    private static final String PREFIX = "-prefix";
-    private static final String DIRECTJPEG = "-directJPEG";
+    // Expected for CLI app to write to System.out/System.err
+    @SuppressWarnings("squid:S106")
+    private static final PrintStream SYSOUT = System.out;
+    @SuppressWarnings("squid:S106")
+    private static final PrintStream SYSERR = System.err;
 
     private static final List<String> JPEG = Arrays.asList(
             COSName.DCT_DECODE.getName(),
             COSName.DCT_DECODE_ABBREVIATION.getName());
 
-    private boolean useDirectJPEG;
+    @Option(names = "-password", description = "the password for the PDF or certificate in keystore.", arity = "0..1", interactive = true)    
+    private String password;
+
+    @Option(names = "-prefix", description = "the image prefix (default to pdf name).")    
     private String prefix;
+
+    @Option(names = "-useDirectJPEG", description = "Forces the direct extraction of JPEG/JPX images " + 
+        "regardless of colorspace or masking.")    
+    private boolean useDirectJPEG;
+
+    @Option(names = "-noColorConvert", description = "Images are extracted with their " +
+        "original colorspace if possible.")    
+    private boolean noColorConvert;
+
+    @Option(names = {"-i", "--input"}, description = "the PDF file", required = true)
+    private File infile;
 
     private final Set<COSStream> seen = new HashSet<>();
     private int imageCounter = 1;
-
-    private ExtractImages()
-    {
-    }
 
     /**
      * Entry point for the application.
      *
      * @param args The command-line arguments.
-     * @throws IOException if there is an error reading the file or extracting the images.
      */
-    public static void main(String[] args) throws IOException
+    public static void main(String[] args)
     {
         // suppress the Dock icon on OS X
         System.setProperty("apple.awt.UIElement", "true");
 
-        ExtractImages extractor = new ExtractImages();
-        extractor.run(args);
+        int exitCode = new CommandLine(new ExtractImages()).execute(args);
+        System.exit(exitCode);
     }
 
-    private void run(String[] args) throws IOException
+    public Integer call()
     {
-        if (args.length < 1 || args.length > 4)
-        {
-            usage();
-        }
-        else
-        {
-            String pdfFile = null;
-            @SuppressWarnings({"squid:S2068"})
-            String password = "";
-            for(int i = 0; i < args.length; i++)
-            {
-                switch (args[i])
-                {
-                    case PASSWORD:
-                        i++;
-                        if (i >= args.length)
-                        {
-                            usage();
-                        }
-                        password = args[i];
-                        break;
-                    case PREFIX:
-                        i++;
-                        if (i >= args.length)
-                        {
-                            usage();
-                        }
-                        prefix = args[i];
-                        break;
-                    case DIRECTJPEG:
-                        useDirectJPEG = true;
-                        break;
-                    default:
-                        if (pdfFile == null)
-                        {
-                            pdfFile = args[i];
-                        }
-                        break;
-                }
-            }
-            if (pdfFile == null)
-            {
-                usage();
-            }
-            else
-            {
-                if (prefix == null && pdfFile.length() >4)
-                {
-                    prefix = pdfFile.substring(0, pdfFile.length() -4);
-                }
-
-                extract(pdfFile, password);
-            }
-        }
-    }
-
-    /**
-     * Print the usage requirements and exit.
-     */
-    private static void usage()
-    {
-        String message = "Usage: java " + ExtractImages.class.getName() + " [options] <inputfile>\n"
-                + "\nOptions:\n"
-                + "  -password <password>   : Password to decrypt document\n"
-                + "  -prefix <image-prefix> : Image prefix (default to pdf name)\n"
-                + "  -directJPEG            : Forces the direct extraction of JPEG/JPX images "
-                + "                           regardless of colorspace or masking\n"
-                + "  <inputfile>            : The PDF document to use\n";
-        
-        System.err.println(message);
-        System.exit(1);
-    }
-
-    private void extract(String pdfFile, String password) throws IOException
-    {
-        try (PDDocument document = Loader.loadPDF(new File(pdfFile), password))
+        try (PDDocument document = Loader.loadPDF(infile, password))
         {
             AccessPermission ap = document.getCurrentAccessPermission();
             if (!ap.canExtractContent())
             {
-                throw new IOException("You do not have permission to extract images");
+                SYSERR.println("You do not have permission to extract images");
+                return 1;
+            }
+
+            if (prefix == null)
+            {
+                prefix = FilenameUtils.removeExtension(infile.getAbsolutePath());
             }
 
             for (PDPage page : document.getPages())
@@ -185,6 +134,12 @@ public final class ExtractImages
                 extractor.run();
             }
         }
+        catch (IOException ioe)
+        {
+            SYSERR.println("Error extracting images [" + ioe.getClass().getSimpleName() + "]: " + ioe.getMessage());
+            return 4;
+        }
+        return 0;
     }
 
     private class ImageGraphicsEngine extends PDFGraphicsStreamEngine
@@ -248,40 +203,39 @@ public final class ExtractImages
             String name = prefix + "-" + imageCounter;
             imageCounter++;
 
-            System.out.println("Writing image: " + name);
-            write2file(pdImage, name, useDirectJPEG);
+            write2file(pdImage, name, useDirectJPEG, noColorConvert);
         }
 
         @Override
         public void appendRectangle(Point2D p0, Point2D p1, Point2D p2, Point2D p3)
                 throws IOException
         {
-
+            // Empty: add special handling if needed
         }
 
         @Override
         public void clip(int windingRule) throws IOException
         {
-
+            // Empty: add special handling if needed
         }
 
         @Override
         public void moveTo(float x, float y) throws IOException
         {
-
+            // Empty: add special handling if needed
         }
 
         @Override
         public void lineTo(float x, float y) throws IOException
         {
-
+            // Empty: add special handling if needed
         }
 
         @Override
         public void curveTo(float x1, float y1, float x2, float y2, float x3, float y3)
                 throws IOException
         {
-
+            // Empty: add special handling if needed
         }
 
         @Override
@@ -293,13 +247,13 @@ public final class ExtractImages
         @Override
         public void closePath() throws IOException
         {
-
+            // Empty: add special handling if needed
         }
 
         @Override
         public void endPath() throws IOException
         {
-
+            // Empty: add special handling if needed
         }
 
         @Override
@@ -340,7 +294,7 @@ public final class ExtractImages
         @Override
         public void shadingFill(COSName shadingName) throws IOException
         {
-
+            // Empty: add special handling if needed
         }
 
         // find out if it is a tiling pattern, then process that one
@@ -356,124 +310,156 @@ public final class ExtractImages
                 }
             }
         }
-    }
 
-    /**
-     * Writes the image to a file with the filename prefix + an appropriate suffix, like "Image.jpg".
-     * The suffix is automatically set depending on the image compression in the PDF.
-     * @param pdImage the image.
-     * @param prefix the filename prefix.
-     * @param directJPEG if true, force saving JPEG/JPX streams as they are in the PDF file. 
-     * @throws IOException When something is wrong with the corresponding file.
-     */
-    private void write2file(PDImage pdImage, String prefix, boolean directJPEG) throws IOException
-    {
-        String suffix = pdImage.getSuffix();
-        if (suffix == null || "jb2".equals(suffix))
+        /**
+         * Writes the image to a file with the filename prefix + an appropriate suffix, like
+         * "Image.jpg". The suffix is automatically set depending on the image compression in the
+         * PDF.
+         *
+         * @param pdImage the image.
+         * @param prefix the filename prefix.
+         * @param directJPEG if true, force saving JPEG/JPX streams as they are in the PDF file.
+         * @param noColorConvert if true, images are extracted with their original colorspace if
+         * possible.
+         * @throws IOException When something is wrong with the corresponding file.
+         */
+        private void write2file(PDImage pdImage, String prefix, boolean directJPEG,
+                boolean noColorConvert) throws IOException
         {
-            suffix = "png";
-        }
-        else if ("jpx".equals(suffix))
-        {
-            // use jp2 suffix for file because jpx not known by windows
-            suffix = "jp2";
-        }
+            String suffix = pdImage.getSuffix();
+            if (suffix == null || "jb2".equals(suffix))
+            {
+                suffix = "png";
+            }
+            else if ("jpx".equals(suffix))
+            {
+                // use jp2 suffix for file because jpx not known by windows
+                suffix = "jp2";
+            }
 
-        if (hasMasks(pdImage))
-        {
-            // TIKA-3040, PDFBOX-4771: can't save ARGB as JPEG
-            suffix = "png";
-        }
+            if (hasMasks(pdImage))
+            {
+                // TIKA-3040, PDFBOX-4771: can't save ARGB as JPEG
+                suffix = "png";
+            }
 
-        try (FileOutputStream out = new FileOutputStream(prefix + "." + suffix))
-        {
-            if ("jpg".equals(suffix))
+            if (noColorConvert)
             {
-                String colorSpaceName = pdImage.getColorSpace().getName();
-                if (directJPEG || 
-                        (PDDeviceGray.INSTANCE.getName().equals(colorSpaceName) ||
-                         PDDeviceRGB.INSTANCE.getName().equals(colorSpaceName)))
-                {
-                    // RGB or Gray colorspace: get and write the unmodified JPEG stream
-                    InputStream data = pdImage.createInputStream(JPEG);
-                    IOUtils.copy(data, out);
-                    IOUtils.closeQuietly(data);
-                }
-                else
-                {
-                    // for CMYK and other "unusual" colorspaces, the JPEG will be converted
-                    BufferedImage image = pdImage.getImage();
-                    if (image != null)
-                    {
-                        ImageIOUtil.writeImage(image, suffix, out);
-                    }
-                }
-            }
-            else if ("jp2".equals(suffix))
-            {
-                String colorSpaceName = pdImage.getColorSpace().getName();
-                if (directJPEG || 
-                    (PDDeviceGray.INSTANCE.getName().equals(colorSpaceName) ||
-                     PDDeviceRGB.INSTANCE.getName().equals(colorSpaceName)))
-                {
-                    // RGB or Gray colorspace: get and write the unmodified JPEG2000 stream
-                    InputStream data = pdImage.createInputStream(
-                            Arrays.asList(COSName.JPX_DECODE.getName()));
-                    IOUtils.copy(data, out);
-                    IOUtils.closeQuietly(data);
-                }
-                else
-                {                        
-                    // for CMYK and other "unusual" colorspaces, the image will be converted
-                    BufferedImage image = pdImage.getImage();
-                    if (image != null)
-                    {
-                        ImageIOUtil.writeImage(image, "jpeg2000", out);
-                    }
-                }
-            }
-            else if ("tiff".equals(suffix) && pdImage.getColorSpace().equals(PDDeviceGray.INSTANCE))
-            {
-                BufferedImage image = pdImage.getImage();
-                if (image == null)
-                {
-                    return;
-                }
-                // CCITT compressed images can have a different colorspace, but this one is B/W
-                // This is a bitonal image, so copy to TYPE_BYTE_BINARY
-                // so that a G4 compressed TIFF image is created by ImageIOUtil.writeImage()
-                int w = image.getWidth();
-                int h = image.getHeight();
-                BufferedImage bitonalImage = new BufferedImage(w, h, BufferedImage.TYPE_BYTE_BINARY);
-                // copy image the old fashioned way - ColorConvertOp is slower!
-                for (int y = 0; y < h; y++)
-                {
-                    for (int x = 0; x < w; x++)
-                    {
-                        bitonalImage.setRGB(x, y, image.getRGB(x, y));
-                    }
-                }
-                ImageIOUtil.writeImage(bitonalImage, suffix, out);
-            }
-            else
-            {
-                BufferedImage image = pdImage.getImage();
+                // We write the raw image if in any way possible.
+                // But we have no alpha information here.
+                BufferedImage image = pdImage.getRawImage();
                 if (image != null)
                 {
-                    ImageIOUtil.writeImage(image, suffix, out);
+                    int elements = image.getRaster().getNumDataElements();
+                    suffix = "png";
+                    if (elements > 3)
+                    {
+                        // More then 3 channels: Thats likely CMYK. We use tiff here,
+                        // but a TIFF codec must be in the class path for this to work.
+                        suffix = "tiff";
+                    }
+                    try (FileOutputStream imageOutput = new FileOutputStream(prefix + "." + suffix))
+                    {
+                        SYSOUT.println("Writing image: " + prefix + "." + suffix);
+                        ImageIOUtil.writeImage(image, suffix, imageOutput);
+                        imageOutput.flush();
+                    }
+                    return;
                 }
             }
-            out.flush();
-        }
-    }
 
-    private boolean hasMasks(PDImage pdImage) throws IOException
-    {
-        if (pdImage instanceof PDImageXObject)
-        {
-            PDImageXObject ximg = (PDImageXObject) pdImage;
-            return ximg.getMask() != null || ximg.getSoftMask() != null;
+            try (FileOutputStream imageOutput = new FileOutputStream(prefix + "." + suffix))
+            {
+                SYSOUT.println("Writing image: " + prefix + "." + suffix);
+
+                if ("jpg".equals(suffix))
+                {
+                    String colorSpaceName = pdImage.getColorSpace().getName();
+                    if (directJPEG || 
+                        (PDDeviceGray.INSTANCE.getName().equals(colorSpaceName) ||
+                         PDDeviceRGB.INSTANCE.getName().equals(colorSpaceName)))
+                    {
+                        // RGB or Gray colorspace: get and write the unmodified JPEG stream
+                        InputStream data = pdImage.createInputStream(JPEG);
+                        IOUtils.copy(data, imageOutput);
+                        IOUtils.closeQuietly(data);
+                    }
+                    else
+                    {
+                        // for CMYK and other "unusual" colorspaces, the JPEG will be converted
+                        BufferedImage image = pdImage.getImage();
+                        if (image != null)
+                        {
+                            ImageIOUtil.writeImage(image, suffix, imageOutput);
+                        }
+                    }
+                }
+                else if ("jp2".equals(suffix))
+                {
+                    String colorSpaceName = pdImage.getColorSpace().getName();
+                    if (directJPEG
+                            || (PDDeviceGray.INSTANCE.getName().equals(colorSpaceName)
+                            || PDDeviceRGB.INSTANCE.getName().equals(colorSpaceName)))
+                    {
+                        // RGB or Gray colorspace: get and write the unmodified JPEG2000 stream
+                        InputStream data = pdImage.createInputStream(
+                                Arrays.asList(COSName.JPX_DECODE.getName()));
+                        IOUtils.copy(data, imageOutput);
+                        IOUtils.closeQuietly(data);
+                    }
+                    else
+                    {
+                        // for CMYK and other "unusual" colorspaces, the image will be converted
+                        BufferedImage image = pdImage.getImage();
+                        if (image != null)
+                        {
+                            ImageIOUtil.writeImage(image, "jpeg2000", imageOutput);
+                        }
+                    }
+                }
+                else if ("tiff".equals(suffix) && pdImage.getColorSpace().equals(PDDeviceGray.INSTANCE))
+                {
+                    BufferedImage image = pdImage.getImage();
+                    if (image == null)
+                    {
+                        return;
+                    }
+                    // CCITT compressed images can have a different colorspace, but this one is B/W
+                    // This is a bitonal image, so copy to TYPE_BYTE_BINARY
+                    // so that a G4 compressed TIFF image is created by ImageIOUtil.writeImage()
+                    int w = image.getWidth();
+                    int h = image.getHeight();
+                    BufferedImage bitonalImage = new BufferedImage(w, h, BufferedImage.TYPE_BYTE_BINARY);
+                    // copy image the old fashioned way - ColorConvertOp is slower!
+                    for (int y = 0; y < h; y++)
+                    {
+                        for (int x = 0; x < w; x++)
+                        {
+                            bitonalImage.setRGB(x, y, image.getRGB(x, y));
+                        }
+                    }
+                    ImageIOUtil.writeImage(bitonalImage, suffix, imageOutput);
+                }
+                else
+                {
+                    BufferedImage image = pdImage.getImage();
+                    if (image != null)
+                    {
+                        ImageIOUtil.writeImage(image, suffix, imageOutput);
+                    }
+                }
+                imageOutput.flush();
+            }
         }
-        return false;
+
+        private boolean hasMasks(PDImage pdImage) throws IOException
+        {
+            if (pdImage instanceof PDImageXObject)
+            {
+                PDImageXObject ximg = (PDImageXObject) pdImage;
+                return ximg.getMask() != null || ximg.getSoftMask() != null;
+            }
+            return false;
+        }
     }
 }

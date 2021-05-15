@@ -15,26 +15,31 @@
  */
 package org.apache.pdfbox.util;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.regex.Pattern;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+
+import org.junit.jupiter.api.Test;
 
 /**
  *
  * @author Michael Doswald
  */
-public class TestNumberFormatUtil extends TestCase
+class TestNumberFormatUtil
 {
 
     private final byte[] buffer = new byte[64];
 
-    public void testFormatOfIntegerValues()
+    @Test
+    void testFormatOfIntegerValues()
     {
         assertEquals(2, NumberFormatUtil.formatFloatFast(51, 5, buffer));
         assertArrayEquals(new byte[]{'5', '1'}, Arrays.copyOfRange(buffer, 0, 2));
@@ -62,7 +67,8 @@ public class TestNumberFormatUtil extends TestCase
                           Arrays.copyOfRange(buffer, 0, 11));
     }
 
-    public void testFormatOfRealValues()
+    @Test
+    void testFormatOfRealValues()
     {
         assertEquals(3, NumberFormatUtil.formatFloatFast(0.7f, 5, buffer));
         assertArrayEquals(new byte[]{'0', '.', '7'}, Arrays.copyOfRange(buffer, 0, 3));
@@ -78,22 +84,23 @@ public class TestNumberFormatUtil extends TestCase
                           Arrays.copyOfRange(buffer, 0, 6));
     }
 
-    public void testFormatOfRealValuesReturnsMinusOneIfItCannotBeFormatted()
+    @Test
+    void testFormatOfRealValuesReturnsMinusOneIfItCannotBeFormatted()
     {
-        assertEquals("NaN should not be formattable", -1, 
-                     NumberFormatUtil.formatFloatFast(Float.NaN, 5, buffer));
-        assertEquals("+Infinity should not be formattable", -1, 
-                     NumberFormatUtil.formatFloatFast(Float.POSITIVE_INFINITY, 5, buffer));
-        assertEquals("-Infinity should not be formattable", -1, 
-                     NumberFormatUtil.formatFloatFast(Float.NEGATIVE_INFINITY, 5, buffer));
-
-        assertEquals("Too big number should not be formattable", -1, 
-                     NumberFormatUtil.formatFloatFast(((float) Long.MAX_VALUE) + 1000000000000f, 5, buffer));
-        assertEquals("Too big negative number should not be formattable", -1, 
-                     NumberFormatUtil.formatFloatFast(Long.MIN_VALUE, 5, buffer));
+        assertEquals(-1, NumberFormatUtil.formatFloatFast(Float.NaN, 5, buffer),
+                "NaN should not be formattable");
+        assertEquals(-1, NumberFormatUtil.formatFloatFast(Float.POSITIVE_INFINITY, 5, buffer),
+                "+Infinity should not be formattable");
+        assertEquals(-1, NumberFormatUtil.formatFloatFast(Float.NEGATIVE_INFINITY, 5, buffer),
+                "-Infinity should not be formattable");
+        assertEquals(-1, NumberFormatUtil.formatFloatFast(((float) Long.MAX_VALUE) + 1000000000000f,
+                5, buffer), "Too big number should not be formattable");
+        assertEquals(-1, NumberFormatUtil.formatFloatFast(Long.MIN_VALUE, 5, buffer),
+                "Too big negative number should not be formattable");
     }
 
-    public void testRoundingUp()
+    @Test
+    void testRoundingUp()
     {
         assertEquals(1, NumberFormatUtil.formatFloatFast(0.999999f, 5, buffer));
         assertArrayEquals(new byte[]{'1'}, Arrays.copyOfRange(buffer, 0, 1));
@@ -105,7 +112,8 @@ public class TestNumberFormatUtil extends TestCase
         assertArrayEquals(new byte[]{'-','1'}, Arrays.copyOfRange(buffer, 0, 2));
     }
     
-    public void testRoundingDown()
+    @Test
+    void testRoundingDown()
     {
         assertEquals(4, NumberFormatUtil.formatFloatFast(0.994f, 2, buffer));
         assertArrayEquals(new byte[]{'0','.','9','9'}, Arrays.copyOfRange(buffer, 0, 4));
@@ -121,7 +129,8 @@ public class TestNumberFormatUtil extends TestCase
      *   <li>A0 size is 841mm x 1189mm, this equals to about 2472 x 3495 in dot resolution</li>
      * </ul>
      */
-    public void testFormattingInRange()
+    @Test
+    void testFormattingInRange()
     {
         //Define a range to test
         BigDecimal minVal = new BigDecimal("-10");
@@ -140,7 +149,7 @@ public class TestNumberFormatUtil extends TestCase
             {
                 //format with the formatFloatFast method and parse back
                 int byteCount = NumberFormatUtil.formatFloatFast(value.floatValue(), maxFractionDigits, formatBuffer);
-                assertFalse(byteCount == -1);
+                assertNotEquals(-1, byteCount);
                 String newStringResult = new String(formatBuffer, 0, byteCount, StandardCharsets.US_ASCII);
                 BigDecimal formattedDecimal = new BigDecimal(newStringResult);
                 
@@ -165,7 +174,7 @@ public class TestNumberFormatUtil extends TestCase
     
     private void assertArrayEquals(byte[] expected, byte[] actual)
     {
-        assertEquals("Length of byte array not equal", expected.length, actual.length);
+        assertEquals(expected.length, actual.length, "Length of byte array not equal");
         for (int idx = 0; idx < expected.length; idx++)
         {
             if (expected[idx] != actual[idx])
@@ -176,27 +185,4 @@ public class TestNumberFormatUtil extends TestCase
         }
     }
 
-    /**
-     * Set the tests in the suite for this test class.
-     *
-     * @return the Suite.
-     */
-    public static Test suite()
-    {
-        return new TestSuite(TestNumberFormatUtil.class);
-    }
-
-    /**
-     * Command line execution.
-     *
-     * @param args Command line arguments.
-     */
-    public static void main(String[] args)
-    {
-        String[] arg =
-        {
-            TestNumberFormatUtil.class.getName()
-        };
-        junit.textui.TestRunner.main(arg);
-    }
 }

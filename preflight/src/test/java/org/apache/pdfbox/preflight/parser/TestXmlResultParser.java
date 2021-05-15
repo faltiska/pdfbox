@@ -20,26 +20,27 @@
  ****************************************************************************/
 package org.apache.pdfbox.preflight.parser;
 
-
 import org.apache.pdfbox.preflight.ValidationResult;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
 
-public class TestXmlResultParser
+class TestXmlResultParser
 {
 
     public static final String ERROR_CODE = "000";
 
-    protected XmlResultParser parser = new XmlResultParser();
+    protected final XmlResultParser parser = new XmlResultParser();
 
     protected Document document;
 
@@ -47,7 +48,7 @@ public class TestXmlResultParser
 
     protected XPath xpath;
 
-    @Before
+    @BeforeEach
     public void before() throws Exception
     {
         document = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
@@ -56,52 +57,52 @@ public class TestXmlResultParser
     }
 
     @Test
-    public void testOneError() throws Exception
+    void testOneError() throws Exception
     {
         ValidationResult result = new ValidationResult(false);
         result.addError(new ValidationResult.ValidationError("7"));
         parser.createResponseWithError(document, "pdftype", result, preflight);
-        Assert.assertNotNull(xpath.evaluate("errors[@count='1']", preflight, XPathConstants.NODE));
+        assertNotNull(xpath.evaluate("errors[@count='1']", preflight, XPathConstants.NODE));
         NodeList nl = (NodeList)xpath.evaluate("errors/error[@count='1']", preflight, XPathConstants.NODESET);
-        Assert.assertEquals(1,nl.getLength());
+        assertEquals(1,nl.getLength());
     }
 
     @Test
-    public void testTwoError() throws Exception
+    void testTwoError() throws Exception
     {
         ValidationResult result = new ValidationResult(false);
         result.addError(new ValidationResult.ValidationError("7"));
         result.addError(new ValidationResult.ValidationError(ERROR_CODE));
         parser.createResponseWithError(document, "pdftype", result, preflight);
-        Assert.assertNotNull(xpath.evaluate("errors[@count='2']", preflight, XPathConstants.NODE));
+        assertNotNull(xpath.evaluate("errors[@count='2']", preflight, XPathConstants.NODE));
         NodeList nl = (NodeList)xpath.evaluate("errors/error[@count='1']", preflight, XPathConstants.NODESET);
-        Assert.assertEquals(2,nl.getLength());
+        assertEquals(2,nl.getLength());
     }
 
     @Test
-    public void testSameErrorTwice() throws Exception
+    void testSameErrorTwice() throws Exception
     {
         ValidationResult result = new ValidationResult(false);
         result.addError(new ValidationResult.ValidationError(ERROR_CODE));
         result.addError(new ValidationResult.ValidationError(ERROR_CODE));
         parser.createResponseWithError(document,"pdftype",result,preflight);
-        Assert.assertNotNull(xpath.evaluate("errors[@count='2']", preflight, XPathConstants.NODE));
-        Assert.assertNotNull(xpath.evaluate("errors/error[@count='2']", preflight, XPathConstants.NODE));
+        assertNotNull(xpath.evaluate("errors[@count='2']", preflight, XPathConstants.NODE));
+        assertNotNull(xpath.evaluate("errors/error[@count='2']", preflight, XPathConstants.NODE));
         Element code = (Element)xpath.evaluate("errors/error[@count='2']/code", preflight, XPathConstants.NODE);
-        Assert.assertNotNull(code);
-        Assert.assertEquals(ERROR_CODE,code.getTextContent());
+        assertNotNull(code);
+        assertEquals(ERROR_CODE,code.getTextContent());
     }
 
     @Test
-    public void testSameCodeWithDifferentMessages() throws Exception
+    void testSameCodeWithDifferentMessages() throws Exception
     {
         ValidationResult result = new ValidationResult(false);
         result.addError(new ValidationResult.ValidationError(ERROR_CODE,"message 1"));
         result.addError(new ValidationResult.ValidationError(ERROR_CODE,"message 2"));
         parser.createResponseWithError(document, "pdftype", result, preflight);
-        Assert.assertNotNull(xpath.evaluate("errors[@count='2']", preflight, XPathConstants.NODE));
+        assertNotNull(xpath.evaluate("errors[@count='2']", preflight, XPathConstants.NODE));
         NodeList nl = (NodeList)xpath.evaluate("errors/error[@count='1']", preflight, XPathConstants.NODESET);
-        Assert.assertEquals(2,nl.getLength());
+        assertEquals(2,nl.getLength());
     }
 
 

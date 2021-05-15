@@ -29,7 +29,7 @@ import org.apache.pdfbox.pdmodel.common.PDRange;
  */
 public class FDFIconFit implements COSObjectable
 {
-    private COSDictionary fit;
+    private final COSDictionary fit;
 
     /**
      * A scale option.
@@ -151,7 +151,7 @@ public class FDFIconFit implements COSObjectable
     public PDRange getFractionalSpaceToAllocate()
     {
         PDRange retval = null;
-        COSArray array = (COSArray) fit.getDictionaryObject(COSName.A);
+        COSArray array = fit.getCOSArray(COSName.A);
         if (array == null)
         {
             retval = new PDRange();

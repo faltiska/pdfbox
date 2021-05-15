@@ -45,6 +45,7 @@ import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.io.MemoryUsageSetting;
 import org.apache.pdfbox.io.RandomAccessRead;
 import org.apache.pdfbox.pdfwriter.COSWriter;
+import org.apache.pdfbox.pdfwriter.compress.CompressParameters;
 import org.apache.pdfbox.pdmodel.common.COSArrayList;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.common.PDStream;
@@ -326,7 +327,7 @@ public class PDDocument implements Closeable
 
         // Get the AcroForm from the Root-Dictionary and append the annotation
         PDDocumentCatalog catalog = getDocumentCatalog();
-        PDAcroForm acroForm = catalog.getAcroForm();
+        PDAcroForm acroForm = catalog.getAcroForm(null);
         catalog.getCOSObject().setNeedToBeUpdated(true);
 
         if (acroForm == null)
@@ -340,15 +341,16 @@ public class PDDocument implements Closeable
         }
 
         PDSignatureField signatureField = null;
-        if (!(acroForm.getCOSObject().getDictionaryObject(COSName.FIELDS) instanceof COSArray))
+        COSBase cosFieldBase = acroForm.getCOSObject().getDictionaryObject(COSName.FIELDS);
+        if (cosFieldBase instanceof COSArray)
         {
-            acroForm.getCOSObject().setItem(COSName.FIELDS, new COSArray());
+            COSArray fieldArray = (COSArray) cosFieldBase;
+            fieldArray.setNeedToBeUpdated(true);
+            signatureField = findSignatureField(acroForm.getFieldIterator(), sigObject);
         }
         else
         {
-            COSArray fieldArray = (COSArray) acroForm.getCOSObject().getDictionaryObject(COSName.FIELDS);
-            fieldArray.setNeedToBeUpdated(true);
-            signatureField = findSignatureField(acroForm.getFieldIterator(), sigObject);
+            acroForm.getCOSObject().setItem(COSName.FIELDS, new COSArray());
         }
         if (signatureField == null)
         {
@@ -370,6 +372,10 @@ public class PDDocument implements Closeable
         // The /F key's Print flag bit shall be set to 1 and 
         // its Hidden, Invisible and NoView flag bits shall be set to 0
         signatureField.getWidgets().get(0).setPrinted(true);
+        // This may be troublesome if several form fields are signed,
+        // see thread from PDFBox users mailing list 17.2.2021 - 19.2.2021
+        // https://mail-archives.apache.org/mod_mbox/pdfbox-users/202102.mbox/thread
+        // better set the printed flag in advance
 
         // Set the AcroForm Fields
         List<PDField> acroFormFields = acroForm.getFields();
@@ -447,6 +453,7 @@ public class PDDocument implements Closeable
                 if (signature != null && signature.getCOSObject().equals(sigObject.getCOSObject()))
                 {
                     signatureField = (PDSignatureField) pdField;
+                    break;
                 }
             }
         }
@@ -477,8 +484,8 @@ public class PDDocument implements Closeable
     /**
      * Check if the widget already exists in the annotation list
      *
-     * @param acroFormFields the list of AcroForm fields.
-     * @param signatureField the signature field.
+     * @param annotations the list of PDAnnotation fields.
+     * @param widget the annotation widget.
      * @return true if the widget already existed in the annotation list, false if not.
      */
     private boolean checkSignatureAnnotation(List<PDAnnotation> annotations, PDAnnotationWidget widget)
@@ -539,13 +546,13 @@ public class PDDocument implements Closeable
     private void assignSignatureRectangle(PDSignatureField signatureField, COSDictionary annotDict)
     {
         // Read and set the rectangle for visual signature
-        COSArray rectArray = (COSArray) annotDict.getDictionaryObject(COSName.RECT);
-        PDRectangle rect = new PDRectangle(rectArray);
+        COSArray rectArray = annotDict.getCOSArray(COSName.RECT);
         PDRectangle existingRectangle = signatureField.getWidgets().get(0).getRectangle();
 
         //in case of an existing field keep the original rect
         if (existingRectangle == null || existingRectangle.getCOSArray().size() != 4)
         {
+            PDRectangle rect = new PDRectangle(rectArray);
             signatureField.getWidgets().get(0).setRectangle(rect);
         }
     }
@@ -561,10 +568,9 @@ public class PDDocument implements Closeable
     private void assignAcroFormDefaultResource(PDAcroForm acroForm, COSDictionary newDict)
     {
         // read and set/update AcroForm default resource dictionary /DR if available
-        COSBase newBase = newDict.getDictionaryObject(COSName.DR);
-        if (newBase instanceof COSDictionary)
+        COSDictionary newDR = newDict.getCOSDictionary(COSName.DR);
+        if (newDR != null)
         {
-            COSDictionary newDR = (COSDictionary) newBase;
             PDResources defaultResources = acroForm.getDefaultResources();
             if (defaultResources == null)
             {
@@ -575,12 +581,11 @@ public class PDDocument implements Closeable
             else
             {
                 COSDictionary oldDR = defaultResources.getCOSObject();
-                COSBase newXObjectBase = newDR.getItem(COSName.XOBJECT);
-                COSBase oldXObjectBase = oldDR.getItem(COSName.XOBJECT);
-                if (newXObjectBase instanceof COSDictionary &&
-                    oldXObjectBase instanceof COSDictionary)
+                COSDictionary newXObject = newDR.getCOSDictionary(COSName.XOBJECT);
+                COSDictionary oldXObject = oldDR.getCOSDictionary(COSName.XOBJECT);
+                if (newXObject != null && oldXObject != null)
                 {
-                    ((COSDictionary) oldXObjectBase).addAll((COSDictionary) newXObjectBase);
+                    oldXObject.addAll(newXObject);
                     oldDR.setNeedToBeUpdated(true);
                 }
             }
@@ -653,8 +658,8 @@ public class PDDocument implements Closeable
         PDStream dest = new PDStream(this, page.getContents(), COSName.FLATE_DECODE);
         importedPage.setContents(dest);
         addPage(importedPage);
-        importedPage.setCropBox(page.getCropBox());
-        importedPage.setMediaBox(page.getMediaBox());
+        importedPage.setCropBox(new PDRectangle(page.getCropBox().getCOSArray()));
+        importedPage.setMediaBox(new PDRectangle(page.getMediaBox().getCOSArray()));
         importedPage.setRotation(page.getRotation());
         if (page.getResources() != null && !page.getCOSObject().containsKey(COSName.RESOURCES))
         {
@@ -725,10 +730,10 @@ public class PDDocument implements Closeable
         if (documentCatalog == null)
         {
             COSDictionary trailer = document.getTrailer();
-            COSBase dictionary = trailer.getDictionaryObject(COSName.ROOT);
-            if (dictionary instanceof COSDictionary)
+            COSDictionary dictionary = trailer.getCOSDictionary(COSName.ROOT);
+            if (dictionary != null)
             {
-                documentCatalog = new PDDocumentCatalog(this, (COSDictionary) dictionary);
+                documentCatalog = new PDDocumentCatalog(this, dictionary);
             }
             else
             {
@@ -800,7 +805,7 @@ public class PDDocument implements Closeable
     public List<PDSignatureField> getSignatureFields()
     {
         List<PDSignatureField> fields = new ArrayList<>();
-        PDAcroForm acroForm = getDocumentCatalog().getAcroForm();
+        PDAcroForm acroForm = getDocumentCatalog().getAcroForm(null);
         if (acroForm != null)
         {
             for (PDField field : acroForm.getFieldTree())
@@ -824,10 +829,10 @@ public class PDDocument implements Closeable
         List<PDSignature> signatures = new ArrayList<>();
         for (PDSignatureField field : getSignatureFields())
         {
-            COSBase value = field.getCOSObject().getDictionaryObject(COSName.V);
-            if (value instanceof COSDictionary)
+            COSDictionary value = field.getCOSObject().getCOSDictionary(COSName.V);
+            if (value != null)
             {
-                signatures.add(new PDSignature((COSDictionary)value));
+                signatures.add(new PDSignature(value));
             }
         }
         return signatures;
@@ -852,9 +857,15 @@ public class PDDocument implements Closeable
     {
         return fontsToSubset;
     }
+    
     /**
-     * Save the document to a file.
-     * 
+     * Save the document to a file using default compression.
+     * <p>
+     * Don't use the input file as target as this will produce a corrupted file.
+     * <p>
+     * If encryption has been activated (with {@link #protect(org.apache.pdfbox.pdmodel.encryption.ProtectionPolicy)
+     * protect(ProtectionPolicy)}), do not use the document after saving because the contents are now encrypted.
+     *
      * @param fileName The file to save as.
      *
      * @throws IOException if the output could not be written
@@ -865,7 +876,12 @@ public class PDDocument implements Closeable
     }
 
     /**
-     * Save the document to a file.
+     * Save the document to a file using default compression.
+     * <p>
+     * Don't use the input file as target as this will produce a corrupted file.
+     * <p>
+     * If encryption has been activated (with {@link #protect(org.apache.pdfbox.pdmodel.encryption.ProtectionPolicy)
+     * protect(ProtectionPolicy)}), do not use the document after saving because the contents are now encrypted.
      * 
      * @param file The file to save as.
      *
@@ -873,51 +889,121 @@ public class PDDocument implements Closeable
      */
     public void save(File file) throws IOException
     {
-        save(new BufferedOutputStream(new FileOutputStream(file)));
+        save(file, CompressParameters.DEFAULT_COMPRESSION);
     }
 
     /**
      * This will save the document to an output stream.
+     * <p>
+     * Don't use the input file as target as this will produce a corrupted file.
+     * <p>
+     * If encryption has been activated (with {@link #protect(org.apache.pdfbox.pdmodel.encryption.ProtectionPolicy)
+     * protect(ProtectionPolicy)}), do not use the document after saving because the contents are now encrypted.
      *
-     * @param output The stream to write to. It will be closed when done. It is recommended to wrap
-     * it in a {@link java.io.BufferedOutputStream}, unless it is already buffered.
+     * @param output The stream to write to. It is recommended to wrap it in a {@link java.io.BufferedOutputStream},
+     * unless it is already buffered.
      *
      * @throws IOException if the output could not be written
      */
     public void save(OutputStream output) throws IOException
+    {
+        save(output, CompressParameters.DEFAULT_COMPRESSION);
+    }
+
+    /**
+     * Save the document using the given compression.
+     * <p>
+     * Don't use the input file as target as this will produce a corrupted file.
+     * <p>
+     * If encryption has been activated (with {@link #protect(org.apache.pdfbox.pdmodel.encryption.ProtectionPolicy)
+     * protect(ProtectionPolicy)}), do not use the document after saving because the contents are now encrypted.
+     *
+     * @param file The file to save as.
+     * @param compressParameters The parameters for the document's compression.
+     * @throws IOException if the output could not be written
+     */
+    public void save(File file, CompressParameters compressParameters) throws IOException
+    {
+        if (file.exists())
+        {
+            LOG.warn(
+                    "You are overwriting an existing file, this will produce a corrupted file if you're also reading from it");
+        }
+        try (BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(
+                new FileOutputStream(file)))
+        {
+            save(bufferedOutputStream, compressParameters);
+        }
+    }
+
+    /**
+     * Save the document to a file using the given compression.
+     * <p>
+     * Don't use the input file as target as this will produce a corrupted file.
+     * <p>
+     * If encryption has been activated (with {@link #protect(org.apache.pdfbox.pdmodel.encryption.ProtectionPolicy)
+     * protect(ProtectionPolicy)}), do not use the document after saving because the contents are now encrypted.
+     * 
+     * @param fileName The file to save as.
+     * @param compressParameters The parameters for the document's compression.
+     *
+     * @throws IOException if the output could not be written
+     */
+    public void save(String fileName, CompressParameters compressParameters) throws IOException
+    {
+        save(new File(fileName), compressParameters);
+    }
+
+    /**
+     * Save the document using the given compression.
+     * <p>
+     * Don't use the input file as target as this will produce a corrupted file.
+     * <p>
+     * If encryption has been activated (with {@link #protect(org.apache.pdfbox.pdmodel.encryption.ProtectionPolicy)
+     * protect(ProtectionPolicy)}), do not use the document after saving because the contents are now encrypted.
+     *
+     * @param output The stream to write to. It is recommended to wrap it in a {@link java.io.BufferedOutputStream},
+     * unless it is already buffered.
+     * @param compressParameters The parameters for the document's compression.
+     * @throws IOException if the output could not be written
+     */
+    public void save(OutputStream output, CompressParameters compressParameters)
+            throws IOException
     {
         if (document.isClosed())
         {
             throw new IOException("Cannot save a document which has been closed");
         }
 
+        // object stream compression requires a cross reference stream.
+        document.setIsXRefStream(compressParameters != null //
+                && CompressParameters.NO_COMPRESSION != compressParameters);
         // subset designated fonts
         for (PDFont font : fontsToSubset)
         {
             font.subset();
         }
         fontsToSubset.clear();
-        
-         // save PDF
-        try (COSWriter writer = new COSWriter(output))
-        {
-            writer.write(this);
-        }
+
+        // save PDF
+        COSWriter writer = new COSWriter(output, compressParameters);
+        writer.write(this);
     }
 
     /**
-     * Save the PDF as an incremental update. This is only possible if the PDF was loaded from a
-     * file or a stream, not if the document was created in PDFBox itself. There must be a path of
-     * objects that have {@link COSUpdateInfo#isNeedToBeUpdated()} set, starting from the document
-     * catalog. For signatures this is taken care by PDFBox itself.
-     *<p>
-     * Other usages of this method are for experienced users only. You will usually never need it.
-     * It is useful only if you are required to keep the current revision and append the changes. A
-     * typical use case is changing a signed file without invalidating the signature.
+     * Save the PDF as an incremental update. This is only possible if the PDF was loaded from a file or a stream, not
+     * if the document was created in PDFBox itself. There must be a path of objects that have
+     * {@link COSUpdateInfo#isNeedToBeUpdated()} set, starting from the document catalog. For signatures this is taken
+     * care by PDFBox itself.
+     * <p>
+     * Other usages of this method are for experienced users only. You will usually never need it. It is useful only if
+     * you are required to keep the current revision and append the changes. A typical use case is changing a signed
+     * file without invalidating the signature.
+     * <p>
+     * Don't use the input file as target as this will produce a corrupted file.
      *
-     * @param output stream to write to. It will be closed when done. It
-     * <i><b>must never</b></i> point to the source file or that one will be
-     * harmed!
+     * @param output stream to write to. It will be closed when done. It <i><b>must never</b></i> point to the source
+     * file or that one will be harmed!
      * @throws IOException if the output could not be written
      * @throws IllegalStateException if the document was not loaded from a file or a stream.
      */
@@ -927,15 +1013,43 @@ public class PDDocument implements Closeable
         {
             throw new IllegalStateException("document was not loaded from a file or a stream");
         }
-        try (COSWriter writer = new COSWriter(output, pdfSource))
-        {
-            writer.write(this, signInterface);
-        }
+        COSWriter writer = new COSWriter(output, pdfSource);
+        writer.write(this, signInterface);
     }
 
     /**
-     * Save PDF incrementally without closing for external signature creation scenario. The general
-     * sequence is:
+     * Save the PDF as an incremental update. This is only possible if the PDF was loaded from a file or a stream, not
+     * if the document was created in PDFBox itself. This allows to include objects even if there is no path of objects
+     * that have {@link COSUpdateInfo#isNeedToBeUpdated()} set so the incremental update gets smaller. Only dictionaries
+     * are supported; if you need to update other objects classes, then add their parent dictionary.
+     * <p>
+     * This method is for experienced users only. You will usually never need it. It is useful only if you are required
+     * to keep the current revision and append the changes. A typical use case is changing a signed file without
+     * invalidating the signature. To know which objects are getting changed, you need to have some understanding of the
+     * PDF specification, and look at the saved file with an editor to verify that you are updating the correct objects.
+     * You should also inspect the page and document structures of the file with PDFDebugger.
+     * <p>
+     * Don't use the input file as target as this will produce a corrupted file.
+     *
+     * @param output stream to write to. It will be closed when done. It <i><b>must never</b></i> point to the source
+     * file or that one will be harmed!
+     * @param objectsToWrite objects that <b>must</b> be part of the incremental saving.
+     * @throws IOException if the output could not be written
+     * @throws IllegalStateException if the document was not loaded from a file or a stream.
+     */
+    public void saveIncremental(OutputStream output, Set<COSDictionary> objectsToWrite) throws IOException
+    {
+        if (pdfSource == null)
+        {
+            throw new IllegalStateException("document was not loaded from a file or a stream");
+        }
+        COSWriter writer = new COSWriter(output, pdfSource, objectsToWrite);
+        writer.write(this, signInterface);
+    }
+
+    /**
+     * Save PDF incrementally without closing for external signature creation scenario. The general sequence is:
+     * 
      * <pre>
      *    PDDocument pdDocument = ...;
      *    OutputStream outputStream = ...;
@@ -957,17 +1071,18 @@ public class PDDocument implements Closeable
      *    pdDocument.close();
      * </pre>
      * <p>
-     * Note that after calling this method, only {@code close()} method may invoked for
-     * {@code PDDocument} instance and only AFTER {@link ExternalSigningSupport} instance is used.
+     * Note that after calling this method, only {@code close()} method may invoked for {@code PDDocument} instance and
+     * only AFTER {@link ExternalSigningSupport} instance is used.
      * </p>
+     * <p>
+     * Don't use the input file as target as this will produce a corrupted file.
      *
-     * @param output stream to write the final PDF. It will be closed when the
-     * document is closed. It <i><b>must never</b></i> point to the source file
-     * or that one will be harmed!
+     * @param output stream to write the final PDF. It will be closed when the document is closed. It <i><b>must
+     * never</b></i> point to the source file or that one will be harmed!
      * @return instance to be used for external signing and setting CMS signature
      * @throws IOException if the output could not be written
-     * @throws IllegalStateException if the document was not loaded from a file or a stream or
-     * signature options were not set.
+     * @throws IllegalStateException if the document was not loaded from a file or a stream or signature options were
+     * not set.
      */
     public ExternalSigningSupport saveIncrementalForExternalSigning(OutputStream output) throws IOException
     {
@@ -1090,6 +1205,8 @@ public class PDDocument implements Closeable
      * encrypted when it will be saved. This method only marks the document for encryption. It also
      * calls {@link #setAllSecurityToBeRemoved(boolean)} with a false argument if it was set to true
      * previously and logs a warning.
+     * <p>
+     * Do not use the document after saving, because the structures are encrypted.
      *
      * @see org.apache.pdfbox.pdmodel.encryption.StandardProtectionPolicy
      * @see org.apache.pdfbox.pdmodel.encryption.PublicKeyProtectionPolicy
@@ -1111,7 +1228,8 @@ public class PDDocument implements Closeable
             encryption = new PDEncryption();
         }
 
-        SecurityHandler securityHandler = SecurityHandlerFactory.INSTANCE.newSecurityHandlerForPolicy(policy);
+        SecurityHandler<ProtectionPolicy> securityHandler =
+                SecurityHandlerFactory.INSTANCE.newSecurityHandlerForPolicy(policy);
         if (securityHandler == null)
         {
             throw new IOException("No security handler for policy " + policy);
@@ -1160,7 +1278,7 @@ public class PDDocument implements Closeable
     /**
      * Provides the document ID.
      *
-     * @return the dcoument ID
+     * @return the document ID
      */
     public Long getDocumentId()
     {

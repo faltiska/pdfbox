@@ -58,7 +58,7 @@ public abstract class FDFAnnotation implements COSObjectable
     /**
      * An annotation flag.
      */
-    private static final int FLAG_INVISIBLE = 1 << 0;
+    private static final int FLAG_INVISIBLE = 1;
     /**
      * An annotation flag.
      */
@@ -99,7 +99,7 @@ public abstract class FDFAnnotation implements COSObjectable
     /**
      * Annotation dictionary.
      */
-    protected COSDictionary annot;
+    protected final COSDictionary annot;
 
     /**
      * Default constructor.
@@ -324,79 +324,78 @@ public abstract class FDFAnnotation implements COSObjectable
         FDFAnnotation retval = null;
         if (fdfDic != null)
         {
-            if (FDFAnnotationText.SUBTYPE.equals(fdfDic.getNameAsString(COSName.SUBTYPE)))
+            String fdfDicName = fdfDic.getNameAsString(COSName.SUBTYPE);
+            if (FDFAnnotationText.SUBTYPE.equals(fdfDicName))
             {
                 retval = new FDFAnnotationText(fdfDic);
             }
-            else if (FDFAnnotationCaret.SUBTYPE.equals(fdfDic.getNameAsString(COSName.SUBTYPE)))
+            else if (FDFAnnotationCaret.SUBTYPE.equals(fdfDicName))
             {
                 retval = new FDFAnnotationCaret(fdfDic);
             }
-            else if (FDFAnnotationFreeText.SUBTYPE.equals(fdfDic.getNameAsString(COSName.SUBTYPE)))
+            else if (FDFAnnotationFreeText.SUBTYPE.equals(fdfDicName))
             {
                 retval = new FDFAnnotationFreeText(fdfDic);
             }
-            else if (FDFAnnotationFileAttachment.SUBTYPE.equals(fdfDic
-                    .getNameAsString(COSName.SUBTYPE)))
+            else if (FDFAnnotationFileAttachment.SUBTYPE.equals(fdfDicName))
             {
                 retval = new FDFAnnotationFileAttachment(fdfDic);
             }
-            else if (FDFAnnotationHighlight.SUBTYPE.equals(fdfDic.getNameAsString(COSName.SUBTYPE)))
+            else if (FDFAnnotationHighlight.SUBTYPE.equals(fdfDicName))
             {
                 retval = new FDFAnnotationHighlight(fdfDic);
             }
-            else if (FDFAnnotationInk.SUBTYPE.equals(fdfDic.getNameAsString(COSName.SUBTYPE)))
+            else if (FDFAnnotationInk.SUBTYPE.equals(fdfDicName))
             {
                 retval = new FDFAnnotationInk(fdfDic);
             }
-            else if (FDFAnnotationLine.SUBTYPE.equals(fdfDic.getNameAsString(COSName.SUBTYPE)))
+            else if (FDFAnnotationLine.SUBTYPE.equals(fdfDicName))
             {
                 retval = new FDFAnnotationLine(fdfDic);
             }
-            else if (FDFAnnotationLink.SUBTYPE.equals(fdfDic.getNameAsString(COSName.SUBTYPE)))
+            else if (FDFAnnotationLink.SUBTYPE.equals(fdfDicName))
             {
                 retval = new FDFAnnotationLink(fdfDic);
             }
-            else if (FDFAnnotationCircle.SUBTYPE.equals(fdfDic.getNameAsString(COSName.SUBTYPE)))
+            else if (FDFAnnotationCircle.SUBTYPE.equals(fdfDicName))
             {
                 retval = new FDFAnnotationCircle(fdfDic);
             }
-            else if (FDFAnnotationSquare.SUBTYPE.equals(fdfDic.getNameAsString(COSName.SUBTYPE)))
+            else if (FDFAnnotationSquare.SUBTYPE.equals(fdfDicName))
             {
                 retval = new FDFAnnotationSquare(fdfDic);
             }
-            else if (FDFAnnotationPolygon.SUBTYPE.equals(fdfDic.getNameAsString(COSName.SUBTYPE)))
+            else if (FDFAnnotationPolygon.SUBTYPE.equals(fdfDicName))
             {
                 retval = new FDFAnnotationPolygon(fdfDic);
             }
-            else if (FDFAnnotationPolyline.SUBTYPE.equals(fdfDic.getNameAsString(COSName.SUBTYPE)))
+            else if (FDFAnnotationPolyline.SUBTYPE.equals(fdfDicName))
             {
                 retval = new FDFAnnotationPolyline(fdfDic);
             }
-            else if (FDFAnnotationSound.SUBTYPE.equals(fdfDic.getNameAsString(COSName.SUBTYPE)))
+            else if (FDFAnnotationSound.SUBTYPE.equals(fdfDicName))
             {
                 retval = new FDFAnnotationSound(fdfDic);
             }
-            else if (FDFAnnotationSquiggly.SUBTYPE.equals(fdfDic.getNameAsString(COSName.SUBTYPE)))
+            else if (FDFAnnotationSquiggly.SUBTYPE.equals(fdfDicName))
             {
                 retval = new FDFAnnotationSquiggly(fdfDic);
             }
-            else if (FDFAnnotationStamp.SUBTYPE.equals(fdfDic.getNameAsString(COSName.SUBTYPE)))
+            else if (FDFAnnotationStamp.SUBTYPE.equals(fdfDicName))
             {
                 retval = new FDFAnnotationStamp(fdfDic);
             }
-            else if (FDFAnnotationStrikeOut.SUBTYPE.equals(fdfDic.getNameAsString(COSName.SUBTYPE)))
+            else if (FDFAnnotationStrikeOut.SUBTYPE.equals(fdfDicName))
             {
                 retval = new FDFAnnotationStrikeOut(fdfDic);
             }
-            else if (FDFAnnotationUnderline.SUBTYPE.equals(fdfDic.getNameAsString(COSName.SUBTYPE)))
+            else if (FDFAnnotationUnderline.SUBTYPE.equals(fdfDicName))
             {
                 retval = new FDFAnnotationUnderline(fdfDic);
             }
             else
             {
-                LOG.warn("Unknown or unsupported annotation type '"
-                        + fdfDic.getNameAsString(COSName.SUBTYPE) + "'");
+                LOG.warn("Unknown or unsupported annotation type '" + fdfDicName + "'");
             }
         }
         return retval;
@@ -447,7 +446,7 @@ public abstract class FDFAnnotation implements COSObjectable
     public Color getColor()
     {
         Color retval = null;
-        COSArray array = (COSArray) annot.getDictionaryObject(COSName.C);
+        COSArray array = annot.getCOSArray(COSName.C);
         if (array != null)
         {
             float[] rgb = array.toFloatArray();
@@ -733,13 +732,8 @@ public abstract class FDFAnnotation implements COSObjectable
      */
     public PDRectangle getRectangle()
     {
-        PDRectangle retval = null;
-        COSArray rectArray = (COSArray) annot.getDictionaryObject(COSName.RECT);
-        if (rectArray != null)
-        {
-            retval = new PDRectangle(rectArray);
-        }
-        return retval;
+        COSArray rectArray = annot.getCOSArray(COSName.RECT);
+        return rectArray != null ? new PDRectangle(rectArray) : null;
     }
 
     /**
@@ -904,15 +898,8 @@ public abstract class FDFAnnotation implements COSObjectable
      */
     public PDBorderStyleDictionary getBorderStyle()
     {
-        COSDictionary bs = (COSDictionary) annot.getDictionaryObject(COSName.BS);
-        if (bs != null)
-        {
-            return new PDBorderStyleDictionary(bs);
-        }
-        else
-        {
-            return null;
-        }
+        COSDictionary bs = annot.getCOSDictionary(COSName.BS);
+        return bs != null ? new PDBorderStyleDictionary(bs) : null;
     }
 
     /**
@@ -935,15 +922,8 @@ public abstract class FDFAnnotation implements COSObjectable
      */
     public PDBorderEffectDictionary getBorderEffect()
     {
-        COSDictionary be = (COSDictionary) annot.getDictionaryObject(COSName.BE);
-        if (be != null)
-        {
-            return new PDBorderEffectDictionary(be);
-        }
-        else
-        {
-            return null;
-        }
+        COSDictionary be = annot.getCOSDictionary(COSName.BE);
+        return be != null ? new PDBorderEffectDictionary(be) : null;
     }
 
     /**
@@ -976,7 +956,7 @@ public abstract class FDFAnnotation implements COSObjectable
 
     private String richContentsToString(Node node, boolean root)
     {
-        String subString = "";
+        StringBuilder sb = new StringBuilder();
 
         NodeList nodelist = node.getChildNodes();
         for (int i = 0; i < nodelist.getLength(); i++)
@@ -984,11 +964,11 @@ public abstract class FDFAnnotation implements COSObjectable
             Node child = nodelist.item(i);
             if (child instanceof Element)
             {
-                subString += richContentsToString(child, false);
+                sb.append(richContentsToString(child, false));
             }
             else if (child instanceof CDATASection)
             {
-            	subString += "<![CDATA[" + ((CDATASection) child).getData() + "]]>";
+            	sb.append("<![CDATA[").append(((CDATASection) child).getData()).append("]]>");
             }
             else if (child instanceof Text)
             {
@@ -997,12 +977,12 @@ public abstract class FDFAnnotation implements COSObjectable
             	{
             		cdata = cdata.replace("&", "&amp;").replace("<", "&lt;");
             	}
-            	subString += cdata;
+            	sb.append(cdata);
             }
         }
         if (root)
         {
-            return subString;
+            return sb.toString();
         }
 
         NamedNodeMap attributes = node.getAttributes();
@@ -1019,6 +999,6 @@ public abstract class FDFAnnotation implements COSObjectable
                     attributeNodeValue));
         }
         return String.format("<%s%s>%s</%s>", node.getNodeName(), builder.toString(),
-                subString, node.getNodeName());
+                sb.toString(), node.getNodeName());
     }
 }

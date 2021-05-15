@@ -33,12 +33,12 @@ import org.apache.fontbox.util.BoundingBox;
  */
 public abstract class CFFFont implements FontBoxFont
 {
-    protected String fontName;
+    private String fontName;
+    private CFFCharset charset;
+    private CFFParser.ByteSource source;
     protected final Map<String, Object> topDict = new LinkedHashMap<>();
-    protected CFFCharset charset;
     protected byte[][] charStrings;
     protected byte[][] globalSubrIndex;
-    private CFFParser.ByteSource source;
 
     /**
      * The name of the font.
@@ -89,7 +89,10 @@ public abstract class CFFFont implements FontBoxFont
      * Returns the FontMatrix.
      */
     @Override
-    public abstract List<Number> getFontMatrix();
+    public List<Number> getFontMatrix()
+    {
+        return (List<Number>) topDict.get("FontMatrix");
+    }
 
     /**
      * Returns the FontBBox.
@@ -124,7 +127,7 @@ public abstract class CFFFont implements FontBoxFont
     /**
      * Returns the character strings dictionary. For expert users only.
      *
-     * @return the dictionary
+     * @return the character strings dictionary as a list of byte arrays.
      */
     public final List<byte[]> getCharStringBytes()
     {
@@ -158,17 +161,17 @@ public abstract class CFFFont implements FontBoxFont
     /**
      * Sets the global subroutine index data.
      * 
-     * @param globalSubrIndexValue an list containing the global subroutines
+     * @param globalSubrIndexValue a list of the global subroutines.
      */
     void setGlobalSubrIndex(byte[][] globalSubrIndexValue)
     {
         globalSubrIndex = globalSubrIndexValue;
     }
 
-    /**
-     * Returns the list containing the global subroutine .
+     /**
+     * Returns the list containing the global subroutines.
      * 
-     * @return the dictionary
+     * @return a list of the global subroutines.
      */
     public List<byte[]> getGlobalSubrIndex()
     {

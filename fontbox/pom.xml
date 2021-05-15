@@ -43,8 +43,8 @@
       <artifactId>commons-logging</artifactId>
     </dependency>
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
     </dependency>
   </dependencies>
 
@@ -54,6 +54,11 @@
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
         <extensions>true</extensions>
+        <configuration>
+            <instructions>
+                <Automatic-Module-Name>org.apache.fontbox</Automatic-Module-Name>
+            </instructions>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.rat</groupId>
@@ -62,21 +67,10 @@
             <excludes>
                 <exclude>src/main/resources/org/apache/fontbox/cmap/*</exclude>
                 <exclude>src/main/resources/org/apache/fontbox/unicode/*</exclude>
+                <exclude>src/test/resources/afm/*</exclude>
             </excludes>
         </configuration>
       </plugin>
-      <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-jar-plugin</artifactId>
-          <configuration>
-              <archive>
-                  <manifestEntries>
-                      <Automatic-Module-Name>org.apache.fontbox</Automatic-Module-Name>
-                  </manifestEntries>
-              </archive>
-          </configuration>
-      </plugin>
-
       <!-- download test files from JIRA and keep them in repository cache -->
       <plugin>
           <groupId>com.googlecode.maven-download-plugin</groupId>

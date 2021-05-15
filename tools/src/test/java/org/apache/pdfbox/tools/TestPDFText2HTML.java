@@ -16,6 +16,9 @@
  */
 package org.apache.pdfbox.tools;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -26,12 +29,11 @@ import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
 
-import junit.framework.TestCase;
 import org.apache.pdfbox.text.PDFTextStripper;
+import org.junit.jupiter.api.Test;
 
-public class TestPDFText2HTML extends TestCase
+class TestPDFText2HTML
 {
-
     private PDDocument createDocument(String title, PDFont font, String text) throws IOException
     {
         PDDocument doc = new PDDocument();
@@ -49,7 +51,8 @@ public class TestPDFText2HTML extends TestCase
         return doc;
     }
 
-    public void testEscapeTitle() throws IOException
+    @Test
+    void testEscapeTitle() throws IOException
     {
         PDFTextStripper stripper = new PDFText2HTML();
         PDDocument doc = createDocument("<script>\u3042", PDType1Font.HELVETICA, "<foo>");
@@ -61,14 +64,15 @@ public class TestPDFText2HTML extends TestCase
         assertTrue(text.contains("&lt;foo&gt;"));
     }
 
-    public void testStyle() throws IOException
+    @Test
+    void testStyle() throws IOException
     {
         PDFTextStripper stripper = new PDFText2HTML();
         PDDocument doc = createDocument("t", PDType1Font.HELVETICA_BOLD, "<bold>");
         String text = stripper.getText(doc);
 
         Matcher bodyMatcher = Pattern.compile("<p>(.*?)</p>").matcher(text);
-        assertTrue("body p exists", bodyMatcher.find());
-        assertEquals("body p", "<b>&lt;bold&gt;</b>", bodyMatcher.group(1));
+        assertTrue(bodyMatcher.find(), "body p exists");
+        assertEquals("<b>&lt;bold&gt;</b>", bodyMatcher.group(1), "body p");
     }
 }

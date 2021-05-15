@@ -20,6 +20,7 @@ import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSFloat;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.pdmodel.common.PDRange;
+
 import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
 import java.io.IOException;
@@ -69,10 +70,14 @@ public final class PDLab extends PDCIEDictionaryBasedColorSpace
         BufferedImage rgbImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         WritableRaster rgbRaster = rgbImage.getRaster();
 
-        float minA = getARange().getMin();
-        float maxA = getARange().getMax();
-        float minB = getBRange().getMin();
-        float maxB = getBRange().getMax();
+        PDRange aRange = getARange();
+        PDRange bRange = getBRange();
+        float minA = aRange.getMin();
+        float maxA = aRange.getMax();
+        float minB = bRange.getMin();
+        float maxB = bRange.getMax();
+        float deltaA = maxA - minA;
+        float deltaB = maxB - minB;
 
         // always three components: ABC
         float[] abc = new float[3];
@@ -89,8 +94,8 @@ public final class PDLab extends PDCIEDictionaryBasedColorSpace
                 
                 // scale to range
                 abc[0] *= 100;
-                abc[1] = minA + (abc[1] * (maxA - minA));
-                abc[2] = minB + (abc[2] * (maxB - minB));
+                abc[1] = minA + abc[1] * deltaA;
+                abc[2] = minB + abc[2] * deltaB;
 
                 float[] rgb = toRGB(abc);
 
@@ -104,6 +109,13 @@ public final class PDLab extends PDCIEDictionaryBasedColorSpace
         }
 
         return rgbImage;
+    }
+
+    @Override
+    public BufferedImage toRawImage(WritableRaster raster)
+    {
+        // Not handled at the moment.
+       return null;
     }
 
     @Override
@@ -147,7 +159,7 @@ public final class PDLab extends PDCIEDictionaryBasedColorSpace
     public float[] getDefaultDecode(int bitsPerComponent)
     {
         PDRange a = getARange();
-        PDRange b = getARange();
+        PDRange b = getBRange();
         return new float[] { 0, 100, a.getMin(), a.getMax(), b.getMin(), b.getMax() };
     }
 
@@ -186,7 +198,7 @@ public final class PDLab extends PDCIEDictionaryBasedColorSpace
      */
     public PDRange getARange()
     {
-        COSArray rangeArray = (COSArray) dictionary.getDictionaryObject(COSName.RANGE);
+        COSArray rangeArray = dictionary.getCOSArray(COSName.RANGE);
         if (rangeArray == null)
         {
             rangeArray = getDefaultRangeArray();
@@ -201,7 +213,7 @@ public final class PDLab extends PDCIEDictionaryBasedColorSpace
      */
     public PDRange getBRange()
     {
-        COSArray rangeArray = (COSArray) dictionary.getDictionaryObject(COSName.RANGE);
+        COSArray rangeArray = dictionary.getCOSArray(COSName.RANGE);
         if (rangeArray == null)
         {
             rangeArray = getDefaultRangeArray();
@@ -231,7 +243,7 @@ public final class PDLab extends PDCIEDictionaryBasedColorSpace
 
     private void setComponentRangeArray(PDRange range, int index)
     {
-        COSArray rangeArray = (COSArray) dictionary.getDictionaryObject(COSName.RANGE);
+        COSArray rangeArray = dictionary.getCOSArray(COSName.RANGE);
         if (rangeArray == null)
         {
             rangeArray = getDefaultRangeArray();

@@ -33,7 +33,7 @@ import org.apache.pdfbox.pdmodel.graphics.pattern.PDAbstractPattern;
 public final class PDPattern extends PDSpecialColorSpace
 {
     /** A pattern which leaves no marks on the page. */
-    private static PDColor EMPTY_PATTERN = new PDColor(new float[] { }, null);
+    private static final PDColor EMPTY_PATTERN = new PDColor(new float[] { }, null);
     
     private final PDResources resources;
     private PDColorSpace underlyingColorSpace;
@@ -97,6 +97,12 @@ public final class PDPattern extends PDSpecialColorSpace
 
     @Override
     public BufferedImage toRGBImage(WritableRaster raster) throws IOException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public BufferedImage toRawImage(WritableRaster raster) throws IOException
     {
         throw new UnsupportedOperationException();
     }

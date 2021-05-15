@@ -41,7 +41,6 @@ import org.apache.pdfbox.cos.COSStream;
 import org.apache.pdfbox.cos.COSObject;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDResources;
-import org.apache.pdfbox.pdmodel.common.COSArrayList;
 import org.apache.pdfbox.pdmodel.common.PDRange;
 import org.apache.pdfbox.pdmodel.common.PDStream;
 
@@ -264,7 +263,8 @@ public final class PDICCBased extends PDCIEBasedColorSpace
     }
 
     /**
-     * Returns true if the given profile is represents sRGB.
+     * Returns true if the given profile represents sRGB.
+     * (unreliable on the data of ColorSpace.CS_sRGB in openjdk)
      */
     private boolean is_sRGB(ICC_Profile profile)
     {
@@ -342,6 +342,16 @@ public final class PDICCBased extends PDCIEBasedColorSpace
         {
             return alternateColorSpace.toRGBImage(raster);
         }
+    }
+
+    @Override
+    public BufferedImage toRawImage(WritableRaster raster) throws IOException
+    {
+        if(awtColorSpace == null)
+        {
+            return alternateColorSpace.toRawImage(raster);
+        }
+        return toRawImage(raster, awtColorSpace);
     }
 
     @Override
@@ -452,7 +462,7 @@ public final class PDICCBased extends PDCIEBasedColorSpace
      */
     public PDRange getRangeForComponent(int n)
     {
-        COSArray rangeArray = (COSArray) stream.getCOSObject().getDictionaryObject(COSName.RANGE);
+        COSArray rangeArray = stream.getCOSObject().getCOSArray(COSName.RANGE);
         if (rangeArray == null || rangeArray.size() < getNumberOfComponents() * 2)
         {
             return new PDRange(); // 0..1
@@ -466,7 +476,7 @@ public final class PDICCBased extends PDCIEBasedColorSpace
      */
     public COSStream getMetadata()
     {
-        return (COSStream)stream.getCOSObject().getDictionaryObject(COSName.METADATA);
+        return stream.getCOSObject().getCOSStream(COSName.METADATA);
     }
 
     /**
@@ -510,7 +520,7 @@ public final class PDICCBased extends PDCIEBasedColorSpace
         COSArray altArray = null;
         if(list != null)
         {
-            altArray = COSArrayList.converterToCOSArray(list);
+            altArray = new COSArray(list);
         }
         stream.getCOSObject().setItem(COSName.ALTERNATE, altArray);
     }
@@ -522,7 +532,7 @@ public final class PDICCBased extends PDCIEBasedColorSpace
      */
     public void setRangeForComponent(PDRange range, int n)
     {
-        COSArray rangeArray = (COSArray) stream.getCOSObject().getDictionaryObject(COSName.RANGE);
+        COSArray rangeArray = stream.getCOSObject().getCOSArray(COSName.RANGE);
         if (rangeArray == null)
         {
             rangeArray = new COSArray();
@@ -545,6 +555,15 @@ public final class PDICCBased extends PDCIEBasedColorSpace
     public void setMetadata(COSStream metadata)
     {
         stream.getCOSObject().setItem(COSName.METADATA, metadata);
+    }
+
+    /**
+     * Internal accessor to support indexed raw images.
+     * @return true if this colorspace is sRGB.
+     */
+    boolean isSRGB()
+    {
+        return isRGB;
     }
 
     @Override

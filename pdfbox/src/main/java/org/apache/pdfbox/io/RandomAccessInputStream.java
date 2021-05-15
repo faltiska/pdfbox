@@ -55,13 +55,7 @@ public class RandomAccessInputStream extends InputStream
     @Override
     public int available() throws IOException
     {
-        restorePosition();
-        long available = input.length() - input.getPosition();
-        if (available > Integer.MAX_VALUE)
-        {
-            return Integer.MAX_VALUE;
-        }
-        return (int)available;
+        return (int) Math.max(0, Math.min(input.length() - position, Integer.MAX_VALUE));
     }
 
     @Override
@@ -113,6 +107,10 @@ public class RandomAccessInputStream extends InputStream
     @Override
     public long skip(long n) throws IOException
     {
+        if (n <= 0)
+        {
+            return 0;
+        }
         restorePosition();
         input.seek(position + n);
         position += n;

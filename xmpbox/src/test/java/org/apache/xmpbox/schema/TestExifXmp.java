@@ -21,6 +21,9 @@
 
 package org.apache.xmpbox.schema;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import java.io.ByteArrayOutputStream;
 import org.apache.xmpbox.XMPMetadata;
 import org.apache.xmpbox.type.OECFType;
@@ -28,15 +31,14 @@ import org.apache.xmpbox.type.TextType;
 import org.apache.xmpbox.type.TypeMapping;
 import org.apache.xmpbox.xml.DomXmpParser;
 import org.apache.xmpbox.xml.XmpSerializer;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.InputStream;
 
-public class TestExifXmp
+class TestExifXmp
 {
     @Test
-    public void testNonStrict() throws Exception
+    void testNonStrict() throws Exception
     {
         InputStream is = this.getClass().getResourceAsStream("/validxmp/exif.xmp");
 
@@ -45,12 +47,12 @@ public class TestExifXmp
         XMPMetadata rxmp = builder.parse(is);
         ExifSchema schema = (ExifSchema)rxmp.getSchema(ExifSchema.class);
         TextType ss = (TextType)schema.getProperty(ExifSchema.SPECTRAL_SENSITIVITY);
-        Assert.assertNotNull(ss);
-        Assert.assertEquals("spectral sens value",ss.getValue());
+        assertNotNull(ss);
+        assertEquals("spectral sens value",ss.getValue());
     }
 
     @Test
-    public void testGenerate() throws Exception
+    void testGenerate() throws Exception
     {
         XMPMetadata metadata = XMPMetadata.createXMPMetadata();
         TypeMapping tmapping = metadata.getTypeMapping();

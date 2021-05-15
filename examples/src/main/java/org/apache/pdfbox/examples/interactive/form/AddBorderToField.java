@@ -40,6 +40,8 @@ import org.apache.pdfbox.pdmodel.interactive.form.PDField;
  */
 public final class AddBorderToField
 {
+    static final String RESULT_FILENAME = "target/AddBorderToField.pdf";
+
     private AddBorderToField()
     {
     }
@@ -47,7 +49,7 @@ public final class AddBorderToField
     public static void main(String[] args) throws IOException
     {
         // Load the PDF document created by SimpleForm.java
-        try (PDDocument document = Loader.loadPDF(new File("target/SimpleForm.pdf")))
+        try (PDDocument document = Loader.loadPDF(new File(CreateSimpleForm.DEFAULT_FILENAME)))
         {
             PDAcroForm acroForm = document.getDocumentCatalog().getAcroForm();
             
@@ -56,17 +58,17 @@ public final class AddBorderToField
             PDField field = acroForm.getField("SampleField");
             PDAnnotationWidget widget = field.getWidgets().get(0);
             
-            // Create the definition for a green border
+            // Create the definition for a red border
             PDAppearanceCharacteristicsDictionary fieldAppearance =
                     new PDAppearanceCharacteristicsDictionary(new COSDictionary());
-            PDColor green = new PDColor(new float[] { 0, 1, 0 }, PDDeviceRGB.INSTANCE);
-            fieldAppearance.setBorderColour(green);
-            
+            PDColor red = new PDColor(new float[] { 1, 0, 0 }, PDDeviceRGB.INSTANCE);
+            fieldAppearance.setBorderColour(red);
+
             // Set the information to be used by the widget which is responsible
             // for the visual style of the form field.
             widget.setAppearanceCharacteristics(fieldAppearance);
             
-            document.save("target/AddBorderToField.pdf");
+            document.save(RESULT_FILENAME);
         }
     }
 }

@@ -21,26 +21,19 @@
 
 package org.apache.xmpbox.schema;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import org.apache.xmpbox.XMPMetadata;
 import org.apache.xmpbox.type.BadFieldValueException;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class PDFAIdentificationOthersTest
+class PDFAIdentificationOthersTest
 {
-
-    protected XMPMetadata metadata;
-
-    @Before
-    public void initTempMetaData() throws Exception
-    {
-        metadata = XMPMetadata.createXMPMetadata();
-    }
-
     @Test
-    public void testPDFAIdentification() throws Exception
+    void testPDFAIdentification() throws Exception
     {
+        XMPMetadata metadata = XMPMetadata.createXMPMetadata();
         PDFAIdentificationSchema pdfaid = metadata.createAndAddPFAIdentificationSchema();
 
         Integer versionId = 1;
@@ -51,34 +44,40 @@ public class PDFAIdentificationOthersTest
         pdfaid.setAmd(amdId);
         pdfaid.setConformance(conformance);
 
-        Assert.assertEquals(versionId, pdfaid.getPart());
-        Assert.assertEquals(amdId, pdfaid.getAmendment());
-        Assert.assertEquals(conformance, pdfaid.getConformance());
+        assertEquals(versionId, pdfaid.getPart());
+        assertEquals(amdId, pdfaid.getAmendment());
+        assertEquals(conformance, pdfaid.getConformance());
 
-        Assert.assertEquals("" + versionId, pdfaid.getPartProperty().getStringValue());
-        Assert.assertEquals(amdId, pdfaid.getAmdProperty().getStringValue());
-        Assert.assertEquals(conformance, pdfaid.getConformanceProperty().getStringValue());
+        assertEquals("" + versionId, pdfaid.getPartProperty().getStringValue());
+        assertEquals(amdId, pdfaid.getAmdProperty().getStringValue());
+        assertEquals(conformance, pdfaid.getConformanceProperty().getStringValue());
 
         // check retrieve this schema in metadata
-        Assert.assertEquals(pdfaid, metadata.getPDFIdentificationSchema());
+        assertEquals(pdfaid, metadata.getPDFIdentificationSchema());
 
         // SaveMetadataHelper.serialize(metadata, true, System.out);
     }
 
-    @Test(expected = BadFieldValueException.class)
-    public void testBadPDFAConformanceId() throws BadFieldValueException
+    @Test
+    void testBadPDFAConformanceId() throws BadFieldValueException
     {
+        XMPMetadata metadata = XMPMetadata.createXMPMetadata();
         PDFAIdentificationSchema pdfaid = metadata.createAndAddPFAIdentificationSchema();
         String conformance = "kiohiohiohiohio";
-        pdfaid.setConformance(conformance);
+        assertThrows(BadFieldValueException.class, () -> {
+	        pdfaid.setConformance(conformance);
+	    });
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testBadVersionIdValueType() throws Exception
+    @Test
+    void testBadVersionIdValueType() throws Exception
     {
+        XMPMetadata metadata = XMPMetadata.createXMPMetadata();
         PDFAIdentificationSchema pdfaid = metadata.createAndAddPFAIdentificationSchema();
         pdfaid.setPartValueWithString("1");
-        pdfaid.setPartValueWithString("ojoj");
+        assertThrows(IllegalArgumentException.class, () -> {
+            pdfaid.setPartValueWithString("ojoj");
+	    });
     }
 
 }

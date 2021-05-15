@@ -31,6 +31,8 @@ public class RandomAccessReadView implements RandomAccessRead
     private final long startPosition;
     // stream length
     private final long streamLength;
+    // close input
+    private final boolean closeInput;
     // current position within the view
     private long currentPosition = 0;
 
@@ -44,9 +46,24 @@ public class RandomAccessReadView implements RandomAccessRead
     public RandomAccessReadView(RandomAccessRead randomAccessRead, long startPosition,
             long streamLength)
     {
+        this(randomAccessRead, startPosition, streamLength, false);
+    }
+
+    /**
+     * Constructor.
+     * 
+     * @param randomAccessRead the underlying random access read
+     * @param startPosition start position within the underlying random access read
+     * @param streamLength stream length
+     * @param closeInput close the underlying random access read when closing the view if set to true
+     */
+    public RandomAccessReadView(RandomAccessRead randomAccessRead, long startPosition,
+            long streamLength, boolean closeInput)
+    {
         this.randomAccessRead = randomAccessRead;
         this.startPosition = startPosition;
         this.streamLength = streamLength;
+        this.closeInput = closeInput;
     }
 
     /**
@@ -66,11 +83,12 @@ public class RandomAccessReadView implements RandomAccessRead
     public void seek(final long newOffset) throws IOException
     {
         checkClosed();
-        if (newOffset < streamLength)
+        if (newOffset < 0)
         {
-            randomAccessRead.seek(startPosition + newOffset);
-            currentPosition = newOffset;
+            throw new IOException("Invalid position " + newOffset);
         }
+        randomAccessRead.seek(startPosition + Math.min(newOffset, streamLength));
+        currentPosition = newOffset;
     }
 
     /**
@@ -79,8 +97,7 @@ public class RandomAccessReadView implements RandomAccessRead
     @Override
     public int read() throws IOException
     {
-        checkClosed();
-        if (currentPosition >= streamLength)
+        if (isEOF())
         {
             return -1;
         }
@@ -97,36 +114,16 @@ public class RandomAccessReadView implements RandomAccessRead
      * {@inheritDoc}
      */
     @Override
-    public int read(byte[] b) throws IOException
-    {
-        return read(b, 0, b.length);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public int read(byte[] b, int off, int len) throws IOException
     {
-        checkClosed();
-        if (currentPosition >= streamLength)
+        if (isEOF())
         {
-            return 0;
+            return -1;
         }
         restorePosition();
         int readBytes = randomAccessRead.read(b, off, Math.min(len, available()));
         currentPosition += readBytes;
         return readBytes;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int available() throws IOException
-    {
-        checkClosed();
-        return (int) (streamLength - currentPosition);
     }
 
     /**
@@ -145,7 +142,10 @@ public class RandomAccessReadView implements RandomAccessRead
     @Override
     public void close() throws IOException
     {
-        checkClosed();
+        if (closeInput && randomAccessRead != null)
+        {
+            randomAccessRead.close();
+        }
         randomAccessRead = null;
     }
 
@@ -156,17 +156,6 @@ public class RandomAccessReadView implements RandomAccessRead
     public boolean isClosed()
     {
         return randomAccessRead == null || randomAccessRead.isClosed();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int peek() throws IOException
-    {
-        checkClosed();
-        restorePosition();
-        return randomAccessRead.peek();
     }
 
     /**
@@ -204,7 +193,7 @@ public class RandomAccessReadView implements RandomAccessRead
     /**
      * Ensure that that the view isn't closed.
      * 
-     * @throws IOException
+     * @throws IOException If RandomAccessReadView already closed
      */
     private void checkClosed() throws IOException
     {

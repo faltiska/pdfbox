@@ -20,20 +20,20 @@ import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
 import org.apache.pdfbox.pdmodel.interactive.form.PDTextField;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Test for the PDAnnotation classes.
  *
  */
-public class PDAnnotationTest
+class PDAnnotationTest
 {
 
     @Test
-    public void createDefaultWidgetAnnotation()
+    void createDefaultWidgetAnnotation()
     {
         PDAnnotation annotation = new PDAnnotationWidget();
         assertEquals(COSName.ANNOT, annotation.getCOSObject().getItem(COSName.TYPE));
@@ -41,7 +41,7 @@ public class PDAnnotationTest
     }
 
     @Test
-    public void createWidgetAnnotationFromField()
+    void createWidgetAnnotationFromField()
     {
         PDDocument document = new PDDocument();
         PDAcroForm acroForm = new PDAcroForm(document);

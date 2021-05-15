@@ -21,7 +21,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.apache.pdfbox.pdmodel.common.COSObjectable;
 
@@ -41,6 +42,21 @@ public class COSArray extends COSBase implements Iterable<COSBase>, COSUpdateInf
     public COSArray()
     {
         //default constructor
+    }
+
+    /**
+     * Use the given list to initialize the COSArray.
+     * 
+     * @param cosObjectables the initial list of COSObjectables
+     */
+    public COSArray(List<? extends COSObjectable> cosObjectables)
+    {
+        if (cosObjectables == null)
+        {
+            throw new IllegalArgumentException("List of COSObjectables cannot be null");
+        }
+        cosObjectables.forEach(cosObjectable ->
+            objects.add(cosObjectable != null ? cosObjectable.getCOSObject() : null));
     }
 
     /**
@@ -186,7 +202,7 @@ public class COSArray extends COSBase implements Iterable<COSBase>, COSUpdateInf
      */
     public COSBase getObject( int index )
     {
-        Object obj = objects.get( index );
+        COSBase obj = objects.get( index );
         if( obj instanceof COSObject )
         {
             obj = ((COSObject)obj).getObject();
@@ -195,7 +211,7 @@ public class COSArray extends COSBase implements Iterable<COSBase>, COSUpdateInf
         {
             obj = null;
         }
-        return (COSBase)obj;
+        return obj;
     }
 
     /**
@@ -412,48 +428,6 @@ public class COSArray extends COSBase implements Iterable<COSBase>, COSUpdateInf
      * {@inheritDoc}
      */
     @Override
-    public boolean equals(Object o) {
-
-        if (o == this)
-        {
-            return true;
-        }
-
-        if (!(o instanceof COSArray))
-        {
-            return false;
-        }
-
-        COSArray toBeCompared = (COSArray) o;
-
-        if (toBeCompared.size() != size())
-        {
-            return false;
-        }
-
-        for (int i=0; i<size(); i++)
-        {
-            if (!(get(i).equals(toBeCompared.get(i))))
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int hashCode() {
-        return Objects.hash(objects, needToBeUpdated);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public String toString()
     {
         return "COSArray{" + objects + "}";
@@ -479,11 +453,12 @@ public class COSArray extends COSBase implements Iterable<COSBase>, COSUpdateInf
     public int indexOf( COSBase object )
     {
         int retval = -1;
-        for( int i=0; retval < 0 && i<size(); i++ )
+        for (int i = 0; i < size(); i++)
         {
             if( get( i ).equals( object ) )
             {
                 retval = i;
+                break;
             }
         }
         return retval;
@@ -499,7 +474,7 @@ public class COSArray extends COSBase implements Iterable<COSBase>, COSUpdateInf
     public int indexOfObject(COSBase object)
     {
         int retval = -1;
-        for (int i = 0; retval < 0 && i < this.size(); i++)
+        for (int i = 0; i < this.size(); i++)
         {
             COSBase item = this.get(i);
             if (item.equals(object) ||
@@ -612,11 +587,119 @@ public class COSArray extends COSBase implements Iterable<COSBase>, COSUpdateInf
      */
     public List<? extends COSBase> toList()
     {
-        List<COSBase> retList = new ArrayList<>(size());
+        return new ArrayList<>(objects);
+    }
+
+    /**
+     * This will return a list of names if the COSArray consists of COSNames only.
+     * 
+     * @return the list of names of the COSArray of COSNames
+     */
+    public List<String> toCOSNameStringList()
+    {
+        return StreamSupport.stream(objects.spliterator(), false) //
+                .map(o -> ((COSName) o).getName()) //
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * This will return a list of names if the COSArray consists of COSStrings only.
+     * 
+     * @return the list of names of the COSArray of COSStrings
+     */
+    public List<String> toCOSStringStringList()
+    {
+        return StreamSupport.stream(objects.spliterator(), false) //
+                .map(o -> ((COSString) o).getString()) //
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * This will return a list of float values if the COSArray consists of COSNumbers only.
+     * 
+     * @return the list of float values of the COSArray of COSNumbers
+     */
+    public List<Float> toCOSNumberFloatList()
+    {
+        List<Float> numbers = new ArrayList<>(size());
         for (int i = 0; i < size(); i++)
         {
-            retList.add(get(i));
+            COSBase num = getObject(i);
+            if (num instanceof COSNumber)
+            {
+                numbers.add(((COSNumber) num).floatValue());
+            }
+            else
+            {
+                numbers.add(null);
+            }
         }
-        return retList;
+        return numbers;
     }
+
+    /**
+     * This will return a list of int values if the COSArray consists of COSNumbers only.
+     * 
+     * @return the list of int values of the COSArray of COSNumbers
+     */
+    public List<Integer> toCOSNumberIntegerList()
+    {
+        List<Integer> numbers = new ArrayList<>(size());
+        for (int i = 0; i < size(); i++)
+        {
+            COSBase num = getObject(i);
+            if (num instanceof COSNumber)
+            {
+                numbers.add(((COSNumber) num).intValue());
+            }
+            else
+            {
+                numbers.add(null);
+            }
+        }
+        return numbers;
+    }
+
+    /**
+     * This will take an list of integer objects and return a COSArray of COSInteger objects.
+     *
+     * @param integer A list of integers
+     *
+     * @return An array of COSInteger objects
+     */
+    public static COSArray ofCOSIntegers(List<Integer> integer)
+    {
+        COSArray retval = new COSArray();
+        integer.forEach(s -> retval.add(COSInteger.get(s.longValue())));
+        return retval;
+    }
+
+    /**
+     * This will take an list of string objects and return a COSArray of COSName objects.
+     *
+     * @param strings A list of strings
+     *
+     * @return An array of COSName objects
+     */
+    public static COSArray ofCOSNames(List<String> strings)
+    {
+        COSArray retval = new COSArray();
+        strings.forEach(s -> retval.add(COSName.getPDFName(s)));
+        return retval;
+    }
+
+    /**
+     * This will take an list of string objects and return a COSArray of COSName objects.
+     *
+     * @param strings A list of strings
+     *
+     * @return An array of COSName objects
+     */
+    public static COSArray ofCOSStrings(List<String> strings)
+    {
+        COSArray retval = new COSArray();
+        strings.forEach(s -> retval.add(new COSString(s)));
+        return retval;
+    }
+
 }

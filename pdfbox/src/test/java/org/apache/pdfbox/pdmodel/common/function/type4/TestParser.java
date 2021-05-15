@@ -16,20 +16,26 @@
  */
 package org.apache.pdfbox.pdmodel.common.function.type4;
 
-import junit.framework.TestCase;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 /**
  * Tests the type 4 function parser.
  *
  */
-public class TestParser extends TestCase
+@Execution(ExecutionMode.CONCURRENT)
+class TestParser
 {
 
     /**
      * Test the very basics.
      * @throws Exception if an error occurs
      */
-    public void testParserBasics() throws Exception
+    @Test
+    void testParserBasics() throws Exception
     {
         Type4Tester.create("3 4 add 2 sub").pop(5).isEmpty();
     }
@@ -38,7 +44,8 @@ public class TestParser extends TestCase
      * Test nested blocks.
      * @throws Exception if an error occurs
      */
-    public void testNested() throws Exception
+    @Test
+    void testNested() throws Exception
     {
         Type4Tester.create("true { 2 1 add } { 2 1 sub } ifelse")
             .pop(3).isEmpty();
@@ -50,7 +57,8 @@ public class TestParser extends TestCase
      * Tests parsing of real values.
      * @throws Exception if an error occurs
      */
-    public void testParseFloat() throws Exception
+    @Test
+    void testParseFloat() throws Exception
     {
         assertEquals(0, InstructionSequenceBuilder.parseReal("0"), 0.00001f);
         assertEquals(1, InstructionSequenceBuilder.parseReal("1"), 0.00001f);
@@ -66,7 +74,8 @@ public class TestParser extends TestCase
      * Tests problematic functions from PDFBOX-804.
      * @throws Exception if an error occurs
      */
-    public void testJira804() throws Exception
+    @Test
+    void testJira804() throws Exception
     {
         //This is an example of a tint to CMYK function
         //Problems here were:

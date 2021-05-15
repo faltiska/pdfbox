@@ -21,39 +21,32 @@
 
 package org.apache.pdfbox.preflight;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
 import org.apache.pdfbox.preflight.parser.PreflightParser;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RunWith(Parameterized.class)
-public class TestValidDirectory
+class TestValidDirectory
 {
-
-    protected File target = null;
-
-    public TestValidDirectory(File file)
+    @ParameterizedTest
+    @MethodSource("initializeParameters")
+    void validate(File target) throws Exception
     {
-        this.target = file;
+        if (target != null)
+        {
+            System.out.println(target);
+            ValidationResult result = PreflightParser.validate(target);
+            assertTrue(result.isValid(), "Validation of " + target);
+        }
     }
 
-    @Test
-    public void validate() throws Exception
-    {
-        System.out.println(target);
-        ValidationResult result = PreflightParser.validate(target);
-        Assert.assertTrue("Validation of " + target, result.isValid());
-    }
-
-    @Parameters
-    public static Collection<Object[]> initializeParameters() throws Exception
+    public static Collection<File> initializeParameters() throws Exception
     {
         // check directory
         File directory = null;
@@ -77,21 +70,25 @@ public class TestValidDirectory
         // create list
         if (directory == null)
         {
-            return new ArrayList<>(0);
+            // add null to signal that test can be skipped
+            // needed for parameterized test as an empty list 
+            // will lead to a PreconditionViolation
+            List<File> data = new ArrayList<>(1);
+            data.add(null);
+            return data;
         }
         else
         {
             File[] files = directory.listFiles();
-            List<Object[]> data = new ArrayList<>(files.length);
+            List<File> data = new ArrayList<>(files.length);
             for (File file : files)
             {
                 if (file.isFile())
                 {
-                    data.add(new Object[] { file });
+                    data.add(file);
                 }
             }
             return data;
         }
     }
-
 }

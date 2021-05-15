@@ -22,8 +22,13 @@ import org.apache.pdfbox.pdmodel.PDDocumentCatalog;
 import org.apache.pdfbox.pdmodel.fdf.FDFDocument;
 import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
 
+import picocli.CommandLine;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
+
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 
 
 /**
@@ -32,14 +37,21 @@ import java.io.IOException;
  *
  * @author Ben Litchfield
  */
+@Command(name = "importxfdf", header = "Imports AcroForm form data from XFDF", versionProvider = Version.class, mixinStandardHelpOptions = true)
 public class ImportXFDF
 {
-    /**
-     * Creates a new instance of ImportFDF.
-     */
-    public ImportXFDF()
-    {
-    }
+    // Expected for CLI app to write to System.out/System.err
+    @SuppressWarnings("squid:S106")
+    private static final PrintStream SYSERR = System.err;
+
+    @Option(names = {"-i", "--input"}, description = "the PDF file to import to", required = true)
+    private File infile;
+
+    @Option(names = {"-o", "--output"}, description = "the PDF file to save to. If omitted the original file will be used")
+    private File outfile;
+
+    @Option(names = {"--data"}, description = "the XFDF data file to import from", required = true)
+    private File xfdffile;
 
     /**
      * This will takes the values from the fdf document and import them into the
@@ -64,42 +76,36 @@ public class ImportXFDF
      * see usage() for commandline
      *
      * @param args command line arguments
-     *
-     * @throws IOException If there is an error importing the FDF document.
      */
-    public static void main(String[] args) throws IOException
+    public static void main(String[] args)
     {
         // suppress the Dock icon on OS X
         System.setProperty("apple.awt.UIElement", "true");
 
-        ImportXFDF importer = new ImportXFDF();
-        importer.importXFDF( args );
+        int exitCode = new CommandLine(new ImportXFDF()).execute(args);
+        System.exit(exitCode);
     }
 
-    private void importXFDF( String[] args ) throws IOException
+    public Integer call()
     {
-        if( args.length != 3 )
+        ImportFDF importer = new ImportFDF();
+        try (PDDocument pdf = Loader.loadPDF(infile);
+                FDFDocument fdf = Loader.loadXFDF(xfdffile))
         {
-            usage();
-        }
-        else
-        {
-            ImportFDF importer = new ImportFDF();
-            try (PDDocument pdf = Loader.loadPDF(new File(args[0]));
-                    FDFDocument fdf = Loader.loadXFDF(args[1]))
+            importer.importFDF( pdf, fdf );
+
+            if (outfile == null)
             {
-                importer.importFDF( pdf, fdf );
-                pdf.save( args[2] );
+                outfile = infile;
             }
-        }
-    }
 
-    /**
-     * This will print out a message telling how to use this example.
-     */
-    private static void usage()
-    {
-        System.err.println( "usage: org.apache.pdfbox.tools.ImportXFDF <pdf-file> <fdf-file> <output-file>" );
-        System.exit(1);
+            pdf.save(outfile);
+        }
+        catch (IOException ioe)
+        {
+            SYSERR.println( "Error importing XFDF data [" + ioe.getClass().getSimpleName() + "]: " + ioe.getMessage());
+            return 4;
+        }
+        return 0;
     }
 }

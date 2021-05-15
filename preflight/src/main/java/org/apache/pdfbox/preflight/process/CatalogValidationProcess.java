@@ -192,7 +192,11 @@ public class CatalogValidationProcess extends AbstractProcess
     {
         COSArray outputIntents = catalog.getCOSObject().getCOSArray(COSName.OUTPUT_INTENTS);
         Map<COSObjectKey, Boolean> tmpDestOutputProfile = new HashMap<>();
-        for (int i = 0; outputIntents != null && i < outputIntents.size(); ++i)
+        if (outputIntents == null)
+        {
+            return;
+        }
+        for (int i = 0; i < outputIntents.size(); ++i)
         {
             COSDictionary outputIntentDict = (COSDictionary) outputIntents.getObject(i);
 
@@ -272,16 +276,10 @@ public class CatalogValidationProcess extends AbstractProcess
             {
         try
         {
-            if (destOutputProfile == null)
-            {
-                return;
-            }
-
-            COSBase localDestOutputProfile = destOutputProfile;
             // destOutputProfile should be an instance of COSObject because of this is a object reference
-            if (localDestOutputProfile instanceof COSObject)
+            if (destOutputProfile instanceof COSObject)
             {
-                if (mapDestOutputProfile.containsKey(new COSObjectKey((COSObject) localDestOutputProfile)))
+                if (mapDestOutputProfile.containsKey(new COSObjectKey((COSObject) destOutputProfile)))
                 {
                     // the profile is already checked. continue
                     return;
@@ -294,13 +292,18 @@ public class CatalogValidationProcess extends AbstractProcess
                     return;
                 }
                 // else the profile will be kept in the mapDestOutputProfile if it is valid
-
-                localDestOutputProfile = ((COSObject) localDestOutputProfile).getObject();
+            }
+            else
+            {
+                addValidationError(ctx, new ValidationError(ERROR_GRAPHIC_OUTPUT_INTENT_INVALID_ENTRY,
+                        "OutputIntent object should be a reference: " + destOutputProfile));
+                return;
             }
 
             // keep reference to avoid multiple profile definition
             mapDestOutputProfile.put(new COSObjectKey((COSObject) destOutputProfile), true);
 
+            COSBase localDestOutputProfile = ((COSObject) destOutputProfile).getObject();
             if (!(localDestOutputProfile instanceof COSStream))
             {
                 addValidationError(ctx, new ValidationError(ERROR_GRAPHIC_OUTPUT_INTENT_INVALID_ENTRY,

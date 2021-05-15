@@ -16,23 +16,24 @@
  */
 package org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * @author Andrea Vacondio
  *
  */
-public class PDOutlineItemTest
+class PDOutlineItemTest
 {
     private PDOutlineItem root;
     private PDOutlineItem first;
     private PDOutlineItem second;
     private PDOutlineItem newSibling;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         root = new PDOutlineItem();
@@ -46,7 +47,7 @@ public class PDOutlineItemTest
     }
 
     @Test
-    public void insertSiblingAfter_OpenChildToOpenParent()
+    void insertSiblingAfter_OpenChildToOpenParent()
     {
         newSibling.openNode();
         root.openNode();
@@ -58,7 +59,7 @@ public class PDOutlineItemTest
     }
 
     @Test
-    public void insertSiblingBefore_OpenChildToOpenParent()
+    void insertSiblingBefore_OpenChildToOpenParent()
     {
         newSibling.openNode();
         root.openNode();
@@ -70,7 +71,7 @@ public class PDOutlineItemTest
     }
 
     @Test
-    public void insertSiblingAfter_OpenChildToClosedParent()
+    void insertSiblingAfter_OpenChildToClosedParent()
     {
         newSibling.openNode();
         assertEquals(-2, root.getOpenCount());
@@ -81,7 +82,7 @@ public class PDOutlineItemTest
     }
 
     @Test
-    public void insertSiblingBefore_OpenChildToClosedParent()
+    void insertSiblingBefore_OpenChildToClosedParent()
     {
         newSibling.openNode();
         assertEquals(-2, root.getOpenCount());
@@ -92,7 +93,7 @@ public class PDOutlineItemTest
     }
 
     @Test
-    public void insertSiblingAfter_ClosedChildToOpenParent()
+    void insertSiblingAfter_ClosedChildToOpenParent()
     {
         root.openNode();
         assertEquals(2, root.getOpenCount());
@@ -103,7 +104,7 @@ public class PDOutlineItemTest
     }
 
     @Test
-    public void insertSiblingBefore_ClosedChildToOpenParent()
+    void insertSiblingBefore_ClosedChildToOpenParent()
     {
         root.openNode();
         assertEquals(2, root.getOpenCount());
@@ -114,7 +115,7 @@ public class PDOutlineItemTest
     }
 
     @Test
-    public void insertSiblingAfter_ClosedChildToClosedParent()
+    void insertSiblingAfter_ClosedChildToClosedParent()
     {
         assertEquals(-2, root.getOpenCount());
         first.insertSiblingAfter(newSibling);
@@ -124,7 +125,7 @@ public class PDOutlineItemTest
     }
 
     @Test
-    public void insertSiblingBefore_ClosedChildToClosedParent()
+    void insertSiblingBefore_ClosedChildToClosedParent()
     {
         assertEquals(-2, root.getOpenCount());
         second.insertSiblingBefore(newSibling);
@@ -134,7 +135,7 @@ public class PDOutlineItemTest
     }
 
     @Test
-    public void insertSiblingTop()
+    void insertSiblingTop()
     {
         assertEquals(root.getFirstChild(), first);
         PDOutlineItem newSibling = new PDOutlineItem();
@@ -144,7 +145,7 @@ public class PDOutlineItemTest
     }
 
     @Test
-    public void insertSiblingTopNoParent()
+    void insertSiblingTopNoParent()
     {
         assertEquals(root.getFirstChild(), first);
         PDOutlineItem newSibling = new PDOutlineItem();
@@ -153,7 +154,7 @@ public class PDOutlineItemTest
     }
 
     @Test
-    public void insertSiblingBottom()
+    void insertSiblingBottom()
     {
         assertEquals(root.getLastChild(), second);
         PDOutlineItem newSibling = new PDOutlineItem();
@@ -163,7 +164,7 @@ public class PDOutlineItemTest
     }
 
     @Test
-    public void insertSiblingBottomNoParent()
+    void insertSiblingBottomNoParent()
     {
         assertEquals(root.getLastChild(), second);
         PDOutlineItem newSibling = new PDOutlineItem();
@@ -171,21 +172,21 @@ public class PDOutlineItemTest
         assertEquals(root.getNextSibling(), newSibling);
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void cannotInsertSiblingBeforeAList()
+    @Test
+    void cannotInsertSiblingBeforeAList()
     {
         PDOutlineItem child = new PDOutlineItem();
         child.insertSiblingAfter(new PDOutlineItem());
         child.insertSiblingAfter(new PDOutlineItem());
-        root.insertSiblingBefore(child);
+        assertThrows(IllegalArgumentException.class, () -> root.insertSiblingBefore(child));
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void cannotInsertSiblingAfterAList()
+    @Test
+    void cannotInsertSiblingAfterAList()
     {
         PDOutlineItem child = new PDOutlineItem();
         child.insertSiblingAfter(new PDOutlineItem());
         child.insertSiblingAfter(new PDOutlineItem());
-        root.insertSiblingAfter(child);
+        assertThrows(IllegalArgumentException.class, () -> root.insertSiblingAfter(child));
     }
 }

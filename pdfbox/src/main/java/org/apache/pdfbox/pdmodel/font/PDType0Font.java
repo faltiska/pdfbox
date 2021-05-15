@@ -71,12 +71,11 @@ public class PDType0Font extends PDFont implements PDVectorFont
         gsubData = GsubData.NO_DATA_FOUND;
         cmapLookup = null;
 
-        COSBase base = dict.getDictionaryObject(COSName.DESCENDANT_FONTS);
-        if (!(base instanceof COSArray))
+        COSArray descendantFonts = dict.getCOSArray(COSName.DESCENDANT_FONTS);
+        if (descendantFonts == null)
         {
             throw new IOException("Missing descendant font array");
         }
-        COSArray descendantFonts = (COSArray) base;
         if (descendantFonts.size() == 0)
         {
             throw new IOException("Descendant font array is empty");
@@ -368,9 +367,16 @@ public class PDType0Font extends PDFont implements PDVectorFont
             // try to find the corresponding Unicode (UC2) CMap
             if (strName != null)
             {
-                CMap prdCMap = CMapManager.getPredefinedCMap(strName);
-                String ucs2Name = prdCMap.getRegistry() + "-" + prdCMap.getOrdering() + "-UCS2";
-                cMapUCS2 = CMapManager.getPredefinedCMap(ucs2Name);
+                try
+                {
+                    CMap prdCMap = CMapManager.getPredefinedCMap(strName);
+                    String ucs2Name = prdCMap.getRegistry() + "-" + prdCMap.getOrdering() + "-UCS2";
+                    cMapUCS2 = CMapManager.getPredefinedCMap(ucs2Name);
+                }
+                catch (IOException ex)
+                {
+                    LOG.warn("Could not get " + strName + " UC2 map for font " + getName(), ex);
+                }
             }
         }
     }

@@ -17,22 +17,24 @@ package org.apache.pdfbox.util;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
-import static org.junit.Assert.assertArrayEquals;
+
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  *
  * @author Michael Doswald
  */
-public class TestHexUtil extends TestCase
+class TestHexUtil
 {
     
     /**
      * Test conversion from short to char[]
      */
-    public void testGetCharsFromShortWithoutPassingInABuffer()
+    @Test
+    void testGetCharsFromShortWithoutPassingInABuffer()
     {
         assertArrayEquals(new char[]{'0','0','0','0'}, Hex.getChars((short)0x0000));
         assertArrayEquals(new char[]{'0','0','0','F'}, Hex.getChars((short)0x000F));
@@ -45,7 +47,8 @@ public class TestHexUtil extends TestCase
      * bytes of the string as hex digits
      *
      */
-    public void testGetCharsUTF16BE()
+    @Test
+    void testGetCharsUTF16BE()
     {
         assertArrayEquals(new char[]{'0','0','6','1','0','0','6','2'}, Hex.getCharsUTF16BE("ab"));
         assertArrayEquals(new char[]{'5','E','2','E','5','2','A','9'}, Hex.getCharsUTF16BE("帮助"));
@@ -54,7 +57,8 @@ public class TestHexUtil extends TestCase
     /**
      * Test getBytes() and getString() and decodeHex()
      */
-    public void testMisc()
+    @Test
+    void testMisc()
     {
         byte[] byteSrcArray = new byte[256];
         for (int i = 0; i < 256; ++i)
@@ -81,27 +85,4 @@ public class TestHexUtil extends TestCase
         assertArrayEquals(byteSrcArray, Hex.decodeHex(dstString));
     }
 
-    /**
-     * Set the tests in the suite for this test class.
-     *
-     * @return the Suite.
-     */
-    public static Test suite()
-    {
-        return new TestSuite(TestHexUtil.class);
-    }
-
-    /**
-     * Command line execution.
-     *
-     * @param args Command line arguments.
-     */
-    public static void main(String[] args)
-    {
-        String[] arg =
-        {
-            TestHexUtil.class.getName()
-        };
-        junit.textui.TestRunner.main(arg);
-    }
 }

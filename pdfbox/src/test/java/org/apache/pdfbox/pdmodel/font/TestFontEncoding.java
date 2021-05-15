@@ -17,10 +17,11 @@
 
 package org.apache.pdfbox.pdmodel.font;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-
-import junit.framework.TestCase;
 
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSArray;
@@ -34,17 +35,19 @@ import org.apache.pdfbox.pdmodel.font.encoding.DictionaryEncoding;
 import org.apache.pdfbox.pdmodel.font.encoding.MacRomanEncoding;
 import org.apache.pdfbox.pdmodel.font.encoding.WinAnsiEncoding;
 import org.apache.pdfbox.text.PDFTextStripper;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests font encoding.
  *
  */
-public class TestFontEncoding extends TestCase
+class TestFontEncoding
 {
     /**
      * Test the add method of a font encoding.
      */
-    public void testAdd() throws Exception
+    @Test
+    void testAdd() throws Exception
     {
         // see PDFDBOX-3332
         int codeForSpace = WinAnsiEncoding.INSTANCE.getNameToCodeMap().get("space");
@@ -54,7 +57,8 @@ public class TestFontEncoding extends TestCase
         assertEquals(32, codeForSpace);
     }
 
-    public void testOverwrite() throws Exception
+    @Test
+    void testOverwrite() throws Exception
     {
         // see PDFDBOX-3332
         COSDictionary dictEncodingDict = new COSDictionary();
@@ -75,7 +79,8 @@ public class TestFontEncoding extends TestCase
      *
      * @throws IOException
      */
-    public void testPDFBox3884() throws IOException
+    @Test
+    void testPDFBox3884() throws IOException
     {
         PDDocument doc = new PDDocument();
         PDPage page = new PDPage();

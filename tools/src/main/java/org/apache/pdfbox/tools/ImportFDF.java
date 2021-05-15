@@ -18,6 +18,8 @@ package org.apache.pdfbox.tools;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
+import java.util.concurrent.Callable;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.Loader;
@@ -25,21 +27,31 @@ import org.apache.pdfbox.pdmodel.PDDocumentCatalog;
 import org.apache.pdfbox.pdmodel.fdf.FDFDocument;
 import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
 
+import picocli.CommandLine;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
+
 /**
  * This example will take a PDF document and fill the fields with data from the
  * FDF fields.
  *
  * @author Ben Litchfield
  */
-public class ImportFDF
+@Command(name = "importfdf", header = "Imports AcroForm form data from FDF", versionProvider = Version.class, mixinStandardHelpOptions = true)
+public class ImportFDF implements Callable<Integer>
 {
-    /**
-     * Creates a new instance of ImportFDF.
-     */
-    public ImportFDF()
-    {
-    }
+    // Expected for CLI app to write to System.out/System.err
+    @SuppressWarnings("squid:S106")
+    private static final PrintStream SYSERR = System.err;
+    
+    @Option(names = {"-i", "--input"}, description = "the PDF file to import to", required = true)
+    private File infile;
 
+    @Option(names = {"-o", "--output"}, description = "the PDF file to save to. If omitted the original file will be used")
+    private File outfile;
+
+    @Option(names = {"--data"}, description = "the FDF data file to import from", required = true)
+    private File fdffile;
     /**
      * This will takes the values from the fdf document and import them into the
      * PDF document.
@@ -70,44 +82,37 @@ public class ImportFDF
      * see usage() for commandline
      *
      * @param args command line arguments
-     *
-     * @throws IOException If there is an error importing the FDF document.
      */
-    public static void main(String[] args) throws IOException
+    public static void main(String[] args)
     {
         // suppress the Dock icon on OS X
         System.setProperty("apple.awt.UIElement", "true");
 
+        int exitCode = new CommandLine(new ImportFDF()).execute(args);
+        System.exit(exitCode);
+    }
+
+    public Integer call()
+    {
         ImportFDF importer = new ImportFDF();
-        importer.importFDF( args );
-    }
 
-    private void importFDF( String[] args ) throws IOException
-    {
-        if( args.length != 3 )
+        try (PDDocument pdf = Loader.loadPDF(infile);
+                FDFDocument fdf = Loader.loadFDF(fdffile))
         {
-            usage();
-        }
-        else
-        {
-            ImportFDF importer = new ImportFDF();
+            importer.importFDF( pdf, fdf );
 
-            try (PDDocument pdf = Loader.loadPDF(new File(args[0]));
-                    FDFDocument fdf = Loader.loadFDF(args[1]))
+            if (outfile == null)
             {
-                importer.importFDF( pdf, fdf );
-
-                pdf.save( args[2] );
+                outfile = infile;
             }
-        }
-    }
 
-    /**
-     * This will print out a message telling how to use this example.
-     */
-    private static void usage()
-    {
-        System.err.println( "usage: org.apache.pdfbox.tools.ImportFDF <pdf-file> <fdf-file> <output-file>" );
-        System.exit(1);
+            pdf.save(outfile);
+        }
+        catch (IOException ioe)
+        {
+            SYSERR.println( "Error importing FDF data [" + ioe.getClass().getSimpleName() + "]: " + ioe.getMessage());
+            return 4;
+        }
+        return 0;
     }
 }

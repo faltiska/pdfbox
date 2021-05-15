@@ -24,17 +24,17 @@ import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.pdmodel.graphics.color.PDOutputIntent;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test PDDocument Catalog functionality.
  *
  */
-public class TestPDDocumentCatalog
+class TestPDDocumentCatalog
 {
 
     /**
@@ -47,13 +47,11 @@ public class TestPDDocumentCatalog
      * @throws IOException in case the document can not be parsed.
      */
     @Test
-    public void retrievePageLabels() throws IOException
+    void retrievePageLabels() throws IOException
     {
-        PDDocument doc = null;
-        try
+        try (PDDocument doc = Loader.loadPDF(
+                TestPDDocumentCatalog.class.getResourceAsStream("test_pagelabels.pdf")))
         {
-            doc = Loader
-                    .loadPDF(TestPDDocumentCatalog.class.getResourceAsStream("test_pagelabels.pdf"));
             PDDocumentCatalog cat = doc.getDocumentCatalog();
             String[] labels = cat.getPageLabels().getLabelsByPageIndices();
             assertEquals(12, labels.length);
@@ -70,13 +68,6 @@ public class TestPDDocumentCatalog
             assertEquals("Appendix I", labels[10]);
             assertEquals("Appendix II", labels[11]);
         }
-        finally
-        {
-            if(doc != null)
-            {
-                doc.close();
-            }
-        }
     }
 
     /**
@@ -89,23 +80,14 @@ public class TestPDDocumentCatalog
      * @throws IOException in case the document can not be parsed.
      */
     @Test
-    public void retrievePageLabelsOnMalformedPdf() throws IOException
+    void retrievePageLabelsOnMalformedPdf() throws IOException
     {
-        PDDocument doc = null;
-        try
+        try (PDDocument doc = Loader
+                .loadPDF(TestPDDocumentCatalog.class.getResourceAsStream("badpagelabels.pdf")))
         {
-            doc = Loader
-                    .loadPDF(TestPDDocumentCatalog.class.getResourceAsStream("badpagelabels.pdf"));
             PDDocumentCatalog cat = doc.getDocumentCatalog();
             // getLabelsByPageIndices() should not throw an exception
             cat.getPageLabels().getLabelsByPageIndices();
-        }
-        finally
-        {
-            if(doc != null)
-            {
-                doc.close();
-            }
         }
     }
 
@@ -120,23 +102,14 @@ public class TestPDDocumentCatalog
      * @throws IOException in case the document can not be parsed.
      */
     @Test
-    public void retrieveNumberOfPages() throws IOException
+    void retrieveNumberOfPages() throws IOException
     {
-        PDDocument doc = null;
-        try
+        try (PDDocument doc = Loader.loadPDF(TestPDDocumentCatalog.class.getResourceAsStream("test.unc.pdf")))
         {
-            doc = Loader.loadPDF(TestPDDocumentCatalog.class.getResourceAsStream("test.unc.pdf"));
             assertEquals(4, doc.getNumberOfPages());
         }
-        finally
-        {
-            if(doc != null)
-            {
-                doc.close();
-            }
-        }
     }
-    
+
     /**
      * Test OutputIntents functionality.
      * 
@@ -147,61 +120,44 @@ public class TestPDDocumentCatalog
      * @throws IOException in case the document can not be parsed.
      */
     @Test
-    public void handleOutputIntents() throws IOException
+    void handleOutputIntents() throws IOException
     {
-        PDDocument doc = null;
-        InputStream colorProfile = null;
-        try
+        try (InputStream colorProfile = TestPDDocumentCatalog.class.getResourceAsStream("sRGB.icc");
+             PDDocument doc = Loader.loadPDF(TestPDDocumentCatalog.class.getResourceAsStream("test.unc.pdf")))
         {
-            
-            doc = Loader.loadPDF(TestPDDocumentCatalog.class.getResourceAsStream("test.unc.pdf"));
             PDDocumentCatalog catalog = doc.getDocumentCatalog();
 
             // retrieve OutputIntents
             List<PDOutputIntent> outputIntents = catalog.getOutputIntents();
             assertTrue(outputIntents.isEmpty());
-            
-            // add an OutputIntent
-            colorProfile = TestPDDocumentCatalog.class.getResourceAsStream("sRGB.icc");
-            // create output intent
+
+            // create and add output intent
             PDOutputIntent oi = new PDOutputIntent(doc, colorProfile); 
             oi.setInfo("sRGB IEC61966-2.1"); 
             oi.setOutputCondition("sRGB IEC61966-2.1"); 
             oi.setOutputConditionIdentifier("sRGB IEC61966-2.1"); 
             oi.setRegistryName("http://www.color.org"); 
             doc.getDocumentCatalog().addOutputIntent(oi);
-            
+
             // retrieve OutputIntents
             outputIntents = catalog.getOutputIntents();
             assertEquals(1,outputIntents.size());
-            
+
             // set OutputIntents
             catalog.setOutputIntents(outputIntents);
             outputIntents = catalog.getOutputIntents();
-            assertEquals(1,outputIntents.size());            
-            
-        }
-        finally
-        {
-            if(doc != null)
-            {
-                doc.close();
-            }
-            
-            if (colorProfile != null)
-            {
-                colorProfile.close();
-            }
+            assertEquals(1,outputIntents.size());
         }
     }
 
     @Test
-    public void handleBooleanInOpenAction() throws IOException
+    void handleBooleanInOpenAction() throws IOException
     {
         //PDFBOX-3772 -- allow for COSBoolean
-        PDDocument doc = new PDDocument();
-        doc.getDocumentCatalog().getCOSObject().setBoolean(COSName.OPEN_ACTION, false);
-        assertNull(doc.getDocumentCatalog().getOpenAction());
-        doc.close();
+        try (PDDocument doc = new PDDocument())
+        {
+            doc.getDocumentCatalog().getCOSObject().setBoolean(COSName.OPEN_ACTION, false);
+            assertNull(doc.getDocumentCatalog().getOpenAction());
+        }
     }
 }

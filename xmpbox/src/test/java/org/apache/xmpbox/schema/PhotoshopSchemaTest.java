@@ -20,63 +20,121 @@
 
 package org.apache.xmpbox.schema;
 
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.stream.Stream;
 
+import org.apache.xmpbox.XMPMetadata;
 import org.apache.xmpbox.type.Cardinality;
 import org.apache.xmpbox.type.Types;
-import org.junit.Before;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RunWith(Parameterized.class)
-public class PhotoshopSchemaTest extends AbstractSchemaTester
-{
+class PhotoshopSchemaTest
+{    
+    private XMPMetadata metadata;
+    private Class<?> schemaClass;
 
-    @Override
-    public PhotoshopSchema getSchema()
+    @BeforeEach
+    void initMetadata()
     {
-        return xmp.createAndAddPhotoshopSchema();
+        metadata = XMPMetadata.createXMPMetadata();
+        schemaClass = PhotoshopSchema.class;
+    }
+    
+    @ParameterizedTest
+    @MethodSource("initializeParameters")
+    void testInitializedToNull(String fieldName, Types type, Cardinality card) throws Exception
+    {
+        SchemaTester schemaTester = new SchemaTester(metadata, schemaClass, fieldName, type, card);
+        schemaTester.testInitializedToNull();
     }
 
-    @Before
-    @Override
-    public void before() throws Exception
+    @ParameterizedTest
+    @MethodSource("initializeParameters")
+    void testSettingValue(String fieldName, Types type, Cardinality card) throws Exception
     {
-        super.before();
+        SchemaTester schemaTester = new SchemaTester(metadata, schemaClass, fieldName, type, card);
+        schemaTester.testSettingValue();
     }
 
-    public PhotoshopSchemaTest(String fieldName, Types type, Cardinality card)
+    @ParameterizedTest
+    @MethodSource("initializeParameters")
+    void testRandomSettingValue(String fieldName, Types type, Cardinality card) throws Exception
     {
-        super(fieldName, type, card);
+        SchemaTester schemaTester = new SchemaTester(metadata, schemaClass, fieldName, type, card);
+        schemaTester.testRandomSettingValue();
     }
 
-    @Parameters
-    public static Collection<Object[]> initializeParameters() throws Exception
+    @ParameterizedTest
+    @MethodSource("initializeParameters")
+    void testSettingValueInArray(String fieldName, Types type, Cardinality card) throws Exception
     {
-        Collection<Object[]> result = new ArrayList<>();
-
-        result.add(new Object[] { "AncestorID", Types.URI, Cardinality.Simple });
-        result.add(new Object[] { "AuthorsPosition", Types.Text, Cardinality.Simple });
-        result.add(new Object[] { "CaptionWriter", Types.ProperName, Cardinality.Simple });
-        result.add(new Object[] { "Category", Types.Text, Cardinality.Simple });
-        result.add(new Object[] { "City", Types.Text, Cardinality.Simple });
-        result.add(new Object[] { "ColorMode", Types.Integer, Cardinality.Simple });
-        result.add(new Object[] { "Country", Types.Text, Cardinality.Simple });
-        result.add(new Object[] { "Credit", Types.Text, Cardinality.Simple });
-        result.add(new Object[] { "DateCreated", Types.Date, Cardinality.Simple });
-        result.add(new Object[] { "Headline", Types.Text, Cardinality.Simple });
-        result.add(new Object[] { "History", Types.Text, Cardinality.Simple });
-        result.add(new Object[] { "ICCProfile", Types.Text, Cardinality.Simple });
-        result.add(new Object[] { "Instructions", Types.Text, Cardinality.Simple });
-        result.add(new Object[] { "Source", Types.Text, Cardinality.Simple });
-        result.add(new Object[] { "State", Types.Text, Cardinality.Simple });
-        result.add(new Object[] { "SupplementalCategories", Types.Text, Cardinality.Simple });
-        result.add(new Object[] { "TransmissionReference", Types.Text, Cardinality.Simple });
-        result.add(new Object[] { "Urgency", Types.Integer, Cardinality.Simple });
-
-        return result;
+        SchemaTester schemaTester = new SchemaTester(metadata, schemaClass, fieldName, type, card);
+        schemaTester.testSettingValueInArray();
     }
 
+    @ParameterizedTest
+    @MethodSource("initializeParameters")
+    void testRandomSettingValueInArray(String fieldName, Types type, Cardinality card) throws Exception
+    {
+        SchemaTester schemaTester = new SchemaTester(metadata, schemaClass, fieldName, type, card);
+        schemaTester.testRandomSettingValueInArray();
+    }
+
+    @ParameterizedTest
+    @MethodSource("initializeParameters")
+    void testPropertySetterSimple(String fieldName, Types type, Cardinality card) throws Exception
+    {
+        SchemaTester schemaTester = new SchemaTester(metadata, schemaClass, fieldName, type, card);
+        schemaTester.testPropertySetterSimple();
+    }
+
+    @ParameterizedTest
+    @MethodSource("initializeParameters")
+    void testRandomPropertySetterSimple(String fieldName, Types type, Cardinality card) throws Exception
+    {
+        SchemaTester schemaTester = new SchemaTester(metadata, schemaClass, fieldName, type, card);
+        schemaTester.testRandomPropertySetterSimple();
+    }
+
+    @ParameterizedTest
+    @MethodSource("initializeParameters")
+    void testPropertySetterInArray(String fieldName, Types type, Cardinality card) throws Exception
+    {
+        SchemaTester schemaTester = new SchemaTester(metadata, schemaClass, fieldName, type, card);
+        schemaTester.testPropertySetterInArray();
+    }
+
+    @ParameterizedTest
+    @MethodSource("initializeParameters")
+    void testRandomPropertySetterInArray(String fieldName, Types type, Cardinality card) throws Exception
+    {
+        SchemaTester schemaTester = new SchemaTester(metadata, schemaClass, fieldName, type, card);
+        schemaTester.testRandomPropertySetterInArray();
+    }
+
+    private static Stream<Arguments> initializeParameters()
+    {        
+        return Stream.of(
+            Arguments.of("AncestorID", Types.URI, Cardinality.Simple),
+            Arguments.of("AuthorsPosition", Types.Text, Cardinality.Simple),
+            Arguments.of("CaptionWriter", Types.ProperName, Cardinality.Simple),
+            Arguments.of("Category", Types.Text, Cardinality.Simple),
+            Arguments.of("City", Types.Text, Cardinality.Simple),
+            Arguments.of("ColorMode", Types.Integer, Cardinality.Simple),
+            Arguments.of("Country", Types.Text, Cardinality.Simple),
+            Arguments.of("Credit", Types.Text, Cardinality.Simple),
+            Arguments.of("DateCreated", Types.Date, Cardinality.Simple),
+            Arguments.of("Headline", Types.Text, Cardinality.Simple),
+            Arguments.of("History", Types.Text, Cardinality.Simple),
+            Arguments.of("ICCProfile", Types.Text, Cardinality.Simple),
+            Arguments.of("Instructions", Types.Text, Cardinality.Simple),
+            Arguments.of("Source", Types.Text, Cardinality.Simple),
+            Arguments.of("State", Types.Text, Cardinality.Simple),
+            Arguments.of("SupplementalCategories", Types.Text, Cardinality.Simple),
+            Arguments.of("TransmissionReference", Types.Text, Cardinality.Simple),
+            Arguments.of("Urgency", Types.Integer, Cardinality.Simple)
+        );
+    }
 }

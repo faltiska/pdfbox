@@ -41,7 +41,6 @@ import org.apache.pdfbox.pdmodel.font.PDType3CharProc;
 import org.apache.pdfbox.pdmodel.font.encoding.Encoding;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDResources;
-import org.apache.pdfbox.pdmodel.common.COSArrayList;
 import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.font.PDFontFactory;
 import org.apache.pdfbox.pdmodel.font.PDType3Font;
@@ -59,8 +58,8 @@ import org.apache.pdfbox.preflight.utils.ContextHelper;
 
 public class Type3FontValidator extends FontValidator<Type3Container>
 {
-    protected PDType3Font font;
-    protected COSDictionary fontDictionary;
+    protected final PDType3Font font;
+    protected final COSDictionary fontDictionary;
 
     public Type3FontValidator(PreflightContext context, PDType3Font font)
     {
@@ -362,17 +361,12 @@ public class Type3FontValidator extends FontValidator<Type3Container>
 
     public List<Float> getWidths(PDFont font)
     {
-        List<Float> widths;
         COSArray array = (COSArray) font.getCOSObject().getDictionaryObject(COSName.WIDTHS);
         if (array != null)
         {
-            widths = COSArrayList.convertFloatCOSArrayToList(array);
+            return array.toCOSNumberFloatList();
         }
-        else
-        {
-            widths = Collections.emptyList();
-        }
-        return widths;
+        return Collections.emptyList();
     }
 
     private PDType3CharProc getCharProc(int code)

@@ -42,7 +42,7 @@ public abstract class PDAction implements PDDestinationOrAction
     /**
      * The action dictionary.
      */
-    protected COSDictionary action;
+    protected final COSDictionary action;
 
     /**
      * Default constructor.
@@ -135,7 +135,7 @@ public abstract class PDAction implements PDDestinationOrAction
         else if( next instanceof COSArray )
         {
             COSArray array = (COSArray)next;
-            List<PDAction> actions = new ArrayList<>();
+            List<PDAction> actions = new ArrayList<>(array.size());
             for( int i=0; i<array.size(); i++ )
             {
                 actions.add( PDActionFactory.createAction( (COSDictionary) array.getObject( i )));
@@ -153,8 +153,8 @@ public abstract class PDAction implements PDDestinationOrAction
      *
      * @param next The Next action or sequence of actions.
      */
-    public void setNext( List<?> next )
+    public void setNext(List<PDAction> next)
     {
-        action.setItem(COSName.NEXT, COSArrayList.converterToCOSArray(next));
+        action.setItem(COSName.NEXT, new COSArray(next));
     }
 }

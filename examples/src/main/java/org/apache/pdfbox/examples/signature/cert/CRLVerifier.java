@@ -124,10 +124,15 @@ public final class CRLVerifier
                 X509Certificate crlIssuerCert = null;
                 for (X509Certificate possibleCert : mergedCertSet)
                 {
-                    if (crl.getIssuerX500Principal().equals(possibleCert.getSubjectX500Principal()))
+                    try
                     {
+                        cert.verify(possibleCert.getPublicKey(), SecurityProvider.getProvider());
                         crlIssuerCert = possibleCert;
                         break;
+                    }
+                    catch (GeneralSecurityException ex)
+                    {
+                        // not the issuer
                     }
                 }
                 if (crlIssuerCert == null)
@@ -137,7 +142,17 @@ public final class CRLVerifier
                             "not found in certificate chain, so the CRL at " +
                             crlDistributionPointsURL + " could not be verified");
                 }
-                crl.verify(crlIssuerCert.getPublicKey(), SecurityProvider.getProvider().getName());
+                crl.verify(crlIssuerCert.getPublicKey(), SecurityProvider.getProvider());
+                //TODO these should be exceptions, but for that we need a test case where
+                // a PDF has a broken OCSP and a working CRL
+                if (crl.getThisUpdate().after(now))
+                {
+                    LOG.error("CRL not yet valid, thisUpdate is " + crl.getThisUpdate());
+                }
+                if (crl.getNextUpdate().before(now))
+                {
+                    LOG.error("CRL no longer valid, nextUpdate is " + crl.getNextUpdate());
+                }
 
                 if (!crl.getIssuerX500Principal().equals(cert.getIssuerX500Principal()))
                 {
@@ -298,12 +313,25 @@ public final class CRLVerifier
         {
             return new ArrayList<>();
         }
-        ASN1InputStream oAsnInStream = new ASN1InputStream(new ByteArrayInputStream(crldpExt));
-        ASN1Primitive derObjCrlDP = oAsnInStream.readObject();
+        ASN1Primitive derObjCrlDP;
+        try (ASN1InputStream oAsnInStream = new ASN1InputStream(crldpExt))
+        {
+            derObjCrlDP = oAsnInStream.readObject();
+        }
+        if (!(derObjCrlDP instanceof ASN1OctetString))
+        {
+            LOG.warn("CRL distribution points for certificate subject " +
+                    cert.getSubjectX500Principal().getName() +
+                    " should be an octet string, but is " + derObjCrlDP);
+            return new ArrayList<>();
+        }
         ASN1OctetString dosCrlDP = (ASN1OctetString) derObjCrlDP;
         byte[] crldpExtOctets = dosCrlDP.getOctets();
-        ASN1InputStream oAsnInStream2 = new ASN1InputStream(new ByteArrayInputStream(crldpExtOctets));
-        ASN1Primitive derObj2 = oAsnInStream2.readObject();
+        ASN1Primitive derObj2;
+        try (ASN1InputStream oAsnInStream2 = new ASN1InputStream(crldpExtOctets))
+        {
+            derObj2 = oAsnInStream2.readObject();
+        }
         CRLDistPoint distPoint = CRLDistPoint.getInstance(derObj2);
         List<String> crlUrls = new ArrayList<>();
         for (DistributionPoint dp : distPoint.getDistributionPoints())

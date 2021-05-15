@@ -21,13 +21,15 @@
 
 package org.apache.xmpbox.type;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import java.util.Calendar;
 import org.apache.xmpbox.XMPMetadata;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class TestAbstractStructuredType
+class TestAbstractStructuredType
 {
 
     private static class MyStructuredType extends AbstractStructuredType
@@ -46,57 +48,51 @@ public class TestAbstractStructuredType
 
     }
 
-    protected MyStructuredType st;
+    final XMPMetadata xmp = XMPMetadata.createXMPMetadata();
 
     public static final String MY_NS = "http://www.apache.org/test#";
-
     public static final String MY_PREFIX = "test";
 
-    @Before
-    public void before() throws Exception
+    protected final MyStructuredType st = new MyStructuredType(xmp, MY_NS, MY_PREFIX);
+
+    @Test
+    void validate() throws Exception
     {
-        XMPMetadata xmp = XMPMetadata.createXMPMetadata();
-        st = new MyStructuredType(xmp, MY_NS, MY_PREFIX);
+        assertEquals(MY_NS, st.getNamespace());
+        assertEquals(MY_PREFIX, st.getPrefix());
+        assertEquals(MY_PREFIX, st.getPrefix());
     }
 
     @Test
-    public void validate() throws Exception
+    void testNonExistingProperty() throws Exception
     {
-        Assert.assertEquals(MY_NS, st.getNamespace());
-        Assert.assertEquals(MY_PREFIX, st.getPrefix());
-        Assert.assertEquals(MY_PREFIX, st.getPrefix());
+        assertNull(st.getProperty("NOT_EXISTING"));
     }
 
     @Test
-    public void testNonExistingProperty() throws Exception
+    void testNotValuatedPropertyProperty() throws Exception
     {
-        Assert.assertNull(st.getProperty("NOT_EXISTING"));
+        assertNull(st.getProperty(MyStructuredType.MYTEXT));
     }
 
     @Test
-    public void testNotValuatedPropertyProperty() throws Exception
-    {
-        Assert.assertNull(st.getProperty(MyStructuredType.MYTEXT));
-    }
-
-    @Test
-    public void testValuatedTextProperty() throws Exception
+    void testValuatedTextProperty() throws Exception
     {
         String s = "my value";
         st.addSimpleProperty(MyStructuredType.MYTEXT, s);
-        Assert.assertEquals(s, st.getPropertyValueAsString(MyStructuredType.MYTEXT));
-        Assert.assertNull(st.getPropertyValueAsString(MyStructuredType.MYDATE));
-        Assert.assertNotNull(st.getProperty(MyStructuredType.MYTEXT));
+        assertEquals(s, st.getPropertyValueAsString(MyStructuredType.MYTEXT));
+        assertNull(st.getPropertyValueAsString(MyStructuredType.MYDATE));
+        assertNotNull(st.getProperty(MyStructuredType.MYTEXT));
     }
 
     @Test
-    public void testValuatedDateProperty() throws Exception
+    void testValuatedDateProperty() throws Exception
     {
         Calendar c = Calendar.getInstance();
         st.addSimpleProperty(MyStructuredType.MYDATE, c);
-        Assert.assertEquals(c, st.getDatePropertyAsCalendar(MyStructuredType.MYDATE));
-        Assert.assertNull(st.getDatePropertyAsCalendar(MyStructuredType.MYTEXT));
-        Assert.assertNotNull(st.getProperty(MyStructuredType.MYDATE));
+        assertEquals(c, st.getDatePropertyAsCalendar(MyStructuredType.MYDATE));
+        assertNull(st.getDatePropertyAsCalendar(MyStructuredType.MYTEXT));
+        assertNotNull(st.getProperty(MyStructuredType.MYDATE));
     }
 
 }

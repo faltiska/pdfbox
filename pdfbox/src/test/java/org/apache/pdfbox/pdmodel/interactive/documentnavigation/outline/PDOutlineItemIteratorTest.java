@@ -16,21 +16,22 @@
  */
 package org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * @author Andrea Vacondio
  *
  */
-public class PDOutlineItemIteratorTest
+class PDOutlineItemIteratorTest
 {
 
     @Test
-    public void singleItem()
+    void singleItem()
     {
         PDOutlineItem first = new PDOutlineItem();
         PDOutlineItemIterator iterator = new PDOutlineItemIterator(first);
@@ -40,7 +41,7 @@ public class PDOutlineItemIteratorTest
     }
 
     @Test
-    public void multipleItem()
+    void multipleItem()
     {
         PDOutlineItem first = new PDOutlineItem();
         PDOutlineItem second = new PDOutlineItem();
@@ -53,14 +54,15 @@ public class PDOutlineItemIteratorTest
         assertFalse(iterator.hasNext());
     }
 
-    @Test(expected = UnsupportedOperationException.class)
-    public void removeUnsupported()
+    @Test
+    void removeUnsupported()
     {
-        new PDOutlineItemIterator(new PDOutlineItem()).remove();
+        PDOutlineItemIterator pdOutlineItemIterator = new PDOutlineItemIterator(new PDOutlineItem());
+        assertThrows(UnsupportedOperationException.class, () -> pdOutlineItemIterator.remove());
     }
 
     @Test
-    public void noChildren()
+    void noChildren()
     {
         PDOutlineItemIterator iterator = new PDOutlineItemIterator(null);
         assertFalse(iterator.hasNext());

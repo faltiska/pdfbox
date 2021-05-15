@@ -16,20 +16,23 @@
  */
 package org.apache.pdfbox.cos;
 
-import static org.junit.Assert.assertFalse;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-public class COSDictionaryTest
+import org.junit.jupiter.api.Test;
+
+class COSDictionaryTest
 {
     @Test
-    public void testCOSDictionaryNotEqualsCOSStream()
+    void testCOSDictionaryNotEqualsCOSStream()
     {
         COSDictionary cosDictionary = new COSDictionary();
         COSStream cosStream = new COSStream();
         cosDictionary.setItem(COSName.BE, COSName.BE);
         cosDictionary.setInt(COSName.LENGTH, 0);
         cosStream.setItem(COSName.BE, COSName.BE);
-        assertFalse("a COSDictionary shall not be equal to a COSStream with the same dictionary entries", cosDictionary.equals(cosStream));
-        assertFalse("a COSStream shall not be equal to a COSDictionary with the same dictionary entries", cosStream.equals(cosDictionary));
+        assertNotEquals(cosDictionary, cosStream,
+                "a COSDictionary shall not be equal to a COSStream with the same dictionary entries");
+        assertNotEquals(cosStream, cosDictionary,
+                "a COSStream shall not be equal to a COSDictionary with the same dictionary entries");
     }
 }

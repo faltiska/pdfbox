@@ -36,6 +36,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintStream;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.Arrays;
@@ -43,6 +44,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.Callable;
+
 import javax.imageio.spi.IIORegistry;
 
 import javax.print.attribute.HashPrintRequestAttributeSet;
@@ -124,6 +127,13 @@ import org.apache.pdfbox.pdmodel.graphics.color.PDDeviceRGB;
 import org.apache.pdfbox.pdmodel.interactive.viewerpreferences.PDViewerPreferences;
 import org.apache.pdfbox.printing.PDFPageable;
 
+import picocli.CommandLine;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
+import picocli.CommandLine.Parameters;
+import picocli.CommandLine.Spec;
+import picocli.CommandLine.Model.CommandSpec;
+
 /**
  * PDF Debugger.
  * 
@@ -131,30 +141,24 @@ import org.apache.pdfbox.printing.PDFPageable;
  * @author Ben Litchfield
  * @author Khyrul Bashar
  */
-@SuppressWarnings({"serial","squid:MaximumInheritanceDepth","squid:S1948"})
-public class PDFDebugger extends JFrame
+@SuppressWarnings({ "serial", "squid:MaximumInheritanceDepth", "squid:S1948" })
+@Command(name = "pdfdebugger", description = "Analyzes and inspects the internal structure of a PDF document")
+public class PDFDebugger extends JFrame implements Callable<Integer>
 {
-    private static final Set<COSName> SPECIALCOLORSPACES =
-            new HashSet<>(Arrays.asList(COSName.INDEXED, COSName.SEPARATION, COSName.DEVICEN));
+    private static final Set<COSName> SPECIALCOLORSPACES = new HashSet<>(
+            Arrays.asList(COSName.INDEXED, COSName.SEPARATION, COSName.DEVICEN));
 
-    private static final Set<COSName> OTHERCOLORSPACES =
-            new HashSet<>(Arrays.asList(COSName.ICCBASED, COSName.PATTERN, COSName.CALGRAY,
-                                 COSName.CALRGB, COSName.LAB));
+    private static final Set<COSName> OTHERCOLORSPACES = new HashSet<>(
+            Arrays.asList(COSName.ICCBASED, COSName.PATTERN, COSName.CALGRAY, COSName.CALRGB, COSName.LAB));
 
-    @SuppressWarnings({"squid:S2068"})
-    private static final String PASSWORD = "-password";
-    private static final String VIEW_STRUCTURE = "-viewstructure";
-
-    private static final int SHORCUT_KEY_MASK =
-            Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
+    private int shortcutKeyMask;
     private static final String OS_NAME = System.getProperty("os.name").toLowerCase();
     private static final boolean IS_MAC_OS = OS_NAME.startsWith("mac os x");
-    
+
     private final JPanel documentPanel = new JPanel();
     private TreeStatusPane statusPane;
     private RecentFiles recentFiles;
     private WindowPrefs windowPrefs;
-    private boolean isPageMode;
     private PDDocument document;
     private String currentFilePath;
     private JScrollPane jScrollPaneRight;
@@ -168,142 +172,137 @@ public class PDFDebugger extends JFrame
     private JMenu recentFilesMenu;
     private JMenuItem printMenuItem;
     private JMenuItem reopenMenuItem;
-    
+
     // edit > find menu
     private JMenu findMenu;
     private JMenuItem findMenuItem;
     private JMenuItem findNextMenuItem;
     private JMenuItem findPreviousMenuItem;
-    
+
+    // cli options
+    // Expected for CLI app to write to System.out/System.err
+    @SuppressWarnings("squid:S106")
+    private static final PrintStream SYSERR = System.err;
+
+    @Option(names = { "-h", "--help" }, usageHelp = true, description = "display this help message")
+    boolean usageHelpRequested;
+
+    @Option(names = "-password", description = "password to decrypt the document", arity = "0..1", interactive = true)
+    private String password;
+
+    @Option(names = "-viewstructure", description = "activate structure mode on startup")
+    private boolean viewstructure = false;
+
+    @Parameters(paramLabel = "inputfile", arity="0..1", description = "the PDF file to be loaded")
+    private File infile;
+
     // configuration
-    public static Properties configuration = new Properties();
-    
+    public static final Properties configuration = new Properties();
+
+    @Spec CommandSpec spec;
+
     /**
      * Constructor.
      */
     public PDFDebugger()
     {
-        this(false);
     }
 
     /**
      * Constructor.
      *
-     * @param isPageMode true if pages are to be displayed, false if internal structure is to be
-     * displayed.
+     * @param isPageMode true if pages are to be displayed, false if internal
+     *                   structure is to be displayed.
      */
     public PDFDebugger(boolean isPageMode)
     {
-        this.isPageMode = isPageMode;
-        loadConfiguration();
-        initComponents();
+        viewstructure = !isPageMode;
     }
 
     /**
      * Entry point.
      * 
      * @param args the command line arguments
-     * @throws Exception If anything goes wrong.
      */
-    public static void main(String[] args) throws Exception
+    public static void main(String[] args)
     {
-        UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        if (System.getProperty("apple.laf.useScreenMenuBar") == null)
+        int exitCode = new CommandLine(new PDFDebugger()).execute(args);
+        if (exitCode > 0)
         {
-            System.setProperty("apple.laf.useScreenMenuBar", "true");
+            System.exit(exitCode);
         }
-
-        // handle uncaught exceptions
-        Thread.setDefaultUncaughtExceptionHandler(
-                (thread, throwable) -> new ErrorDialog(throwable).setVisible(true));
-
-        // open file, if any
-        String filename = null;
-        @SuppressWarnings({"squid:S2068"})
-        String password = "";
-        boolean viewPages = true;
-        
-        for( int i = 0; i < args.length; i++ )
-        {
-            switch (args[i])
-            {
-                case PASSWORD:
-                    i++;
-                    if (i >= args.length)
-                    {
-                        usage();
-                    }
-                    password = args[i];
-                    break;
-                case VIEW_STRUCTURE:
-                    viewPages = false;
-                    break;
-                default:
-                    filename = args[i];
-                    break;
-            }
-        }
-        final PDFDebugger viewer = new PDFDebugger(viewPages);
-
-        // use our custom logger
-        // this works only if there is no "LogFactory.getLog()" in this class,
-        // and if there are no methods that call logging, even invisible
-        // use reduced file from PDFBOX-3653 to see logging
-        LogDialog.init(viewer, viewer.statusBar.getLogLabel());
-        System.setProperty("org.apache.commons.logging.Log", "org.apache.pdfbox.debugger.ui.DebugLog");
-
-        TextDialog.init(viewer);
-
-        // trigger premature initializations for more accurate rendering benchmarks
-        // See discussion in PDFBOX-3988
-        if (PDType1Font.COURIER.isStandard14())
-        {
-            // Yes this is always true
-            PDDeviceCMYK.INSTANCE.toRGB(new float[] { 0, 0, 0, 0} );
-            PDDeviceRGB.INSTANCE.toRGB(new float[] { 0, 0, 0 } );
-            IIORegistry.getDefaultInstance();
-            FilterFactory.INSTANCE.getFilter(COSName.FLATE_DECODE);
-        }
-
-        if (filename != null)
-        {
-            File file = new File(filename);
-            if (file.exists())
-            {
-                viewer.readPDFFile(filename, password);
-            }
-        }
-        viewer.setVisible(true);
     }
+
+    @Override
+    public Integer call()
+    {
+        try
+        {
+            // can't be initialized earlier because it's an awt call which would fail when
+            // PDFBox.main runs on a headless system
+            shortcutKeyMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
+
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            if (System.getProperty("apple.laf.useScreenMenuBar") == null)
+            {
+                System.setProperty("apple.laf.useScreenMenuBar", "true");
+            }
     
+            // handle uncaught exceptions
+            Thread.setDefaultUncaughtExceptionHandler(
+                    (thread, throwable) -> new ErrorDialog(throwable).setVisible(true));
+    
+            loadConfiguration();
+            initComponents();
+
+            // use our custom logger
+            // this works only if there is no "LogFactory.getLog()" in this class,
+            // and if there are no methods that call logging, even invisible
+            // use reduced file from PDFBOX-3653 to see logging
+            LogDialog.init(this,statusBar.getLogLabel());
+            System.setProperty("org.apache.commons.logging.Log", "org.apache.pdfbox.debugger.ui.DebugLog");
+
+            TextDialog.init(this);
+
+            // trigger premature initializations for more accurate rendering benchmarks
+            // See discussion in PDFBOX-3988
+            if (PDType1Font.COURIER.isStandard14())
+            {
+                // Yes this is always true
+                PDDeviceCMYK.INSTANCE.toRGB(new float[] { 0, 0, 0, 0} );
+                PDDeviceRGB.INSTANCE.toRGB(new float[] { 0, 0, 0 } );
+                IIORegistry.getDefaultInstance();
+                FilterFactory.INSTANCE.getFilter(COSName.FLATE_DECODE);
+            }
+
+            if (infile != null && infile.exists())
+            {
+                readPDFFile(infile, password);
+            }
+
+            setVisible(true);
+        }
+        catch (Exception ex)
+        {
+            SYSERR.println( "Error viewing document: " + ex.getMessage());
+            return 4;
+        }
+        return 0;
+    }
+
     public boolean isPageMode()
     {
-        return this.isPageMode;
+        return !viewstructure;
     }
     
     public void setPageMode(boolean isPageMode)
     {
-        this.isPageMode = isPageMode;
+        viewstructure = !isPageMode;
     }
     
     public boolean hasDocument()
     {
         return document != null;
-    }
-    
-    /**
-     * This will print out a message telling how to use this utility.
-     */
-    private static void usage()
-    {
-        String message = "Usage: java -jar pdfbox-app-x.y.z.jar PDFDebugger [options] <inputfile>\n"
-                + "\nOptions:\n"
-                + "  -password <password> : Password to decrypt the document\n"
-                + "  -viewstructure       : activate structure mode on startup\n"
-                + "  <inputfile>          : The PDF document to be loaded\n";
-        
-        System.err.println(message);
-        System.exit(1);
     }
     
     /**
@@ -419,17 +418,16 @@ public class PDFDebugger extends JFrame
                     List<File> files = (List<File>) transferable.getTransferData(
                             DataFlavor.javaFileListFlavor);
                     readPDFFile(files.get(0), "");
-                    return true;
                 }
                 catch (IOException e)
                 {
                     new ErrorDialog(e).setVisible(true);
-                    return true;
                 }
                 catch (UnsupportedFlavorException e)
                 {
                     throw new RuntimeException(e);
                 }
+                return true;
             }
         });
 
@@ -468,7 +466,7 @@ public class PDFDebugger extends JFrame
     private JMenu createFileMenu()
     {
         JMenuItem openMenuItem = new JMenuItem("Open...");
-        openMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O, SHORCUT_KEY_MASK));
+        openMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O, shortcutKeyMask));
         openMenuItem.addActionListener(this::openMenuItemActionPerformed);
 
         JMenu fileMenu = new JMenu("File");
@@ -476,7 +474,7 @@ public class PDFDebugger extends JFrame
         fileMenu.setMnemonic('F');
 
         JMenuItem openUrlMenuItem = new JMenuItem("Open URL...");
-        openUrlMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_U, SHORCUT_KEY_MASK));
+        openUrlMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_U, shortcutKeyMask));
         openUrlMenuItem.addActionListener(evt ->
         {
             String urlString = JOptionPane.showInputDialog("Enter an URL");
@@ -496,7 +494,7 @@ public class PDFDebugger extends JFrame
         fileMenu.add(openUrlMenuItem);
         
         reopenMenuItem = new JMenuItem("Reopen");
-        reopenMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_R, SHORCUT_KEY_MASK));
+        reopenMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_R, shortcutKeyMask));
         reopenMenuItem.addActionListener(evt ->
         {
             try
@@ -533,19 +531,19 @@ public class PDFDebugger extends JFrame
         fileMenu.add(recentFilesMenu);
 
         printMenuItem = new JMenuItem("Print");
-        printMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_P, SHORCUT_KEY_MASK));
+        printMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_P, shortcutKeyMask));
         printMenuItem.setEnabled(false);
         printMenuItem.addActionListener(this::printMenuItemActionPerformed);
 
         fileMenu.addSeparator();
         fileMenu.add(printMenuItem);
 
-        JMenuItem exitMenuItem = new JMenuItem("Exit");
-        exitMenuItem.setAccelerator(KeyStroke.getKeyStroke("alt F4"));
-        exitMenuItem.addActionListener(this::exitMenuItemActionPerformed);
-
         if (!IS_MAC_OS)
         {
+            JMenuItem exitMenuItem = new JMenuItem("Exit");
+            exitMenuItem.setAccelerator(KeyStroke.getKeyStroke("alt F4"));
+            exitMenuItem.addActionListener(this::exitMenuItemActionPerformed);
+
             fileMenu.addSeparator();
             fileMenu.add(exitMenuItem);
         }
@@ -586,12 +584,12 @@ public class PDFDebugger extends JFrame
         
         findMenuItem = new JMenuItem("Find...");
         findMenuItem.setActionCommand("find");
-        findMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F, SHORCUT_KEY_MASK));
+        findMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F, shortcutKeyMask));
         
         findNextMenuItem = new JMenuItem("Find Next");
         if (IS_MAC_OS)
         {
-            findNextMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_G, SHORCUT_KEY_MASK));
+            findNextMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_G, shortcutKeyMask));
         }
         else
         {
@@ -602,7 +600,7 @@ public class PDFDebugger extends JFrame
         if (IS_MAC_OS)
         {
             findPreviousMenuItem.setAccelerator(KeyStroke.getKeyStroke(
-                    KeyEvent.VK_G, SHORCUT_KEY_MASK | InputEvent.SHIFT_DOWN_MASK));
+                    KeyEvent.VK_G, shortcutKeyMask | InputEvent.SHIFT_DOWN_MASK));
         }
         else
         {
@@ -971,14 +969,14 @@ public class PDFDebugger extends JFrame
         {
             Object pageObj = path.getParentPath().getLastPathComponent();
             COSDictionary page = (COSDictionary) getUnderneathObject(pageObj);
-            resourcesDic = (COSDictionary) page.getDictionaryObject(COSName.RESOURCES);
+            resourcesDic = page.getCOSDictionary(COSName.RESOURCES);
             isContentStream = true;
         }
         else if (COSName.CONTENTS.equals(parentKey) || COSName.CHAR_PROCS.equals(parentKey))
         {
             Object pageObj = path.getParentPath().getParentPath().getLastPathComponent();
             COSDictionary page = (COSDictionary) getUnderneathObject(pageObj);
-            resourcesDic = (COSDictionary) page.getDictionaryObject(COSName.RESOURCES);
+            resourcesDic = page.getCOSDictionary(COSName.RESOURCES);
             isContentStream = true;
         }
         else if (COSName.FORM.equals(stream.getCOSName(COSName.SUBTYPE)) ||
@@ -987,7 +985,7 @@ public class PDFDebugger extends JFrame
         {
             if (stream.containsKey(COSName.RESOURCES))
             {
-                resourcesDic = (COSDictionary) stream.getDictionaryObject(COSName.RESOURCES);
+                resourcesDic = stream.getCOSDictionary(COSName.RESOURCES);
             }
             isContentStream = true;
         }
@@ -1306,7 +1304,7 @@ public class PDFDebugger extends JFrame
         TreeStatus treeStatus = new TreeStatus(document.getDocument().getTrailer());
         statusPane.updateTreeStatus(treeStatus);
         
-        if (isPageMode)
+        if (!viewstructure)
         {
             File file = new File(currentFilePath);
             DocumentEntry documentEntry = new DocumentEntry(document, file.getName());
@@ -1328,7 +1326,7 @@ public class PDFDebugger extends JFrame
     /**
      * Internal class to avoid double code in password entry loop.
      */
-    abstract class DocumentOpener
+    abstract static class DocumentOpener
     {
         String password;
 
@@ -1340,16 +1338,16 @@ public class PDFDebugger extends JFrame
         /**
          * Override to load the actual input type (File, URL, stream), don't call it directly!
          * 
-         * @return
-         * @throws IOException 
+         * @return the PDDocument instance
+         * @throws IOException Cannot read document
          */
         abstract PDDocument open() throws IOException;
 
         /**
          * Call this!
          * 
-         * @return
-         * @throws IOException 
+         * @return the PDDocument instance
+         * @throws IOException Cannot read document
          */
         final PDDocument parse() throws IOException 
         {

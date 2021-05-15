@@ -16,7 +16,12 @@
 
 package org.apache.pdfbox.examples.signature;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.security.GeneralSecurityException;
+import java.security.MessageDigest;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
@@ -81,27 +86,25 @@ public class SigUtils
      */
     public static int getMDPPermission(PDDocument doc)
     {
-        COSBase base = doc.getDocumentCatalog().getCOSObject().getDictionaryObject(COSName.PERMS);
-        if (base instanceof COSDictionary)
+        COSDictionary permsDict = doc.getDocumentCatalog().getCOSObject()
+                .getCOSDictionary(COSName.PERMS);
+        if (permsDict != null)
         {
-            COSDictionary permsDict = (COSDictionary) base;
-            base = permsDict.getDictionaryObject(COSName.DOCMDP);
-            if (base instanceof COSDictionary)
+            COSDictionary signatureDict = permsDict.getCOSDictionary(COSName.DOCMDP);
+            if (signatureDict != null)
             {
-                COSDictionary signatureDict = (COSDictionary) base;
-                base = signatureDict.getDictionaryObject("Reference");
-                if (base instanceof COSArray)
+                COSArray refArray = signatureDict.getCOSArray(COSName.REFERENCE);
+                if (refArray instanceof COSArray)
                 {
-                    COSArray refArray = (COSArray) base;
                     for (int i = 0; i < refArray.size(); ++i)
                     {
-                        base = refArray.getObject(i);
+                        COSBase base = refArray.getObject(i);
                         if (base instanceof COSDictionary)
                         {
                             COSDictionary sigRefDict = (COSDictionary) base;
-                            if (COSName.DOCMDP.equals(sigRefDict.getDictionaryObject("TransformMethod")))
+                            if (COSName.DOCMDP.equals(sigRefDict.getDictionaryObject(COSName.TRANSFORM_METHOD)))
                             {
-                                base = sigRefDict.getDictionaryObject("TransformParams");
+                                base = sigRefDict.getDictionaryObject(COSName.TRANSFORM_PARAMS);
                                 if (base instanceof COSDictionary)
                                 {
                                     COSDictionary transformDict = (COSDictionary) base;
@@ -122,35 +125,52 @@ public class SigUtils
     }
 
     /**
-     * Set the access permissions granted for this document in the DocMDP transform parameters
-     * dictionary. Details are described in the table "Entries in the DocMDP transform parameters
-     * dictionary" in the PDF specification.
+     * Set the "modification detection and prevention" permissions granted for this document in the
+     * DocMDP transform parameters dictionary. Details are described in the table "Entries in the
+     * DocMDP transform parameters dictionary" in the PDF specification.
      *
      * @param doc The document.
      * @param signature The signature object.
      * @param accessPermissions The permission value (1, 2 or 3).
+     *
+     * @throws IOException if a signature exists.
      */
     public static void setMDPPermission(PDDocument doc, PDSignature signature, int accessPermissions)
+            throws IOException
     {
+        for (PDSignature sig : doc.getSignatureDictionaries())
+        {
+            // "Approval signatures shall follow the certification signature if one is present"
+            // thus we don't care about timestamp signatures
+            if (COSName.DOC_TIME_STAMP.equals(sig.getCOSObject().getItem(COSName.TYPE)))
+            {
+                continue;
+            }
+            if (sig.getCOSObject().containsKey(COSName.CONTENTS))
+            {
+                throw new IOException("DocMDP transform method not allowed if an approval signature exists");
+            }
+        }
+
         COSDictionary sigDict = signature.getCOSObject();
 
         // DocMDP specific stuff
         COSDictionary transformParameters = new COSDictionary();
-        transformParameters.setItem(COSName.TYPE, COSName.getPDFName("TransformParams"));
+        transformParameters.setItem(COSName.TYPE, COSName.TRANSFORM_PARAMS);
         transformParameters.setInt(COSName.P, accessPermissions);
         transformParameters.setName(COSName.V, "1.2");
         transformParameters.setNeedToBeUpdated(true);
 
         COSDictionary referenceDict = new COSDictionary();
-        referenceDict.setItem(COSName.TYPE, COSName.getPDFName("SigRef"));
-        referenceDict.setItem("TransformMethod", COSName.DOCMDP);
-        referenceDict.setItem("DigestMethod", COSName.getPDFName("SHA1"));
-        referenceDict.setItem("TransformParams", transformParameters);
+        referenceDict.setItem(COSName.TYPE, COSName.SIG_REF);
+        referenceDict.setItem(COSName.TRANSFORM_METHOD, COSName.DOCMDP);
+        referenceDict.setItem(COSName.DIGEST_METHOD, COSName.getPDFName("SHA1"));
+        referenceDict.setItem(COSName.TRANSFORM_PARAMS, transformParameters);
         referenceDict.setNeedToBeUpdated(true);
 
         COSArray referenceArray = new COSArray();
         referenceArray.add(referenceDict);
-        sigDict.setItem("Reference", referenceArray);
+        sigDict.setItem(COSName.REFERENCE, referenceArray);
         referenceArray.setNeedToBeUpdated(true);
 
         // Catalog
@@ -256,7 +276,7 @@ public class SigUtils
         {
             PDSignature lastSignature = optLastSignature.get();
             COSBase type = lastSignature.getCOSObject().getItem(COSName.TYPE);
-            if (COSName.SIG.equals(type) || COSName.DOC_TIME_STAMP.equals(type))
+            if (type == null || COSName.SIG.equals(type) || COSName.DOC_TIME_STAMP.equals(type))
             {
                 return lastSignature;
             }
@@ -329,5 +349,40 @@ public class SigUtils
         // For the EU, get a list here:
         // https://ec.europa.eu/digital-single-market/en/eu-trusted-lists-trust-service-providers
         // ( getRootCertificates() is not helpful because these are SSL certificates)
+    }
+
+    /**
+     * Get certificate of a TSA.
+     * 
+     * @param tsaUrl URL
+     * @return the X.509 certificate.
+     *
+     * @throws GeneralSecurityException
+     * @throws IOException 
+     */
+    public static X509Certificate getTsaCertificate(String tsaUrl)
+            throws GeneralSecurityException, IOException
+    {
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        TSAClient tsaClient = new TSAClient(new URL(tsaUrl), null, null, digest);
+        InputStream emptyStream = new ByteArrayInputStream(new byte[0]);
+        TimeStampToken timeStampToken = tsaClient.getTimeStampToken(emptyStream);
+        return getCertificateFromTimeStampToken(timeStampToken);
+    }
+
+    /**
+     * Extract X.509 certificate from a timestamp
+     * @param timeStampToken
+     * @return the X.509 certificate.
+     * @throws CertificateException 
+     */
+    public static X509Certificate getCertificateFromTimeStampToken(TimeStampToken timeStampToken)
+            throws CertificateException
+    {
+        @SuppressWarnings("unchecked") // TimeStampToken.getSID() is untyped
+        Collection<X509CertificateHolder> tstMatches =
+                timeStampToken.getCertificates().getMatches(timeStampToken.getSID());
+        X509CertificateHolder tstCertHolder = tstMatches.iterator().next();
+        return new JcaX509CertificateConverter().getCertificate(tstCertHolder);
     }
 }

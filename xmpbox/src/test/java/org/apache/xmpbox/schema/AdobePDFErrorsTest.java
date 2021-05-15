@@ -21,29 +21,21 @@
 
 package org.apache.xmpbox.schema;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import org.apache.xmpbox.XMPMetadata;
 import org.apache.xmpbox.type.BadFieldValueException;
-import org.apache.xmpbox.xml.DomXmpParser;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class AdobePDFErrorsTest
+class AdobePDFErrorsTest
 {
 
-    protected XMPMetadata metadata;
-
-    protected DomXmpParser builder;
-
-    @Before
-    public void initTempMetaData() throws Exception
-    {
-        builder = new DomXmpParser();
-        metadata = XMPMetadata.createXMPMetadata();
-    }
+    private final XMPMetadata metadata = XMPMetadata.createXMPMetadata();
 
     @Test
-    public void testPDFAIdentification() throws Exception
+    void testPDFAIdentification() throws Exception
     {
         AdobePDFSchema schem = metadata.createAndAddAdobePDFSchema();
 
@@ -55,39 +47,42 @@ public class AdobePDFErrorsTest
         schem.setPDFVersion(pdfVersion);
 
         // Check get null if property not defined
-        Assert.assertNull(schem.getProducer());
+        assertNull(schem.getProducer());
 
         schem.setProducer(producer);
 
-        Assert.assertEquals("Keywords", schem.getKeywordsProperty().getPropertyName());
-        Assert.assertEquals(keywords, schem.getKeywords());
+        assertEquals("Keywords", schem.getKeywordsProperty().getPropertyName());
+        assertEquals(keywords, schem.getKeywords());
 
-        Assert.assertEquals("PDFVersion", schem.getPDFVersionProperty().getPropertyName());
-        Assert.assertEquals(pdfVersion, schem.getPDFVersion());
+        assertEquals("PDFVersion", schem.getPDFVersionProperty().getPropertyName());
+        assertEquals(pdfVersion, schem.getPDFVersion());
 
-        Assert.assertEquals("Producer", schem.getProducerProperty().getPropertyName());
-        Assert.assertEquals(producer, schem.getProducer());
+        assertEquals("Producer", schem.getProducerProperty().getPropertyName());
+        assertEquals(producer, schem.getProducer());
 
         // check retrieve this schema in metadata
-        Assert.assertEquals(schem, metadata.getAdobePDFSchema());
+        assertEquals(schem, metadata.getAdobePDFSchema());
 
         // SaveMetadataHelper.serialize(metadata, true, System.out);
     }
 
-    @Test(expected = BadFieldValueException.class)
-    public void testBadPDFAConformanceId() throws Exception
+    @Test
+    void testBadPDFAConformanceId() throws Exception
     {
         PDFAIdentificationSchema pdfaid = metadata.createAndAddPFAIdentificationSchema();
         String conformance = "kiohiohiohiohio";
-        pdfaid.setConformance(conformance);
+        assertThrows(BadFieldValueException.class, () -> {
+	        pdfaid.setConformance(conformance);
+	    });
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testBadVersionIdValueType() throws Exception
+    @Test
+    void testBadVersionIdValueType() throws Exception
     {
         PDFAIdentificationSchema pdfaid = metadata.createAndAddPFAIdentificationSchema();
         pdfaid.setPartValueWithString("1");
-        pdfaid.setPartValueWithString("ojoj");
+        assertThrows(IllegalArgumentException.class, () -> {    
+            pdfaid.setPartValueWithString("ojoj");
+	    });
     }
-
 }

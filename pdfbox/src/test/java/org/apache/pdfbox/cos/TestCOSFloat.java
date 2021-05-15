@@ -17,24 +17,29 @@
 
 package org.apache.pdfbox.cos;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.Random;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
-
 import org.apache.pdfbox.pdfwriter.COSWriter;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests {@link COSFloat}.
  */
-public class TestCOSFloat extends TestCOSNumber
+class TestCOSFloat extends TestCOSNumber
 {
-    @Override
-    public void setUp()
+    @BeforeAll
+    static void setUp()
     {
         try
         {
@@ -103,29 +108,32 @@ public class TestCOSFloat extends TestCOSNumber
      * These are tested over a range of arbitrary values to ensure Consistency,
      * Reflexivity, Symmetry, Transitivity and non-nullity.
      */
-    public void testEquals()
+    @Test
+    void testEquals()
     {
         new BaseTester()
         {
             @Override
+            @SuppressWarnings({"java:S5863"}) // don't flag tests for reflexivity
             void runTest(float num)
             {
+
                 COSFloat test1 = new COSFloat(num);
                 COSFloat test2 = new COSFloat(num);
                 COSFloat test3 = new COSFloat(num);
                 // Reflexive (x == x)
-                assertTrue(test1.equals(test1));
+                assertEquals(test1, test1);
                 // Symmetric is preserved ( x==y then y==x)
-                assertTrue(test2.equals(test3));
-                assertTrue(test3.equals(test2));
+                assertEquals(test2, test3);
+                assertEquals(test3, test2);
                 // Transitive (if x==y && y==z then x==z)
-                assertTrue(test1.equals(test2));
-                assertTrue(test2.equals(test3));
-                assertTrue(test1.equals(test3));
+                assertEquals(test1, test2);
+                assertEquals(test2, test3);
+                assertEquals(test1, test3);
 
                 float nf = Float.intBitsToFloat(Float.floatToIntBits(num) + 1);
                 COSFloat test4 = new COSFloat(nf);
-                assertFalse(test4.equals(test1));
+                assertNotEquals(test4, test1);
             }
         }.runTests();
     }
@@ -142,7 +150,7 @@ public class TestCOSFloat extends TestCOSNumber
 
             float nf = Float.intBitsToFloat(Float.floatToIntBits(num) + 1);
             COSFloat test3 = new COSFloat(nf);
-            assertFalse(test3.hashCode() == test1.hashCode());
+            assertNotSame(test3.hashCode(), test1.hashCode());
         }
     }
 
@@ -150,7 +158,8 @@ public class TestCOSFloat extends TestCOSNumber
      * Tests hashCode() - ensures that the Object.hashCode() contract is obeyed
      * over a range of arbitrary values.
      */
-    public void testHashCode()
+    @Test
+    void testHashCode()
     {
         new HashCodeTester().runTests();
     }
@@ -168,7 +177,8 @@ public class TestCOSFloat extends TestCOSNumber
     }
 
     @Override
-    public void testFloatValue()
+    @Test
+    void testFloatValue()
     {
         new FloatValueTester().runTests();
     }
@@ -186,7 +196,8 @@ public class TestCOSFloat extends TestCOSNumber
     }
 
     @Override
-    public void testIntValue()
+    @Test
+    void testIntValue()
     {
         new IntValueTester().runTests();
     }
@@ -204,15 +215,16 @@ public class TestCOSFloat extends TestCOSNumber
     }
     
     @Override
-    public void testLongValue()
+    @Test
+    void testLongValue()
     {
         new LongValueTester().runTests();
     }
 
     class AcceptTester extends BaseTester
     {
-        ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-        COSWriter visitor = new COSWriter(outStream);
+        final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+        final COSWriter visitor = new COSWriter(outStream);
 
         @Override
         void runTest(float num)
@@ -234,14 +246,15 @@ public class TestCOSFloat extends TestCOSNumber
     }
 
     @Override
-    public void testAccept()
+    @Test
+    void testAccept()
     {
         new AcceptTester().runTests();
     }
 
     class WritePDFTester extends BaseTester
     {
-        ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+        final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 
         WritePDFTester()
         {
@@ -280,7 +293,8 @@ public class TestCOSFloat extends TestCOSNumber
      * Tests writePDF() - this method takes an {@link java.io.OutputStream} and writes
      * this object to it.
      */
-    public void testWritePDF()
+    @Test
+    void testWritePDF()
     {
         WritePDFTester writePDFTester = new WritePDFTester();
         writePDFTester.runTests();
@@ -289,19 +303,21 @@ public class TestCOSFloat extends TestCOSNumber
         writePDFTester.runTest(0.000000000000000000000000000000001f);
     }
 
-    public void testDoubleNegative() throws IOException
+    @Test
+    void testDoubleNegative() throws IOException
     {
         // PDFBOX-4289
         COSFloat cosFloat = new COSFloat("--16.33");
         assertEquals(-16.33f, cosFloat.floatValue());
     }
 
-    public void testVerySmallValues() throws IOException
+    @Test
+    void testVerySmallValues() throws IOException
     {
         double smallValue = Float.MIN_VALUE / 10d;
 
-        assertEquals("Test must be performed with a value smaller than Float.MIN_VALUE.", -1,
-                Double.compare(smallValue, Float.MIN_VALUE));
+        assertEquals(-1, Double.compare(smallValue, Float.MIN_VALUE),
+                "Test must be performed with a value smaller than Float.MIN_VALUE.");
 
         // 1.4012984643248171E-46
         String asString = String.valueOf(smallValue);
@@ -326,12 +342,13 @@ public class TestCOSFloat extends TestCOSNumber
         assertEquals(0.0f, cosFloat.floatValue());
     }
 
-    public void testVeryLargeValues() throws IOException
+    @Test
+    void testVeryLargeValues() throws IOException
     {
         double largeValue = Float.MAX_VALUE * 10d;
 
-        assertEquals("Test must be performed with a value larger than Float.MAX_VALUE.", 1,
-                Double.compare(largeValue, Float.MIN_VALUE));
+        assertEquals(1, Double.compare(largeValue, Float.MIN_VALUE),
+                "Test must be performed with a value larger than Float.MAX_VALUE.");
 
         // 1.4012984643248171E-46
         String asString = String.valueOf(largeValue);
@@ -356,7 +373,8 @@ public class TestCOSFloat extends TestCOSNumber
         assertEquals(-Float.MAX_VALUE, cosFloat.floatValue());
     }
 
-    public void testMisplacedNegative() throws IOException
+    @Test
+    void testMisplacedNegative() throws IOException
     {
         // PDFBOX-2990, PDFBOX-3369 have 0.00000-33917698
         // PDFBOX-3500 has 0.-262
@@ -368,46 +386,17 @@ public class TestCOSFloat extends TestCOSNumber
         assertEquals(new COSFloat("-0.262"), cosFloat);
     }
 
-    public void testDuplicateMisplacedNegative()
+    @Test
+    void testDuplicateMisplacedNegative()
     {
-        try
-        {
-            new COSFloat("0.-26-2");
-            fail("Was expecting an IOException");
-        }
-        catch (IOException expected)
-        {
-        }
-
-        try
-        {
-            new COSFloat("-0.-262");
-            fail("Was expecting an IOException");
-        }
-        catch (IOException expected)
-        {
-        }
-
-        try
-        {
-            new COSFloat("---0.262");
-            fail("Was expecting an IOException");
-        }
-        catch (IOException expected)
-        {
-        }
-
-        try
-        {
-            new COSFloat("--0.2-62");
-            fail("Was expecting an IOException");
-        }
-        catch (IOException expected)
-        {
-        }
+        assertThrows(IOException.class, () -> new COSFloat("0.-26-2"));
+        assertThrows(IOException.class, () -> new COSFloat("-0.-262"));
+        assertThrows(IOException.class, () -> new COSFloat("---0.262"));
+        assertThrows(IOException.class, () -> new COSFloat("--0.2-62"));
     }
 
-    public void testStubOperatorMinMaxValues()
+    @Test
+    void testStubOperatorMinMaxValues()
     {
         float largeValue = 32768f;
         float largeNegativeValue = -32768f;
@@ -436,13 +425,4 @@ public class TestCOSFloat extends TestCOSNumber
         return value;
     }
 
-    /**
-     * This will get the suite of test that this class holds.
-     *
-     * @return All of the tests that this class holds.
-     */
-    public static Test suite()
-    {
-        return new TestSuite(TestCOSFloat.class);
-    }
 }

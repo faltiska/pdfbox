@@ -16,9 +16,9 @@
  */
 package org.apache.pdfbox.pdmodel.interactive.form;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,20 +27,20 @@ import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.cos.COSString;
 import org.apache.pdfbox.pdmodel.PDDocument;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test for the PDChoice class.
  *
  */
-public class PDChoiceTest
+class PDChoiceTest
 {
     private PDDocument document;
     private PDAcroForm acroForm;
     private List<String> options;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         document = new PDDocument();
@@ -52,7 +52,7 @@ public class PDChoiceTest
     }
 
     @Test
-    public void createListBox()
+    void createListBox()
     {
         PDChoice choiceField = new PDListBox(acroForm);
         
@@ -62,7 +62,7 @@ public class PDChoiceTest
     }
 
     @Test
-    public void createComboBox()
+    void createComboBox()
     {
         PDChoice choiceField = new PDComboBox(acroForm);
         
@@ -72,7 +72,7 @@ public class PDChoiceTest
     }
     
     @Test
-    public void getOptionsFromStrings()
+    void getOptionsFromStrings()
     {
         PDChoice choiceField = new PDComboBox(acroForm);
         COSArray choiceFieldOptions = new COSArray();
@@ -88,7 +88,7 @@ public class PDChoiceTest
     }
 
     @Test
-    public void getOptionsFromCOSArray()
+    void getOptionsFromCOSArray()
     {
         PDChoice choiceField = new PDComboBox(acroForm);
         COSArray choiceFieldOptions = new COSArray();
@@ -119,7 +119,7 @@ public class PDChoiceTest
      * Get the entries form a moxed values array. See PDFBOX-4185
      */
     @Test
-    public void getOptionsFromMixed()
+    void getOptionsFromMixed()
     {
         PDChoice choiceField = new PDComboBox(acroForm);
         COSArray choiceFieldOptions = new COSArray();

@@ -16,17 +16,17 @@
  */
 package org.apache.fontbox.ttf;
 
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import junit.framework.TestCase;
-
-public class TestMemoryTTFDataStream extends TestCase
+class TestMemoryTTFDataStream
 {
     @Test
-    public void testEOF() throws IOException
+    void testEOF() throws IOException
     {
         byte[] byteArray = new byte[10];
         ByteArrayInputStream inputStream = new ByteArrayInputStream(byteArray);

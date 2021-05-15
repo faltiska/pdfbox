@@ -22,15 +22,15 @@
 package org.apache.xmpbox.parser;
 
 import org.apache.xmpbox.type.PropertiesDescription;
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 
-public class PropMappingTest
+class PropMappingTest
 {
 
     protected PropertiesDescription propMap;
     protected String nsURI = "http://www.test.org/PropMap#";
 
-    @Before
+    @BeforeEach
     public void init()
     {
         propMap = new PropertiesDescription();

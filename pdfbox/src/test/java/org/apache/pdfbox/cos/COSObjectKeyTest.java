@@ -16,13 +16,15 @@
  */
 package org.apache.pdfbox.cos;
 
-import org.junit.Assert;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-public class COSObjectKeyTest
+import org.junit.jupiter.api.Test;
+
+class COSObjectKeyTest
 {
     @Test
-    public void compareToInputNotNullOutputZero()
+    void compareToInputNotNullOutputZero()
     {
         // Arrange
         final COSObjectKey objectUnderTest = new COSObjectKey(0L, 0);
@@ -32,11 +34,11 @@ public class COSObjectKeyTest
         final int retval = objectUnderTest.compareTo(other);
 
         // Assert result
-        Assert.assertEquals(0, retval);
+        assertEquals(0, retval);
     }
 
     @Test
-    public void compareToInputNotNullOutputPositive()
+    void compareToInputNotNullOutputPositive()
     {
         // Arrange
         final COSObjectKey objectUnderTest = new COSObjectKey(0L, 0);
@@ -46,22 +48,22 @@ public class COSObjectKeyTest
         final int retval = objectUnderTest.compareTo(other);
 
         // Assert result
-        Assert.assertEquals(1, retval);
+        assertEquals(1, retval);
     }
 
     @Test
-    public void checkHashCode()
+    void checkHashCode()
     {
         // same object number 100 0
-        Assert.assertEquals(new COSObjectKey(100, 0).hashCode(),
+        assertEquals(new COSObjectKey(100, 0).hashCode(),
                 new COSObjectKey(100, 0).hashCode());
 
         // different object numbers/same generation numbers 100 0 vs. 200 0
-        Assert.assertNotEquals(new COSObjectKey(100, 0).hashCode(),
+        assertNotEquals(new COSObjectKey(100, 0).hashCode(),
                 new COSObjectKey(200, 0).hashCode());
 
         // different object numbers/different generation numbers/ sum of both numbers are equal 100 0 vs. 99 1
-        Assert.assertNotEquals(new COSObjectKey(100, 0).hashCode(),
+        assertNotEquals(new COSObjectKey(100, 0).hashCode(),
                 new COSObjectKey(99, 1).hashCode());
     }
 }

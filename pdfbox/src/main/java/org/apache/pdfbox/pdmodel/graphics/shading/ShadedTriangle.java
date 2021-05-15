@@ -57,7 +57,7 @@ class ShadedTriangle
      */
     ShadedTriangle(Point2D[] p, float[][] c)
     {
-        corner = p.clone();
+        corner = p.clone(); // yes this is a shallow clone
         color = c.clone();
         area = getArea(p[0], p[1], p[2]);
         degree = calcDeg(p);

@@ -33,9 +33,9 @@ import org.apache.pdfbox.preflight.utils.ContextHelper;
 
 public class PreflightDocument extends PDDocument
 {
-    private ValidationResult result = new ValidationResult(true);
+    private final ValidationResult result = new ValidationResult(true);
 
-    private PreflightConfiguration config;
+    private final PreflightConfiguration config;
 
     private PreflightContext context;
 
@@ -132,9 +132,6 @@ public class PreflightDocument extends PDDocument
      */
     public ValidationResult validate() throws ValidationException
     {
-        // force early class loading to check if people forgot to use --add-modules javax.xml.bind
-        // on java 9 & 10, or to add jaxb-api on java 11 and later
-        javax.xml.bind.DatatypeConverter.parseInt("0");
         context.setConfig(config);
         Collection<String> processes = config.getProcessNames();
         for (String name : processes)
@@ -145,7 +142,7 @@ public class PreflightDocument extends PDDocument
     }
 
     /**
-     * Returns the format which is used to valide the pdf document.
+     * Returns the format which is used to validate the pdf document.
      * 
      * @return the format used for validation
      */

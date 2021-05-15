@@ -17,14 +17,20 @@
 package org.apache.pdfbox.pdmodel.graphics.image;
 
 import java.awt.Color;
+import java.awt.color.ColorSpace;
+import java.awt.color.ICC_ColorSpace;
 import java.awt.color.ICC_Profile;
 import java.awt.image.BufferedImage;
+import java.awt.image.ColorModel;
+import java.awt.image.ComponentColorModel;
+import java.awt.image.WritableRaster;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Hashtable;
 import javax.imageio.ImageIO;
 
 import org.apache.pdfbox.cos.COSName;
@@ -33,20 +39,29 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.graphics.color.PDICCBased;
+import org.apache.pdfbox.pdmodel.graphics.color.PDIndexed;
 
+import static org.apache.pdfbox.pdmodel.graphics.image.LosslessFactoryTest.checkIdentRaw;
 import static org.apache.pdfbox.pdmodel.graphics.image.ValidateXImage.checkIdent;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import org.junit.Before;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class PNGConverterTest
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
+
+@Execution(ExecutionMode.CONCURRENT)
+class PNGConverterTest
 {
+    private static final File parentDir = new File("target/test-output/graphics/graphics");
 
-    @Before
-    public void setup()
+    @BeforeAll
+    static void setup()
     {
         //noinspection ResultOfMethodCallIgnored
         parentDir.mkdirs();
@@ -76,80 +91,78 @@ public class PNGConverterTest
     }
 
     @Test
-    public void testImageConversionRGB() throws IOException
+    void testImageConversionRGB() throws IOException
     {
         checkImageConvert("png.png");
     }
 
     @Test
-    public void testImageConversionRGBGamma() throws IOException
+    void testImageConversionRGBGamma() throws IOException
     {
         checkImageConvert("png_rgb_gamma.png");
     }
 
-    // @Test
-    public void testImageConversionRGB16BitICC() throws IOException
+    @Test
+    void testImageConversionRGB16BitICC() throws IOException
     {
         checkImageConvert("png_rgb_romm_16bit.png");
     }
 
     @Test
-    public void testImageConversionRGBIndexed() throws IOException
+    void testImageConversionRGBIndexed() throws IOException
     {
         checkImageConvert("png_indexed.png");
     }
 
     @Test
-    public void testImageConversionRGBIndexedAlpha1Bit() throws IOException
+    void testImageConversionRGBIndexedAlpha1Bit() throws IOException
     {
         checkImageConvert("png_indexed_1bit_alpha.png");
     }
 
     @Test
-    public void testImageConversionRGBIndexedAlpha2Bit() throws IOException
+    void testImageConversionRGBIndexedAlpha2Bit() throws IOException
     {
         checkImageConvert("png_indexed_2bit_alpha.png");
     }
 
     @Test
-    public void testImageConversionRGBIndexedAlpha4Bit() throws IOException
+    void testImageConversionRGBIndexedAlpha4Bit() throws IOException
     {
         checkImageConvert("png_indexed_4bit_alpha.png");
     }
 
     @Test
-    public void testImageConversionRGBIndexedAlpha8Bit() throws IOException
+    void testImageConversionRGBIndexedAlpha8Bit() throws IOException
     {
         checkImageConvert("png_indexed_8bit_alpha.png");
     }
 
     @Test
-    public void testImageConversionRGBAlpha() throws IOException
+    void testImageConversionRGBAlpha() throws IOException
     {
         // We can't handle Alpha RGB
         checkImageConvertFail("png_alpha_rgb.png");
     }
 
     @Test
-    public void testImageConversionGrayAlpha() throws IOException
+    void testImageConversionGrayAlpha() throws IOException
     {
         // We can't handle Alpha RGB
         checkImageConvertFail("png_alpha_gray.png");
     }
 
     @Test
-    public void testImageConversionGray() throws IOException
+    void testImageConversionGray() throws IOException
     {
         checkImageConvertFail("png_gray.png");
     }
 
     @Test
-    public void testImageConversionGrayGamma() throws IOException
+    void testImageConversionGrayGamma() throws IOException
     {
         checkImageConvertFail("png_gray_with_gama.png");
     }
-
-    private final File parentDir = new File("target/test-output/graphics/graphics");
 
     private void checkImageConvertFail(String name) throws IOException
     {
@@ -163,33 +176,83 @@ public class PNGConverterTest
 
     private void checkImageConvert(String name) throws IOException
     {
-        PDDocument doc = new PDDocument();
-        byte[] imageBytes = IOUtils.toByteArray(PNGConverterTest.class.getResourceAsStream(name));
-        PDImageXObject pdImageXObject = PNGConverter.convertPNGImage(doc, imageBytes);
-        if (pdImageXObject.getColorSpace() instanceof PDICCBased)
+        try (PDDocument doc = new PDDocument())
         {
-            // Make sure that ICC profile is a valid one
-            PDICCBased iccColorSpace = (PDICCBased) pdImageXObject.getColorSpace();
-            ICC_Profile.getInstance(iccColorSpace.getPDStream().toByteArray());
-        }
-        PDPage page = new PDPage();
-        doc.addPage(page);
-        PDPageContentStream contentStream = new PDPageContentStream(doc, page);
-        contentStream.setNonStrokingColor(Color.PINK);
-        contentStream.addRect(0, 0, page.getCropBox().getWidth(), page.getCropBox().getHeight());
-        contentStream.fill();
+            byte[] imageBytes = IOUtils.toByteArray(PNGConverterTest.class.getResourceAsStream(name));
+            PDImageXObject pdImageXObject = PNGConverter.convertPNGImage(doc, imageBytes);
+            assertNotNull(pdImageXObject);
+            
+            ICC_Profile imageProfile = null;
+            if (pdImageXObject.getColorSpace() instanceof PDICCBased)
+            {
+                // Make sure that ICC profile is a valid one
+                PDICCBased iccColorSpace = (PDICCBased) pdImageXObject.getColorSpace();
+                imageProfile = ICC_Profile.getInstance(iccColorSpace.getPDStream().toByteArray());
+            }
+            PDPage page = new PDPage();
+            doc.addPage(page);
+            try (PDPageContentStream contentStream = new PDPageContentStream(doc, page))
+            {
+                contentStream.setNonStrokingColor(Color.PINK);
+                contentStream.addRect(0, 0, page.getCropBox().getWidth(), page.getCropBox().getHeight());
+                contentStream.fill();
+                
+                contentStream.drawImage(pdImageXObject, 0, 0, pdImageXObject.getWidth(),
+                        pdImageXObject.getHeight());
+            }
+            doc.save(new File(parentDir, name + ".pdf"));
+            BufferedImage image = pdImageXObject.getImage();
 
-        contentStream.drawImage(pdImageXObject, 0, 0, pdImageXObject.getWidth(),
-                pdImageXObject.getHeight());
-        contentStream.close();
-        doc.save(new File(parentDir, name + ".pdf"));
-        BufferedImage image = pdImageXObject.getImage();
-        checkIdent(ImageIO.read(new ByteArrayInputStream(imageBytes)), image);
-        doc.close();
+            assertNotNull(pdImageXObject.getRawRaster());
+            
+            BufferedImage expectedImage = ImageIO.read(new ByteArrayInputStream(imageBytes));
+            if (imageProfile != null && expectedImage.getColorModel().getColorSpace().isCS_sRGB())
+            {
+                // The image has an embedded ICC Profile, but the default java PNG
+                // reader does not correctly read that.
+                expectedImage = getImageWithProfileData(expectedImage, imageProfile);
+            }
+            
+            checkIdent(expectedImage, image);
+
+            BufferedImage rawImage = pdImageXObject.getRawImage();
+            if (rawImage != null)
+            {
+                assertEquals(rawImage.getWidth(), pdImageXObject.getWidth());
+                assertEquals(rawImage.getHeight(), pdImageXObject.getHeight());
+                // We compare the raw data
+                checkIdentRaw(expectedImage, pdImageXObject);
+            }
+        }
+    }
+
+    public static BufferedImage getImageWithProfileData(BufferedImage sourceImage,
+             ICC_Profile realProfile)
+    {
+        Hashtable<String, Object> properties = new Hashtable<>();
+        String[] propertyNames = sourceImage.getPropertyNames();
+        if (propertyNames != null)
+        {
+            for (String propertyName : propertyNames)
+            {
+                properties.put(propertyName, sourceImage.getProperty(propertyName));
+            }
+        }
+        ComponentColorModel oldColorModel = (ComponentColorModel) sourceImage.getColorModel();
+        boolean hasAlpha = oldColorModel.hasAlpha();
+        int transparency = oldColorModel.getTransparency();
+        boolean alphaPremultiplied = oldColorModel.isAlphaPremultiplied();
+        WritableRaster raster = sourceImage.getRaster();
+        int dataType = raster.getDataBuffer().getDataType();
+        int[] componentSize = oldColorModel.getComponentSize();
+        final ColorModel colorModel = new ComponentColorModel(new ICC_ColorSpace(realProfile),
+                componentSize, hasAlpha, alphaPremultiplied, transparency, dataType);
+        return new BufferedImage(colorModel, raster, sourceImage.isAlphaPremultiplied(),
+                properties);
     }
 
     @Test
-    public void testCheckConverterState()
+    void testCheckConverterState()
     {
         assertFalse(PNGConverter.checkConverterState(null));
         PNGConverter.PNGConverterState state = new PNGConverter.PNGConverterState();
@@ -253,7 +316,7 @@ public class PNGConverterTest
     }
 
     @Test
-    public void testChunkSane()
+    void testChunkSane()
     {
         PNGConverter.Chunk chunk = new PNGConverter.Chunk();
         assertTrue(PNGConverter.checkChunkSane(null));
@@ -276,7 +339,7 @@ public class PNGConverterTest
     }
 
     @Test
-    public void testCRCImpl()
+    void testCRCImpl()
     {
         byte[] b1 = "Hello World!".getBytes();
         assertEquals(472456355, PNGConverter.crc(b1, 0, b1.length));
@@ -284,7 +347,7 @@ public class PNGConverterTest
     }
 
     @Test
-    public void testMapPNGRenderIntent()
+    void testMapPNGRenderIntent()
     {
         assertEquals(COSName.PERCEPTUAL, PNGConverter.mapPNGRenderIntent(0));
         assertEquals(COSName.RELATIVE_COLORIMETRIC, PNGConverter.mapPNGRenderIntent(1));
@@ -292,5 +355,36 @@ public class PNGConverterTest
         assertEquals(COSName.ABSOLUTE_COLORIMETRIC, PNGConverter.mapPNGRenderIntent(3));
         assertNull(PNGConverter.mapPNGRenderIntent(-1));
         assertNull(PNGConverter.mapPNGRenderIntent(4));
+    }
+
+    /**
+     * Test code coverage for /Intent /Perceptual and for sRGB icc profile in indexed colorspace.
+     *
+     * @throws IOException 
+     */
+    @Test
+    void testImageConversionIntentIndexed() throws IOException
+    {
+        checkImageConvert("929316.png");
+
+        try (PDDocument doc = new PDDocument())
+        {
+            byte[] imageBytes = IOUtils.toByteArray(PNGConverterTest.class.getResourceAsStream("929316.png"));
+            PDImageXObject pdImageXObject = PNGConverter.convertPNGImage(doc, imageBytes);
+            assertEquals(COSName.PERCEPTUAL, pdImageXObject.getCOSObject().getItem(COSName.INTENT));
+
+            // Check that this image gets an indexed colorspace with sRGB ICC based colorspace
+            PDIndexed indexedColorspace = (PDIndexed) pdImageXObject.getColorSpace();
+
+            PDICCBased iccColorspace = (PDICCBased) indexedColorspace.getBaseColorSpace();
+            // validity of ICC CS is tested in checkImageConvert
+
+            // should be an sRGB profile. Or at least, the data that is in ColorSpace.CS_sRGB and
+            // that was assigned in PNGConvert.
+            // (PDICCBased.is_sRGB() fails in openjdk on that data, maybe it is not a "real" sRGB)
+            ICC_Profile rgbProfile = ICC_Profile.getInstance(ColorSpace.CS_sRGB);
+            byte[] sRGB_bytes = rgbProfile.getData();
+            assertArrayEquals(sRGB_bytes, iccColorspace.getPDStream().toByteArray());
+        }
     }
 }

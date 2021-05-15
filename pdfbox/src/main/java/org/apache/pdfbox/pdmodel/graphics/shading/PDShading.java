@@ -17,6 +17,8 @@
 package org.apache.pdfbox.pdmodel.graphics.shading;
 
 import java.awt.Paint;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.Rectangle2D;
 import java.io.IOException;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSBase;
@@ -152,7 +154,7 @@ public abstract class PDShading implements COSObjectable
     {
         if (background == null)
         {
-            background = (COSArray) dictionary.getDictionaryObject(COSName.BACKGROUND);
+            background = dictionary.getCOSArray(COSName.BACKGROUND);
         }
         return background;
     }
@@ -168,7 +170,7 @@ public abstract class PDShading implements COSObjectable
     {
         if (bBox == null)
         {
-            COSArray array = (COSArray) dictionary.getDictionaryObject(COSName.BBOX);
+            COSArray array = dictionary.getCOSArray(COSName.BBOX);
             if (array != null)
             {
                 bBox = new PDRectangle(array);
@@ -193,6 +195,19 @@ public abstract class PDShading implements COSObjectable
         {
             dictionary.setItem(COSName.BBOX, bBox.getCOSArray());
         }
+    }
+
+    /**
+     * Calculate a bounding rectangle around the areas of this shading context.
+     * 
+     * @param xform
+     * @param matrix
+     * @return Bounding rectangle or null, if not supported by this shading type.
+     * @throws java.io.IOException
+     */
+    public Rectangle2D getBounds(AffineTransform xform, Matrix matrix) throws IOException
+    {
+        return null;
     }
 
     /**

@@ -33,7 +33,6 @@ import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.cos.COSNull;
-import org.apache.pdfbox.pdmodel.common.COSArrayList;
 import org.apache.pdfbox.pdmodel.common.function.PDFunction;
 
 /**
@@ -283,6 +282,7 @@ public class PDDeviceN extends PDSpecialColorSpace
         // cache color mappings
         Map<String, int[]> map1 = new HashMap<>();
         String key;
+        StringBuilder keyBuilder = new StringBuilder();
 
         int width = raster.getWidth();
         int height = raster.getHeight();
@@ -300,11 +300,13 @@ public class PDDeviceN extends PDSpecialColorSpace
             {
                 raster.getPixel(x, y, src);
                 // use a string representation as key
-                key = Float.toString(src[0]);
+                keyBuilder.append(src[0]);
                 for (int s = 1; s < numSrcComponents; s++)
                 {
-                    key += "#" + Float.toString(src[s]);
+                    keyBuilder.append('#').append(src[s]);
                 }
+                key = keyBuilder.toString();
+                keyBuilder.setLength(0);
                 int[] pxl = map1.get(key);
                 if (pxl != null)
                 {
@@ -322,12 +324,12 @@ public class PDDeviceN extends PDSpecialColorSpace
                 
                 // convert from alternate color space to RGB
                 float[] rgbFloat = alternateColorSpace.toRGB(result);
-                
-                for (int s = 0; s < 3; s++)
-                {
-                    // scale to 0..255
-                    rgb[s] = (int) (rgbFloat[s] * 255f);
-                }                
+
+                // scale to 0..255
+                rgb[0] = (int) (rgbFloat[0] * 255f);
+                rgb[1] = (int) (rgbFloat[1] * 255f);
+                rgb[2] = (int) (rgbFloat[2] * 255f);
+
                 // must clone because rgb is reused
                 map1.put(key, rgb.clone());
 
@@ -358,7 +360,8 @@ public class PDDeviceN extends PDSpecialColorSpace
         for (int c = 0; c < numColorants; c++)
         {
             PDColorSpace componentColorSpace;
-            if (colorantToComponent[c] >= 0)
+            boolean isProcessColorant = colorantToComponent[c] >= 0;
+            if (isProcessColorant)
             {
                 // process color
                 componentColorSpace = processColorSpace;
@@ -376,13 +379,12 @@ public class PDDeviceN extends PDSpecialColorSpace
             }
 
             // get the single component
-            boolean isProcessColorant = colorantToComponent[c] >= 0;
             float[] componentSamples = new float[componentColorSpace.getNumberOfComponents()];
-            int componentIndex = colorantToComponent[c];
 
             if (isProcessColorant)
             {
                 // process color
+                int componentIndex = colorantToComponent[c];
                 componentSamples[componentIndex] = value[c];
             }
             else
@@ -413,6 +415,13 @@ public class PDDeviceN extends PDSpecialColorSpace
 
         // convert the alternate color space to RGB
         return alternateColorSpace.toRGB(altValue);
+    }
+
+    @Override
+    public BufferedImage toRawImage(WritableRaster raster)
+    {
+        // We don't know how to convert that.
+        return null;
     }
 
     /**
@@ -460,8 +469,7 @@ public class PDDeviceN extends PDSpecialColorSpace
      */
     public List<String> getColorantNames()
     {
-        COSArray names = (COSArray)array.getObject(COLORANT_NAMES);
-        return COSArrayList.convertCOSNameCOSArrayToList(names);
+        return ((COSArray) array.getObject(COLORANT_NAMES)).toCOSNameStringList();
     }
 
     /**
@@ -479,7 +487,7 @@ public class PDDeviceN extends PDSpecialColorSpace
      */
     public void setColorantNames(List<String> names)
     {
-        COSArray namesArray = COSArrayList.convertStringListToCOSNameCOSArray(names);
+        COSArray namesArray = COSArray.ofCOSNames(names);
         array.set(COLORANT_NAMES, namesArray);
     }
 

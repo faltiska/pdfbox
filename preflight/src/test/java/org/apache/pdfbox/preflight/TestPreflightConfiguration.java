@@ -20,90 +20,145 @@
  ****************************************************************************/
 package org.apache.pdfbox.preflight;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.apache.pdfbox.preflight.exception.MissingValidationProcessException;
 import org.apache.pdfbox.preflight.exception.ValidationException;
 import org.apache.pdfbox.preflight.process.BookmarkValidationProcess;
 import org.apache.pdfbox.preflight.process.EmptyValidationProcess;
 import org.apache.pdfbox.preflight.process.ValidationProcess;
 import org.apache.pdfbox.preflight.process.reflect.ResourcesValidationProcess;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class TestPreflightConfiguration
+class TestPreflightConfiguration
 {
+    @Test
+    void testGetValidationProcess_MissingProcess() throws Exception
+    {
+        PreflightConfiguration configuration = PreflightConfiguration.createPdfA1BConfiguration();
+        assertThrows(MissingValidationProcessException.class, () -> {
+            configuration.getInstanceOfProcess("unknownProcess");
+        });
+    }
 
     @Test
-    public void testGetValidationProcess() throws Exception
+    void testGetValidationProcess_MissingProcess_NoError() throws Exception
+    {
+        PreflightConfiguration configuration = PreflightConfiguration.createPdfA1BConfiguration();
+        configuration.setErrorOnMissingProcess(false);
+        assertDoesNotThrow(() -> {
+            configuration.getInstanceOfProcess("unknownProcess");
+        });
+    }
+
+    @Test
+    void testReplaceValidationProcess() throws Exception
+    {
+        PreflightConfiguration configuration = PreflightConfiguration.createPdfA1BConfiguration();
+
+        String processName = "mock-process";
+        configuration.replaceProcess(processName, MockProcess.class);
+        assertEquals(MockProcess.class, configuration.getInstanceOfProcess(processName).getClass());
+
+        configuration.replaceProcess(processName, MockProcess2.class);
+        assertEquals(MockProcess2.class, configuration.getInstanceOfProcess(processName).getClass());
+    }
+    
+    @Test
+    void testGetValidationProcess() throws Exception
     {
         PreflightConfiguration confg = PreflightConfiguration.createPdfA1BConfiguration();
         ValidationProcess vp = confg.getInstanceOfProcess(PreflightConfiguration.BOOKMARK_PROCESS);
-        Assert.assertNotNull(vp);
-        Assert.assertTrue(vp instanceof BookmarkValidationProcess);
+        assertNotNull(vp);
+        assertTrue(vp instanceof BookmarkValidationProcess);
     }
     
     @Test
-    public void testGetValidationPageProcess() throws Exception
+    void testGetValidationPageProcess() throws Exception
     {
         PreflightConfiguration confg = PreflightConfiguration.createPdfA1BConfiguration();
         ValidationProcess vp = confg.getInstanceOfProcess(PreflightConfiguration.RESOURCES_PROCESS);
-        Assert.assertNotNull(vp);
-        Assert.assertTrue(vp instanceof ResourcesValidationProcess);
+        assertNotNull(vp);
+        assertTrue(vp instanceof ResourcesValidationProcess);
     }
     
     @Test
-    public void testGetValidationProcess_noError() throws Exception
+    void testGetValidationProcess_noError() throws Exception
     {
         PreflightConfiguration confg = PreflightConfiguration.createPdfA1BConfiguration();
         confg.setErrorOnMissingProcess(false);
         confg.removeProcess(PreflightConfiguration.BOOKMARK_PROCESS);
         ValidationProcess vp = confg.getInstanceOfProcess(PreflightConfiguration.BOOKMARK_PROCESS);
-        Assert.assertNotNull(vp);
-        Assert.assertTrue(vp instanceof EmptyValidationProcess);
+        assertNotNull(vp);
+        assertTrue(vp instanceof EmptyValidationProcess);
     }
     
     @Test
-    public void testGetValidationPageProcess_noError() throws Exception
+    void testGetValidationPageProcess_noError() throws Exception
     {
         PreflightConfiguration confg = PreflightConfiguration.createPdfA1BConfiguration();
         confg.setErrorOnMissingProcess(false);
         confg.removePageProcess(PreflightConfiguration.RESOURCES_PROCESS);
         ValidationProcess vp = confg.getInstanceOfProcess(PreflightConfiguration.RESOURCES_PROCESS);
-        Assert.assertNotNull(vp);
-        Assert.assertTrue(vp instanceof EmptyValidationProcess);
+        assertNotNull(vp);
+        assertTrue(vp instanceof EmptyValidationProcess);
     }
 
-    @Test(expected=ValidationException.class)
-    public void testGetMissingValidationProcess() throws Exception
+    @Test
+    void testGetMissingValidationProcess() throws Exception
     {
         PreflightConfiguration confg = PreflightConfiguration.createPdfA1BConfiguration();
         confg.removeProcess(PreflightConfiguration.BOOKMARK_PROCESS);
-        confg.getInstanceOfProcess(PreflightConfiguration.BOOKMARK_PROCESS);
-        Assert.fail();
+        assertThrows(ValidationException.class, () -> {
+            confg.getInstanceOfProcess(PreflightConfiguration.BOOKMARK_PROCESS);
+        });
     }
 
-    @Test(expected=ValidationException.class)
-    public void testGetMissingValidationPageProcess() throws Exception
+    @Test
+    void testGetMissingValidationPageProcess() throws Exception
     {
         PreflightConfiguration confg = PreflightConfiguration.createPdfA1BConfiguration();
         confg.removePageProcess(PreflightConfiguration.RESOURCES_PROCESS);
-        confg.getInstanceOfProcess(PreflightConfiguration.RESOURCES_PROCESS);
-        Assert.fail();
+        assertThrows(ValidationException.class, () -> {
+            confg.getInstanceOfProcess(PreflightConfiguration.RESOURCES_PROCESS);
+        });
     }
     
-    @Test(expected=ValidationException.class)
-    public void testGetMissingValidationProcess2() throws Exception
+    @Test
+    void testGetMissingValidationProcess2() throws Exception
     {
         PreflightConfiguration confg = PreflightConfiguration.createPdfA1BConfiguration();
         confg.replaceProcess(PreflightConfiguration.BOOKMARK_PROCESS, null);
-        confg.getInstanceOfProcess(PreflightConfiguration.BOOKMARK_PROCESS);
-        Assert.fail();
+        assertThrows(ValidationException.class, () -> {
+            confg.getInstanceOfProcess(PreflightConfiguration.BOOKMARK_PROCESS);
+        });
     }
 
-    @Test(expected=ValidationException.class)
-    public void testGetMissingValidationPageProcess2() throws Exception
+    @Test
+    void testGetMissingValidationPageProcess2() throws Exception
     {
         PreflightConfiguration confg = PreflightConfiguration.createPdfA1BConfiguration();
         confg.replacePageProcess(PreflightConfiguration.RESOURCES_PROCESS, null);
-        confg.getInstanceOfProcess(PreflightConfiguration.RESOURCES_PROCESS);
-        Assert.fail();
+        assertThrows(ValidationException.class, () -> {
+            confg.getInstanceOfProcess(PreflightConfiguration.RESOURCES_PROCESS);
+        });
+    }
+
+    static class MockProcess implements ValidationProcess
+    {
+        public void validate(PreflightContext ctx) throws ValidationException
+        {
+        }
+    }
+
+    static class MockProcess2 extends MockProcess
+    {
+        public void validate(PreflightContext ctx) throws ValidationException
+        {
+        }
     }
 }

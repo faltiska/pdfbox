@@ -70,18 +70,17 @@ public class FDFPage implements COSObjectable
      */
     public List<FDFTemplate> getTemplates()
     {
-        List<FDFTemplate> retval = null;
-        COSArray array = (COSArray) page.getDictionaryObject(COSName.TEMPLATES);
+        COSArray array = page.getCOSArray(COSName.TEMPLATES);
         if (array != null)
         {
-            List<FDFTemplate> objects = new ArrayList<>();
+            List<FDFTemplate> objects = new ArrayList<>(array.size());
             for (int i = 0; i < array.size(); i++)
             {
                 objects.add(new FDFTemplate((COSDictionary) array.getObject(i)));
             }
-            retval = new COSArrayList<>(objects, array);
+            return new COSArrayList<>(objects, array);
         }
-        return retval;
+        return null;
     }
 
     /**
@@ -91,7 +90,7 @@ public class FDFPage implements COSObjectable
      */
     public void setTemplates(List<FDFTemplate> templates)
     {
-        page.setItem(COSName.TEMPLATES, COSArrayList.converterToCOSArray(templates));
+        page.setItem(COSName.TEMPLATES, new COSArray(templates));
     }
 
     /**

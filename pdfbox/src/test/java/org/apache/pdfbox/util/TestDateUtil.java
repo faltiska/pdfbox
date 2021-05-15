@@ -16,6 +16,9 @@
  */
 package org.apache.pdfbox.util;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import java.io.IOException;
 import java.text.ParsePosition;
 import java.util.Calendar;
@@ -24,11 +27,8 @@ import java.util.Locale;
 import java.util.SimpleTimeZone;
 import java.util.TimeZone;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
-
 import org.apache.pdfbox.cos.COSString;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test the date conversion utility.
@@ -37,35 +37,19 @@ import org.apache.pdfbox.cos.COSString;
  * @author Fred Hansen
  * 
  */
-public class TestDateUtil extends TestCase
+class TestDateUtil
 {
     private static final int MINS = 60*1000, HRS = 60*MINS;
     // expect parse fail
     private static final int BAD = -666;  
     
     /**
-     * Test class constructor.
-     *
-     * @param name The name of the test class.
-     *
-     * @throws IOException If there is an error creating the test.
-     */
-    public TestDateUtil( String name ) throws IOException
-    {
-        super( name );
-    }
-
-    
-    ////////////////////////////////////////////////////
-    // Test body follows
-    
-    
-    /**
      * Test common date formats.
      *
      * @throws Exception when there is an exception
      */
-    public void testExtract() throws Exception
+    @Test
+    void testExtract() throws Exception
     {
         TimeZone timezone = TimeZone.getDefault();
         TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
@@ -86,7 +70,7 @@ public class TestDateUtil extends TestCase
      * @param expect the expected calendar value
      * @param was the calendar value to be checked
      */
-    public void assertCalendarEquals(Calendar expect, Calendar was) 
+    private void assertCalendarEquals(Calendar expect, Calendar was)
     {
         assertEquals( expect.getTimeInMillis(), was.getTimeInMillis() );
         assertEquals( expect.getTimeZone().getRawOffset(), 
@@ -99,7 +83,8 @@ public class TestDateUtil extends TestCase
      * 
      * @throws IOException if something went wrong.
      */
-    public void testDateConversion() throws IOException 
+    @Test
+    void testDateConversion() throws IOException
     { 
         Calendar c = DateConverter.toCalendar("D:20050526205258+01'00'"); 
         assertEquals(2005, c.get(Calendar.YEAR)); 
@@ -157,7 +142,8 @@ public class TestDateUtil extends TestCase
      * Years differ to make it easier to find failures.
      * @throws Exception none expected
      */
-    public void testDateConverter() throws Exception 
+    @Test
+    void testDateConverter() throws Exception
     {
             int year = Calendar.getInstance().get(Calendar.YEAR);
             checkParse(2010, 4,23, 0, 0, 0, 0, 0, "D:20100423");
@@ -327,7 +313,8 @@ public class TestDateUtil extends TestCase
      * 
      * @throws Exception if something went wrong.
      */
-    public void testToString() throws Exception 
+    @Test
+    void testToString() throws Exception
     {                                                              // std DST
         TimeZone tzPgh = TimeZone.getTimeZone("America/New_York");   // -5 -4
         TimeZone tzBerlin = TimeZone.getTimeZone("Europe/Berlin");   // +1 +2
@@ -339,6 +326,8 @@ public class TestDateUtil extends TestCase
         
         assertNull(DateConverter.toCalendar((COSString) null));
         assertNull(DateConverter.toCalendar((String) null));
+        assertNull(DateConverter.toCalendar("D:    "));
+        assertNull(DateConverter.toCalendar("D:"));
         
         checkToString(2013, 8, 28, 3, 14, 15, tzPgh, -4, 0);
         checkToString(2014, 2, 28, 3, 14, 15, tzPgh, -5, 0);
@@ -351,18 +340,10 @@ public class TestDateUtil extends TestCase
         checkToString(2015, 8, 28, 3, 14, 15, tzAdelaide, +9, 30);
         checkToString(2016, 2, 28, 3, 14, 15, tzAdelaide, +10, 30);
         // McMurdo has a daylightsavings rule, but it seems never to apply
-        checkToString(1981, 1, 1, 1, 14, 15, tzMcMurdo, +0, 0);
-        checkToString(1982, 2, 1, 1, 14, 15, tzMcMurdo, +0, 0);
-        checkToString(1983, 3, 1, 1, 14, 15, tzMcMurdo, +0, 0);
-        checkToString(1984, 4, 1, 1, 14, 15, tzMcMurdo, +0, 0);
-        checkToString(1985, 5, 1, 1, 14, 15, tzMcMurdo, +0, 0);
-        checkToString(1986, 6, 1, 1, 14, 15, tzMcMurdo, +0, 0);
-        checkToString(1987, 7, 1, 1, 14, 15, tzMcMurdo, +0, 0);
-        checkToString(1988, 8, 1, 1, 14, 15, tzMcMurdo, +0, 0);
-        checkToString(1989, 9, 1, 1, 14, 15, tzMcMurdo, +0, 0);
-        checkToString(1990, 10, 1, 1, 14, 15, tzMcMurdo, +0, 0);
-        checkToString(1991, 11, 1, 1, 14, 15, tzMcMurdo, +0, 0);
-        checkToString(1992, 12, 1, 1, 14, 15, tzMcMurdo, +0, 0);
+        for (int m = 1; m <= 12; ++m)
+        {
+            checkToString(1980 + m, m, 1, 1, 14, 15, tzMcMurdo, +0, 0);
+        }
     }
 
     private static void checkParseTZ(int expect, String src)
@@ -375,7 +356,8 @@ public class TestDateUtil extends TestCase
     /**
      * Timezone testcase.
      */
-    public void testParseTZ() 
+    @Test
+    void testParseTZ()
     {
         // 1st parameter is what to expect
         checkParseTZ(0*HRS+0*MINS, "+00:00");
@@ -415,7 +397,8 @@ public class TestDateUtil extends TestCase
     /**
      * Timezone offset testcase.
      */
-    public void testFormatTZoffset()
+    @Test
+    void testFormatTZoffset()
     {
         // 2nd parameter is what to expect
         checkFormatOffset(-12.1, "-12:06");
@@ -439,30 +422,4 @@ public class TestDateUtil extends TestCase
         checkFormatOffset(-14, "-14:00");
     }
     
-    // testbody precedes
-    ////////////////////////////////////////////////////
-    
-    /**
-     * Set the tests in the suite for this test class.
-     *
-     * @return the Suite.
-     */
-    public static Test suite()
-    {
-        return new TestSuite( TestDateUtil.class );
-    }
-
-    /**
-     * Command line execution.
-     *
-     * @param args Command line arguments.
-     */
-    public static void main( String[] args )
-    {
-        String[] arg = 
-        {
-            TestDateUtil.class.getName() 
-        };
-        junit.textui.TestRunner.main( arg );
-    }
 }

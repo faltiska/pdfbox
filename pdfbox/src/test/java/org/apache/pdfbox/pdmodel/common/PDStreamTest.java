@@ -15,6 +15,9 @@
  */
 package org.apache.pdfbox.pdmodel.common;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -22,37 +25,36 @@ import java.util.List;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.pdmodel.PDDocument;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  *
  * @author Tilman Hausherr
  */
-public class PDStreamTest
+class PDStreamTest
 {
     
     /**
      * Test for null filter list (PDFBOX-2948)
      */
     @Test
-    public void testCreateInputStreamNullFilters() throws Exception
+    void testCreateInputStreamNullFilters() throws Exception
     {
         try (PDDocument doc = new PDDocument())
         {
             InputStream is = new ByteArrayInputStream(new byte[] { 12, 34, 56, 78 });
             PDStream pdStream = new PDStream(doc, is, (COSArray) null);
-            Assert.assertTrue(pdStream.getFilters().isEmpty());
+            assertTrue(pdStream.getFilters().isEmpty());
             List<String> stopFilters = new ArrayList<>();
             stopFilters.add(COSName.DCT_DECODE.toString());
             stopFilters.add(COSName.DCT_DECODE_ABBREVIATION.toString());
             
             is = pdStream.createInputStream(stopFilters);
-            Assert.assertEquals(12,is.read());
-            Assert.assertEquals(34,is.read());
-            Assert.assertEquals(56,is.read());
-            Assert.assertEquals(78,is.read());
-            Assert.assertEquals(-1,is.read());
+            assertEquals(12,is.read());
+            assertEquals(34,is.read());
+            assertEquals(56,is.read());
+            assertEquals(78,is.read());
+            assertEquals(-1,is.read());
         }
     } 
     
@@ -60,23 +62,23 @@ public class PDStreamTest
      * Test for empty filter list
      */
     @Test
-    public void testCreateInputStreamEmptyFilters() throws Exception
+    void testCreateInputStreamEmptyFilters() throws Exception
     {
         try (PDDocument doc = new PDDocument())
         {
             InputStream is = new ByteArrayInputStream(new byte[] { 12, 34, 56, 78 });
             PDStream pdStream = new PDStream(doc, is, new COSArray());
-            Assert.assertEquals(0,pdStream.getFilters().size());
+            assertEquals(0,pdStream.getFilters().size());
             List<String> stopFilters = new ArrayList<>();
             stopFilters.add(COSName.DCT_DECODE.toString());
             stopFilters.add(COSName.DCT_DECODE_ABBREVIATION.toString());
             
             is = pdStream.createInputStream(stopFilters);
-            Assert.assertEquals(12,is.read());
-            Assert.assertEquals(34,is.read());
-            Assert.assertEquals(56,is.read());
-            Assert.assertEquals(78,is.read());
-            Assert.assertEquals(-1,is.read());
+            assertEquals(12,is.read());
+            assertEquals(34,is.read());
+            assertEquals(56,is.read());
+            assertEquals(78,is.read());
+            assertEquals(-1,is.read());
         }
     }
     
@@ -84,20 +86,20 @@ public class PDStreamTest
      * Test for null stop filters
      */
     @Test
-    public void testCreateInputStreamNullStopFilters() throws Exception
+    void testCreateInputStreamNullStopFilters() throws Exception
     {
         try (PDDocument doc = new PDDocument())
         {
             InputStream is = new ByteArrayInputStream(new byte[] { 12, 34, 56, 78 });
             PDStream pdStream = new PDStream(doc, is, new COSArray());
-            Assert.assertEquals(0, pdStream.getFilters().size());
+            assertEquals(0, pdStream.getFilters().size());
             
             is = pdStream.createInputStream((List<String>) null);
-            Assert.assertEquals(12, is.read());
-            Assert.assertEquals(34, is.read());
-            Assert.assertEquals(56, is.read());
-            Assert.assertEquals(78,is.read());
-            Assert.assertEquals(-1,is.read());
+            assertEquals(12, is.read());
+            assertEquals(34, is.read());
+            assertEquals(56, is.read());
+            assertEquals(78,is.read());
+            assertEquals(-1,is.read());
         }
     }
 

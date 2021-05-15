@@ -16,16 +16,17 @@
  */
 package org.apache.pdfbox.pdmodel.interactive.form;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,15 +43,16 @@ import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotation;
 import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationWidget;
 import org.apache.pdfbox.rendering.TestPDFToImage;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Assertions;
 
 /**
  * Test for the PDButton class.
  *
  */
-public class PDAcroFormTest
+class PDAcroFormTest
 {
     
     private PDDocument document;
@@ -59,7 +61,7 @@ public class PDAcroFormTest
     private static final File OUT_DIR = new File("target/test-output");
     private static final File IN_DIR = new File("src/test/resources/org/apache/pdfbox/pdmodel/interactive/form");
     
-    @Before
+    @BeforeEach
     public void setUp()
     {
         document = new PDDocument();
@@ -68,7 +70,7 @@ public class PDAcroFormTest
     }
 
     @Test
-    public void testFieldsEntry()
+    void testFieldsEntry()
     {
         // the /Fields entry has been created with the AcroForm
         // as this is a required entry
@@ -91,7 +93,7 @@ public class PDAcroFormTest
     }
     
     @Test
-    public void testAcroFormProperties()
+    void testAcroFormProperties()
     {
         assertTrue(acroForm.getDefaultAppearance().isEmpty());
         acroForm.setDefaultAppearance("/Helv 0 Tf 0 g");
@@ -99,7 +101,7 @@ public class PDAcroFormTest
     }
     
     @Test
-    public void testFlatten() throws IOException
+    void testFlatten() throws IOException
     {
         File file = new File(OUT_DIR, "AlignmentTests-flattened.pdf");
         try (PDDocument testPdf = Loader.loadPDF(new File(IN_DIR, "AlignmentTests.pdf")))
@@ -124,17 +126,16 @@ public class PDAcroFormTest
      * (PDFBOX-3301)
      */
     @Test
-    public void testFlattenWidgetNoRef() throws IOException
+    void testFlattenWidgetNoRef() throws IOException
     {
         File file = new File(OUT_DIR, "AlignmentTests-flattened-noRef.pdf");
 
         try (PDDocument testPdf = Loader.loadPDF(new File(IN_DIR, "AlignmentTests.pdf")))
         {
             PDAcroForm acroFormToTest = testPdf.getDocumentCatalog().getAcroForm();
-            for (PDField field : acroFormToTest.getFieldTree()) {
-                for (PDAnnotationWidget widget : field.getWidgets()) {
-                    widget.getCOSObject().removeItem(COSName.P);
-                }
+            for (PDField field : acroFormToTest.getFieldTree())
+            {
+                field.getWidgets().forEach(widget -> widget.getCOSObject().removeItem(COSName.P));
             }
             acroFormToTest.flatten();
 
@@ -154,7 +155,7 @@ public class PDAcroFormTest
     }
     
     @Test
-    public void testFlattenSpecificFieldsOnly() throws IOException
+    void testFlattenSpecificFieldsOnly() throws IOException
     {
         File file = new File(OUT_DIR, "AlignmentTests-flattened-specificFields.pdf");
         
@@ -188,7 +189,7 @@ public class PDAcroFormTest
      * (PDFBOX-3752)
      */
     @Test
-    public void testDontAddMissingInformationOnDocumentLoad()
+    void testDontAddMissingInformationOnDocumentLoad()
     {
         try
         {
@@ -204,8 +205,6 @@ public class PDAcroFormTest
                 // ensure that the missing information has not been generated
                 assertNull(acroFormDictionary.getDictionaryObject(COSName.DA));
                 assertNull(acroFormDictionary.getDictionaryObject(COSName.RESOURCES));
-                
-                pdfDocument.close();
             }
         }
         catch (IOException e)
@@ -222,7 +221,7 @@ public class PDAcroFormTest
      * (PDFBOX-3752)
      */
     @Test
-    public void testAddMissingInformationOnAcroFormAccess()
+    void testAddMissingInformationOnAcroFormAccess()
     {
         try
         {
@@ -261,7 +260,7 @@ public class PDAcroFormTest
      * @throws IOException 
      */
     @Test
-    public void testBadDA() throws IOException
+    void testBadDA() throws IOException
     {
         try (PDDocument doc = new PDDocument())
         {
@@ -286,16 +285,9 @@ public class PDAcroFormTest
             widget.setPage(page);
 
             page.getAnnotations().add(widget);
-
-            try
-            {
-                textBox.setValue("huhu");
-            }
-            catch (IllegalArgumentException ex)
-            {
-                return;
-            }
-            fail("IllegalArgumentException should have been thrown");
+            
+            Assertions.assertThrows(IllegalArgumentException.class, () -> textBox.setValue("huhu"),
+                "IllegalArgumentException should have been thrown");
         }
     }
 
@@ -304,7 +296,7 @@ public class PDAcroFormTest
      * they don't exist.
      */
     @Test
-    public void testAcroFormDefaultFonts() throws IOException
+    void testAcroFormDefaultFonts() throws IOException
     {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (PDDocument doc = new PDDocument())
@@ -330,6 +322,7 @@ public class PDAcroFormTest
             doc.getDocumentCatalog().setAcroForm(new PDAcroForm(doc));
             acroForm2 = doc.getDocumentCatalog().getAcroForm();
             defaultResources = acroForm2.getDefaultResources();
+            
             PDFont helv = defaultResources.getFont(COSName.HELV);
             PDFont zadb = defaultResources.getFont(COSName.ZA_DB);
             assertNotNull(helv);
@@ -350,7 +343,26 @@ public class PDAcroFormTest
         }
     }
 
-    @After
+    /**
+     * PDFBOX-3777 Illegal Fields definition COSDictionary instead of Array
+     * 
+     * @throws IOException
+     */
+    @Test
+    void testIllegalFieldsDefinition() throws IOException
+    {
+        String sourceUrl = "https://issues.apache.org/jira/secure/attachment/12866226/D1790B.PDF";
+
+        try (PDDocument testPdf = Loader.loadPDF(new URL(sourceUrl).openStream()))
+        {
+            PDDocumentCatalog catalog = testPdf.getDocumentCatalog();
+
+            assertDoesNotThrow(() -> catalog.getAcroForm(), "Getting the AcroForm shall not throw an exception");
+        }
+    }
+
+
+    @AfterEach
     public void tearDown() throws IOException
     {
         document.close();
@@ -383,7 +395,6 @@ public class PDAcroFormTest
             // acroForm.getField("SampleField").getCOSObject().setString(COSName.V, "content");
 
             tmpDocument.save(baos); // this is a working PDF
-            tmpDocument.close();
             return baos.toByteArray();
         }
     }

@@ -22,6 +22,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
 import java.util.EnumSet;
+import java.util.Optional;
+import java.util.function.Consumer;
 
 /**
  * An implementation of the RandomAccess interface backed by a memory mapped file channel. The whole file is mapped to
@@ -38,6 +40,9 @@ public class RandomAccessReadMemoryMappedFile implements RandomAccessRead
 
     // file channel of the file to be read
     private FileChannel fileChannel;
+
+    // function to unmap the byte buffer
+    private Consumer<? super ByteBuffer> unmapper = IOUtils::unmap;
 
     /**
      * Default constructor.
@@ -70,6 +75,8 @@ public class RandomAccessReadMemoryMappedFile implements RandomAccessRead
         mappedByteBuffer = parent.mappedByteBuffer.duplicate();
         size = parent.size;
         mappedByteBuffer.rewind();
+        // unmap doesn't work on duplicate, see Unsafe#invokeCleaner
+        unmapper = null;
     }
 
     /**
@@ -82,6 +89,7 @@ public class RandomAccessReadMemoryMappedFile implements RandomAccessRead
         {
             fileChannel.close();
         }
+        Optional.ofNullable(unmapper).ifPresent(u -> u.accept(mappedByteBuffer));
         mappedByteBuffer = null;
     }
 
@@ -96,7 +104,9 @@ public class RandomAccessReadMemoryMappedFile implements RandomAccessRead
         {
             throw new IOException("Invalid position "+position);
         }
-        mappedByteBuffer.position((int) position);
+        // it is allowed to jump beyond the end of the file
+        // jump to the end of the reader
+        mappedByteBuffer.position((int) Math.min(position, size));
     }
 
     /**
@@ -130,7 +140,7 @@ public class RandomAccessReadMemoryMappedFile implements RandomAccessRead
     {
         if (isEOF())
         {
-            return 0;
+            return -1;
         }
         int remainingBytes = (int)size - mappedByteBuffer.position();
         mappedByteBuffer.get(b, offset, Math.min(remainingBytes, length));
@@ -150,7 +160,7 @@ public class RandomAccessReadMemoryMappedFile implements RandomAccessRead
     /**
      * Ensure that the RandomAccessReadMemoryMappedFile is not closed
      * 
-     * @throws IOException
+     * @throws IOException If RandomAccessBuffer already closed
      */
     private void checkClosed() throws IOException
     {
@@ -179,52 +189,10 @@ public class RandomAccessReadMemoryMappedFile implements RandomAccessRead
         return mappedByteBuffer.position() >= size;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int available() throws IOException
-    {
-        return (int) Math.min(length() - getPosition(), Integer.MAX_VALUE);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int peek() throws IOException
-    {
-        int result = read();
-        if (result != -1)
-        {
-            rewind(1);
-        }
-        return result;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void rewind(int bytes) throws IOException
-    {
-        checkClosed();
-        seek(getPosition() - bytes);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int read(byte[] b) throws IOException
-    {
-        return read(b, 0, b.length);
-    }
-
     @Override
     public RandomAccessReadView createView(long startPosition, long streamLength)
     {
         return new RandomAccessReadView(new RandomAccessReadMemoryMappedFile(this), startPosition,
-                streamLength);
+                streamLength, true);
     }
 }

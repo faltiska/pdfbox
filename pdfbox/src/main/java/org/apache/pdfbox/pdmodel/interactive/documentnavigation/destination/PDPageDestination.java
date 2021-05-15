@@ -34,7 +34,7 @@ public abstract class PDPageDestination extends PDDestination
     /**
      * Storage for the page destination.
      */
-    protected COSArray array;
+    protected final COSArray array;
 
     /**
      * Constructor to create empty page destination.
@@ -138,11 +138,17 @@ public abstract class PDPageDestination extends PDDestination
     private int indexOfPageTree(COSDictionary pageDict)
     {
         COSDictionary parent = pageDict;
-        while (parent.getDictionaryObject(COSName.PARENT, COSName.P) instanceof COSDictionary)
+        while (true)
         {
-            parent = (COSDictionary) parent.getDictionaryObject(COSName.PARENT, COSName.P);
+            COSDictionary prevParent = parent.getCOSDictionary(COSName.PARENT, COSName.P);
+            if (prevParent == null)
+            {
+                break;
+            }
+            parent = prevParent;
         }
-        if (parent.containsKey(COSName.KIDS) && COSName.PAGES.equals(parent.getItem(COSName.TYPE)))
+        if (parent.containsKey(COSName.KIDS)
+                && COSName.PAGES.equals(parent.getCOSName(COSName.TYPE)))
         {
             // now parent is the highest pages node
             PDPageTree pages = new PDPageTree(parent);

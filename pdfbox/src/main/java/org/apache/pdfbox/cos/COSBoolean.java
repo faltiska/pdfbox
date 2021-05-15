@@ -29,11 +29,11 @@ public final class COSBoolean extends COSBase
     /**
      * The true boolean token.
      */
-    public static final byte[] TRUE_BYTES = new byte[] { 116, 114, 117, 101 }; // "true".getBytes("ISO-8859-1")
+    private static final byte[] TRUE_BYTES = new byte[] { 116, 114, 117, 101 }; // "true".getBytes("ISO-8859-1")
     /**
      * The false boolean token.
      */
-    public static final byte[] FALSE_BYTES = new byte[] { 102, 97, 108, 115, 101 }; // "false".getBytes("ISO-8859-1")
+    private static final byte[] FALSE_BYTES = new byte[] { 102, 97, 108, 115, 101 }; // "false".getBytes("ISO-8859-1")
 
     /**
      * The PDF true value.
@@ -123,6 +123,25 @@ public final class COSBoolean extends COSBase
     public String toString()
     {
         return String.valueOf( value );
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int hashCode() {
+        //taken from java.lang.Boolean
+        return value ? 1231 : 1237;
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
+    public boolean equals(Object obj) {
+        if (obj instanceof COSBoolean) {
+            return value == ((COSBoolean)obj).getValue();
+        }
+        return false;
     }
 
     /**

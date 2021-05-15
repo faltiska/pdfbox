@@ -24,7 +24,6 @@ import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.cos.COSString;
-import org.apache.pdfbox.pdmodel.common.COSArrayList;
 import org.apache.pdfbox.pdmodel.common.COSObjectable;
 
 /**
@@ -71,9 +70,9 @@ public class PDSeedValueCertificate implements COSObjectable
      */
     public PDSeedValueCertificate()
     {
-        this.dictionary = new COSDictionary();
-        this.dictionary.setItem(COSName.TYPE, COSName.SV_CERT);
-        this.dictionary.setDirect(true);
+        dictionary = new COSDictionary();
+        dictionary.setItem(COSName.TYPE, COSName.SV_CERT);
+        dictionary.setDirect(true);
     }
 
     /**
@@ -83,8 +82,8 @@ public class PDSeedValueCertificate implements COSObjectable
      */
     public PDSeedValueCertificate(COSDictionary dict)
     {
-        this.dictionary = dict;
-        this.dictionary.setDirect(true);
+        dictionary = dict;
+        dictionary.setDirect(true);
     }
 
     /**
@@ -104,7 +103,7 @@ public class PDSeedValueCertificate implements COSObjectable
      */
     public boolean isSubjectRequired()
     {
-        return this.getCOSObject().getFlag(COSName.FF, FLAG_SUBJECT);
+        return dictionary.getFlag(COSName.FF, FLAG_SUBJECT);
     }
 
     /**
@@ -114,7 +113,7 @@ public class PDSeedValueCertificate implements COSObjectable
      */
     public void setSubjectRequired(boolean flag)
     {
-        this.getCOSObject().setFlag(COSName.FF, FLAG_SUBJECT, flag);
+        dictionary.setFlag(COSName.FF, FLAG_SUBJECT, flag);
     }
 
     /**
@@ -123,7 +122,7 @@ public class PDSeedValueCertificate implements COSObjectable
      */
     public boolean isIssuerRequired()
     {
-        return this.getCOSObject().getFlag(COSName.FF, FLAG_ISSUER);
+        return dictionary.getFlag(COSName.FF, FLAG_ISSUER);
     }
 
     /**
@@ -133,7 +132,7 @@ public class PDSeedValueCertificate implements COSObjectable
      */
     public void setIssuerRequired(boolean flag)
     {
-        this.getCOSObject().setFlag(COSName.FF, FLAG_ISSUER, flag);
+        dictionary.setFlag(COSName.FF, FLAG_ISSUER, flag);
     }
 
     /**
@@ -142,7 +141,7 @@ public class PDSeedValueCertificate implements COSObjectable
      */
     public boolean isOIDRequired()
     {
-        return this.getCOSObject().getFlag(COSName.FF, FLAG_OID);
+        return dictionary.getFlag(COSName.FF, FLAG_OID);
     }
 
     /**
@@ -152,7 +151,7 @@ public class PDSeedValueCertificate implements COSObjectable
      */
     public void setOIDRequired(boolean flag)
     {
-        this.getCOSObject().setFlag(COSName.FF, FLAG_OID, flag);
+        dictionary.setFlag(COSName.FF, FLAG_OID, flag);
     }
 
     /**
@@ -161,7 +160,7 @@ public class PDSeedValueCertificate implements COSObjectable
      */
     public boolean isSubjectDNRequired()
     {
-        return this.getCOSObject().getFlag(COSName.FF, FLAG_SUBJECT_DN);
+        return dictionary.getFlag(COSName.FF, FLAG_SUBJECT_DN);
     }
 
     /**
@@ -171,7 +170,7 @@ public class PDSeedValueCertificate implements COSObjectable
      */
     public void setSubjectDNRequired(boolean flag)
     {
-        this.getCOSObject().setFlag(COSName.FF, FLAG_SUBJECT_DN, flag);
+        dictionary.setFlag(COSName.FF, FLAG_SUBJECT_DN, flag);
     }
 
     /**
@@ -180,7 +179,7 @@ public class PDSeedValueCertificate implements COSObjectable
      */
     public boolean isKeyUsageRequired()
     {
-        return this.getCOSObject().getFlag(COSName.FF, FLAG_KEY_USAGE);
+        return dictionary.getFlag(COSName.FF, FLAG_KEY_USAGE);
     }
 
     /**
@@ -190,7 +189,7 @@ public class PDSeedValueCertificate implements COSObjectable
      */
     public void setKeyUsageRequired(boolean flag)
     {
-        this.getCOSObject().setFlag(COSName.FF, FLAG_KEY_USAGE, flag);
+        dictionary.setFlag(COSName.FF, FLAG_KEY_USAGE, flag);
     }
 
     /**
@@ -199,7 +198,7 @@ public class PDSeedValueCertificate implements COSObjectable
      */
     public boolean isURLRequired()
     {
-        return this.getCOSObject().getFlag(COSName.FF, FLAG_URL);
+        return dictionary.getFlag(COSName.FF, FLAG_URL);
     }
 
     /**
@@ -209,7 +208,7 @@ public class PDSeedValueCertificate implements COSObjectable
      */
     public void setURLRequired(boolean flag)
     {
-        this.getCOSObject().setFlag(COSName.FF, FLAG_URL, flag);
+        dictionary.setFlag(COSName.FF, FLAG_URL, flag);
     }
 
     /**
@@ -217,13 +216,8 @@ public class PDSeedValueCertificate implements COSObjectable
      */
     public List<byte[]> getSubject()
     {
-        COSBase base = this.dictionary.getDictionaryObject(COSName.SUBJECT);
-        if (base instanceof COSArray)
-        {
-            COSArray array = (COSArray) base;
-            return getListOfByteArraysFromCOSArray(array);
-        }
-        return null;
+        COSArray array = dictionary.getCOSArray(COSName.SUBJECT);
+        return array != null ? getListOfByteArraysFromCOSArray(array) : null;
     }
 
     /**
@@ -237,12 +231,7 @@ public class PDSeedValueCertificate implements COSObjectable
      */
     public void setSubject(List<byte[]> subjects)
     {
-        COSArray array = new COSArray();
-        for (byte[] subject : subjects)
-        {
-            array.add(new COSString(subject));
-        }
-        this.dictionary.setItem(COSName.SUBJECT, array);
+        dictionary.setItem(COSName.SUBJECT, convertListOfByteArraysToCOSArray(subjects));
     }
 
     /**
@@ -253,19 +242,13 @@ public class PDSeedValueCertificate implements COSObjectable
      */
     public void addSubject(byte[] subject)
     {
-        COSBase base = this.dictionary.getDictionaryObject(COSName.SUBJECT);
-        COSArray array;
-        if (base instanceof COSArray)
-        {
-            array = (COSArray) base;
-        }
-        else
+        COSArray array = dictionary.getCOSArray(COSName.SUBJECT);
+        if (array == null)
         {
             array = new COSArray();
         }
-        COSString string = new COSString(subject);
-        array.add(string);
-        this.dictionary.setItem(COSName.SUBJECT, array);
+        array.add(new COSString(subject));
+        dictionary.setItem(COSName.SUBJECT, array);
     }
 
     /**
@@ -275,10 +258,9 @@ public class PDSeedValueCertificate implements COSObjectable
      */
     public void removeSubject(byte[] subject)
     {
-        COSBase base = this.dictionary.getDictionaryObject(COSName.SUBJECT);
-        if (base instanceof COSArray)
+        COSArray array = dictionary.getCOSArray(COSName.SUBJECT);
+        if (array != null)
         {
-            COSArray array = (COSArray) base;
             array.remove(new COSString(subject));
         }
     }
@@ -290,13 +272,12 @@ public class PDSeedValueCertificate implements COSObjectable
      */
     public List<Map<String, String>> getSubjectDN()
     {
-        COSBase base = this.dictionary.getDictionaryObject(COSName.SUBJECT_DN);
-        if (base instanceof COSArray)
+        COSArray cosArray = dictionary.getCOSArray(COSName.SUBJECT_DN);
+        if (cosArray != null)
         {
-            COSArray cosArray = (COSArray) base;
-            List subjectDNList = cosArray.toList();
+            List<? extends COSBase> subjectDNList = cosArray.toList();
             List<Map<String, String>> result = new LinkedList<>();
-            for (Object subjectDNItem : subjectDNList)
+            for (COSBase subjectDNItem : subjectDNList)
             {
                 if (subjectDNItem instanceof COSDictionary)
                 {
@@ -331,8 +312,7 @@ public class PDSeedValueCertificate implements COSObjectable
             subjectDNItem.forEach((key, value) -> dict.setItem(key, new COSString(value)));
             subjectDNDict.add(dict);
         }
-        this.dictionary.setItem(COSName.SUBJECT_DN,
-                COSArrayList.converterToCOSArray(subjectDNDict));
+        dictionary.setItem(COSName.SUBJECT_DN, new COSArray(subjectDNDict));
     }
 
     /**
@@ -353,10 +333,9 @@ public class PDSeedValueCertificate implements COSObjectable
      */
     public List<String> getKeyUsage()
     {
-        COSBase base = this.dictionary.getDictionaryObject(COSName.KEY_USAGE);
-        if (base instanceof COSArray)
+        COSArray array = dictionary.getCOSArray(COSName.KEY_USAGE);
+        if (array != null)
         {
-            COSArray array = (COSArray) base;
             List<String> keyUsageExtensions = new LinkedList<>();
             for (COSBase item : array)
             {
@@ -392,8 +371,8 @@ public class PDSeedValueCertificate implements COSObjectable
      */
     public void setKeyUsage(List<String> keyUsageExtensions)
     {
-        this.dictionary.setItem(COSName.KEY_USAGE,
-                COSArrayList.converterToCOSArray(keyUsageExtensions));
+        dictionary.setItem(COSName.KEY_USAGE,
+                COSArray.ofCOSStrings(keyUsageExtensions));
     }
 
     /**
@@ -412,19 +391,13 @@ public class PDSeedValueCertificate implements COSObjectable
                 throw new IllegalArgumentException("characters can only be 0, 1, X");
             }
         }
-        COSBase base = this.dictionary.getDictionaryObject(COSName.KEY_USAGE);
-        COSArray array;
-        if (base instanceof COSArray)
-        {
-            array = (COSArray) base;
-        }
-        else
+        COSArray array = dictionary.getCOSArray(COSName.KEY_USAGE);
+        if (array == null)
         {
             array = new COSArray();
         }
-        COSString string = new COSString(keyUsageExtension);
-        array.add(string);
-        this.dictionary.setItem(COSName.KEY_USAGE, array);
+        array.add(new COSString(keyUsageExtension));
+        dictionary.setItem(COSName.KEY_USAGE, array);
     }
 
     /**
@@ -465,10 +438,9 @@ public class PDSeedValueCertificate implements COSObjectable
      */
     public void removeKeyUsage(String keyUsageExtension)
     {
-        COSBase base = this.dictionary.getDictionaryObject(COSName.KEY_USAGE);
-        if (base instanceof COSArray)
+        COSArray array = dictionary.getCOSArray(COSName.KEY_USAGE);
+        if (array != null)
         {
-            COSArray array = (COSArray) base;
             array.remove(new COSString(keyUsageExtension));
         }
     }
@@ -478,13 +450,8 @@ public class PDSeedValueCertificate implements COSObjectable
      */
     public List<byte[]> getIssuer()
     {
-        COSBase base = this.dictionary.getDictionaryObject(COSName.ISSUER);
-        if (base instanceof COSArray)
-        {
-            COSArray array = (COSArray) base;
-            return getListOfByteArraysFromCOSArray(array);
-        }
-        return null;
+        COSArray array = dictionary.getCOSArray(COSName.ISSUER);
+        return array != null ? getListOfByteArraysFromCOSArray(array) : null;
     }
 
     /**
@@ -496,12 +463,7 @@ public class PDSeedValueCertificate implements COSObjectable
      */
     public void setIssuer(List<byte[]> issuers)
     {
-        COSArray array = new COSArray();
-        for (byte[] issuer : issuers)
-        {
-            array.add(new COSString(issuer));
-        }
-        this.dictionary.setItem(COSName.ISSUER, array);
+        dictionary.setItem(COSName.ISSUER, convertListOfByteArraysToCOSArray(issuers));
     }
 
     /**
@@ -513,19 +475,13 @@ public class PDSeedValueCertificate implements COSObjectable
      */
     public void addIssuer(byte[] issuer)
     {
-        COSBase base = this.dictionary.getDictionaryObject(COSName.ISSUER);
-        COSArray array;
-        if (base instanceof COSArray)
-        {
-            array = (COSArray) base;
-        }
-        else
+        COSArray array = dictionary.getCOSArray(COSName.ISSUER);
+        if (array == null)
         {
             array = new COSArray();
         }
-        COSString string = new COSString(issuer);
-        array.add(string);
-        this.dictionary.setItem(COSName.ISSUER, array);
+        array.add(new COSString(issuer));
+        dictionary.setItem(COSName.ISSUER, array);
     }
 
     /**
@@ -535,10 +491,9 @@ public class PDSeedValueCertificate implements COSObjectable
      */
     public void removeIssuer(byte[] issuer)
     {
-        COSBase base = this.dictionary.getDictionaryObject(COSName.ISSUER);
-        if (base instanceof COSArray)
+        COSArray array = dictionary.getCOSArray(COSName.ISSUER);
+        if (array != null)
         {
-            COSArray array = (COSArray) base;
             array.remove(new COSString(issuer));
         }
     }
@@ -549,13 +504,8 @@ public class PDSeedValueCertificate implements COSObjectable
      */
     public List<byte[]> getOID()
     {
-        COSBase base = this.dictionary.getDictionaryObject(COSName.OID);
-        if (base instanceof COSArray)
-        {
-            COSArray array = (COSArray) base;
-            return getListOfByteArraysFromCOSArray(array);
-        }
-        return null;
+        COSArray array = dictionary.getCOSArray(COSName.OID);
+        return array != null ? getListOfByteArraysFromCOSArray(array) : null;
     }
 
     /**
@@ -567,12 +517,7 @@ public class PDSeedValueCertificate implements COSObjectable
      */
     public void setOID(List<byte[]> oidByteStrings)
     {
-        COSArray array = new COSArray();
-        for (byte[] oid : oidByteStrings)
-        {
-            array.add(new COSString(oid));
-        }
-        this.dictionary.setItem(COSName.OID, array);
+        dictionary.setItem(COSName.OID, convertListOfByteArraysToCOSArray(oidByteStrings));
     }
 
     /**
@@ -582,19 +527,13 @@ public class PDSeedValueCertificate implements COSObjectable
      */
     public void addOID(byte[] oid)
     {
-        COSBase base = this.dictionary.getDictionaryObject(COSName.OID);
-        COSArray array;
-        if (base instanceof COSArray)
-        {
-            array = (COSArray) base;
-        }
-        else
+        COSArray array = dictionary.getCOSArray(COSName.OID);
+        if (array == null)
         {
             array = new COSArray();
         }
-        COSString string = new COSString(oid);
-        array.add(string);
-        this.dictionary.setItem(COSName.OID, array);
+        array.add(new COSString(oid));
+        dictionary.setItem(COSName.OID, array);
     }
 
     /**
@@ -604,10 +543,9 @@ public class PDSeedValueCertificate implements COSObjectable
      */
     public void removeOID(byte[] oid)
     {
-        COSBase base = this.dictionary.getDictionaryObject(COSName.OID);
-        if (base instanceof COSArray)
+        COSArray array = dictionary.getCOSArray(COSName.OID);
+        if (array != null)
         {
-            COSArray array = (COSArray) base;
             array.remove(new COSString(oid));
         }
     }
@@ -617,7 +555,7 @@ public class PDSeedValueCertificate implements COSObjectable
      */
     public String getURL()
     {
-        return this.dictionary.getString(COSName.URL);
+        return dictionary.getString(COSName.URL);
     }
 
     /**
@@ -627,7 +565,7 @@ public class PDSeedValueCertificate implements COSObjectable
      */
     public void setURL(String url)
     {
-        this.dictionary.setString(COSName.URL, url);
+        dictionary.setString(COSName.URL, url);
     }
 
     /**
@@ -647,7 +585,7 @@ public class PDSeedValueCertificate implements COSObjectable
      */
     public String getURLType()
     {
-        return this.dictionary.getNameAsString(COSName.URL_TYPE);
+        return dictionary.getNameAsString(COSName.URL_TYPE);
     }
 
     /**
@@ -672,7 +610,7 @@ public class PDSeedValueCertificate implements COSObjectable
      */
     public void setURLType(String urlType)
     {
-        this.dictionary.setName(COSName.URL_TYPE, urlType);
+        dictionary.setName(COSName.URL_TYPE, urlType);
     }
 
     private static List<byte[]> getListOfByteArraysFromCOSArray(COSArray array)
@@ -688,4 +626,10 @@ public class PDSeedValueCertificate implements COSObjectable
         return result;
     }
 
+    private static COSArray convertListOfByteArraysToCOSArray(List<byte[]> strings)
+    {
+        COSArray array = new COSArray();
+        strings.forEach(s -> array.add(new COSString(s)));
+        return array;
+    }
 }

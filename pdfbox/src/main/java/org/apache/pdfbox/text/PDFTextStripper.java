@@ -164,7 +164,7 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
      */
     protected ArrayList<List<TextPosition>> charactersByArticle;
 
-    private Map<String, TreeMap<Float, TreeSet<Float>>> characterListMapping;
+    private final Map<String, TreeMap<Float, TreeSet<Float>>> characterListMapping = new HashMap<>();
 
     protected PDDocument document;
     protected Writer output;
@@ -208,6 +208,8 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
     {
         currentPageNo = 0;
         document = null;
+        charactersByArticle.clear();
+        characterListMapping.clear();
     }
 
     /**
@@ -338,7 +340,23 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
             charactersByArticle = new ArrayList<>(numberOfArticleSections);
             for (int i = 0; i < numberOfArticleSections; i++)
             {
-                charactersByArticle.add(new ArrayList<>());
+                if (i < originalSize)
+                {
+                    charactersByArticle.get(i).clear();
+                }
+                else
+                {
+                    if (numberOfArticleSections < originalSize)
+                    {
+                        //TODO Looks like decrement (--i) needed because next value will be ignored.
+                        // This segment is never reached in tests?!
+                        charactersByArticle.remove(i);
+                    }
+                    else
+                    {
+                        charactersByArticle.add(new ArrayList<>());
+                    }
+                }
             }
             characterListMapping = new HashMap<>();
 
@@ -353,7 +371,7 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
         beadRectangles = new ArrayList<>();
         for (PDThreadBead bead : page.getThreadBeads())
         {
-            if (bead == null)
+            if (bead == null || bead.getRectangle() == null)
             {
                 // can't skip, because of null entry handling in processTextPosition()
                 beadRectangles.add(null);
@@ -626,6 +644,16 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
                                                     .endsWith(wordSeparator))))
                     {
                         line.add(LineItem.getWordSeparator());
+                    }
+                    // if there is at least the equivalent of one space
+                    // between the last character and the current one,
+                    // reset the max line height as the font size may have completely changed.
+                    if (Math.abs(position.getX()
+                            - lastPosition.getTextPosition().getX()) > (wordSpacing + deltaSpace))
+                    {
+                        maxYForLine = MAX_Y_FOR_LINE_RESET_VALUE;
+                        maxHeightForLine = MAX_HEIGHT_FOR_LINE_RESET_VALUE;
+                        minYTopForLine = MIN_Y_TOP_FOR_LINE_RESET_VALUE;
                     }
                 }
                 if (positionY >= maxYForLine)
@@ -1926,7 +1954,7 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
      */
     private static final class LineItem
     {
-        public static LineItem WORD_SEPARATOR = new LineItem();
+        public static final LineItem WORD_SEPARATOR = new LineItem();
 
         public static LineItem getWordSeparator()
         {
@@ -1964,8 +1992,8 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
      */
     protected static final class WordWithTextPositions
     {
-        String text;
-        List<TextPosition> textPositions;
+        final String text;
+        final List<TextPosition> textPositions;
 
         WordWithTextPositions(String word, List<TextPosition> positions)
         {

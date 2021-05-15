@@ -102,12 +102,13 @@ public abstract class PDFunction implements COSObjectable
     {
         return functionStream;
     }
+
     /**
      * Create the correct PD Model function based on the COS base function.
      *
      * @param function The COS function dictionary.
      *
-     * @return The PDModel Function object.
+     * @return The PDModel Function object, never null.
      *
      * @throws IOException If we are unable to create the PDFunction object.
      */
@@ -126,7 +127,7 @@ public abstract class PDFunction implements COSObjectable
         if (!(base instanceof COSDictionary))
         {
             throw new IOException("Error: Function must be a Dictionary, but is " +
-                    base.getClass().getSimpleName());
+                    (base == null ? "(null)" : base.getClass().getSimpleName()));
         }
         COSDictionary functionDictionary = (COSDictionary) base;
         int functionType = functionDictionary.getInt(COSName.FUNCTION_TYPE);
@@ -257,7 +258,7 @@ public abstract class PDFunction implements COSObjectable
     {
         if (range == null) 
         {
-            range = (COSArray) getCOSObject().getDictionaryObject(COSName.RANGE);
+            range = getCOSObject().getCOSArray(COSName.RANGE);
         }
         return range;
     }
@@ -271,7 +272,7 @@ public abstract class PDFunction implements COSObjectable
     {
         if (domain == null)
         {
-            domain = (COSArray) getCOSObject().getDictionaryObject(COSName.DOMAIN);
+            domain = getCOSObject().getCOSArray(COSName.DOMAIN);
         }
         return domain;
     }

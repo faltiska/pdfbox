@@ -16,114 +16,69 @@
  */
 package org.apache.pdfbox.tools;
 
+import java.awt.GraphicsEnvironment;
+
 import org.apache.pdfbox.debugger.PDFDebugger;
+
+import picocli.CommandLine;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.ParameterException;
+import picocli.CommandLine.Spec;
 
 /**
  * Simple wrapper around all the command line utilities included in PDFBox.
  * Used as the main class in the runnable standalone PDFBox jar.
  */
-public final class PDFBox 
+@Command(name="pdfbox",
+    customSynopsis = "pdfbox [COMMAND] [OPTIONS]",
+    footer = {
+        "See 'pdfbox help <command>' to read about a specific subcommand"
+    },
+    versionProvider = Version.class)
+public final class PDFBox implements Runnable
 {
-    private PDFBox()
-    {
-    }
-    
-    /**
+    @Spec CommandLine.Model.CommandSpec spec;
+
+      /**
      * Main method.
      * 
      * @param args command line arguments
-     * @throws java.lang.Exception
      */
-    public static void main(String[] args) throws Exception
+    public static void main(String[] args)
     {
         // suppress the Dock icon on OS X
         System.setProperty("apple.awt.UIElement", "true");
 
-        if (args.length > 0) 
+        CommandLine commandLine = new CommandLine(new PDFBox()).setSubcommandsCaseInsensitive(true);
+        if (!GraphicsEnvironment.isHeadless())
         {
-            String command = args[0];
-            String[] arguments = new String[args.length - 1];
-            System.arraycopy(args, 1, arguments, 0, arguments.length);
-            boolean exitAfterCallingMain = true;
-            switch (command)
-            {
-                case "Decrypt":
-                    Decrypt.main(arguments);
-                    break;
-                case "Encrypt":
-                    Encrypt.main(arguments);
-                    break;
-                case "ExtractText":
-                    ExtractText.main(arguments);
-                    break;
-                case "ExtractImages":
-                    ExtractImages.main(arguments);
-                    break;
-                case "OverlayPDF":
-                    OverlayPDF.main(arguments);
-                    break;
-                case "PrintPDF":
-                    PrintPDF.main(arguments);
-                    break;
-                case "PDFDebugger":
-                case "PDFReader":
-                    PDFDebugger.main(arguments);
-                    exitAfterCallingMain = false;
-                    break;
-                case "PDFMerger":
-                    PDFMerger.main(arguments);
-                    break;
-                case "PDFSplit":
-                    PDFSplit.main(arguments);
-                    break;
-                case "PDFToImage":
-                    PDFToImage.main(arguments);
-                    break;
-                case "ImageToPDF":
-                    ImageToPDF.main(arguments);
-                    break;
-                case "TextToPDF":
-                    TextToPDF.main(arguments);
-                    break;
-                case "WriteDecodedDoc":
-                    WriteDecodedDoc.main(arguments);
-                    break;
-                default:
-                    showMessageAndExit();
-                    break;
-            }
-            if (exitAfterCallingMain)
-            {
-                System.exit(0);
-            }
+            commandLine.addSubcommand("debug", PDFDebugger.class);
         }
-        else 
-        {
-            showMessageAndExit();
-        }
+        commandLine.addSubcommand("decrypt", Decrypt.class);
+        commandLine.addSubcommand("encrypt", Encrypt.class);
+        commandLine.addSubcommand("decode", WriteDecodedDoc.class);
+        commandLine.addSubcommand("export:images", ExtractImages.class);
+        commandLine.addSubcommand("export:text", ExtractText.class);
+        commandLine.addSubcommand("export:fdf", ExportFDF.class);
+        commandLine.addSubcommand("export:xfdf", ExportXFDF.class);
+        commandLine.addSubcommand("import:fdf", ImportFDF.class);
+        commandLine.addSubcommand("import:xfdf", ImportXFDF.class);
+        commandLine.addSubcommand("overlay", OverlayPDF.class);
+        commandLine.addSubcommand("print", PrintPDF.class);
+        commandLine.addSubcommand("render", PDFToImage.class);
+        commandLine.addSubcommand("merge", PDFMerger.class);
+        commandLine.addSubcommand("split", PDFSplit.class);
+        commandLine.addSubcommand("fromimage", ImageToPDF.class);
+        commandLine.addSubcommand("fromtext", TextToPDF.class);
+        commandLine.addSubcommand("version", Version.class);
+        commandLine.addSubcommand("help", CommandLine.HelpCommand.class);
+        
+        commandLine.execute(args);
     }
 
-    private static void showMessageAndExit() 
+    @Override
+    public void run()
     {
-        String message = "PDFBox version: \""+ Version.getVersion()+ "\""
-                + "\nUsage: java -jar pdfbox-app-x.y.z.jar <command> <args..>\n"
-                + "\nPossible commands are:\n"
-                + "  Decrypt\n"
-                + "  Encrypt\n"
-                + "  ExtractText\n"
-                + "  ExtractImages\n"
-                + "  ImageToPDF\n"
-                + "  OverlayPDF\n"
-                + "  PrintPDF\n"
-                + "  PDFDebugger\n"
-                + "  PDFMerger\n"
-                + "  PDFReader\n"
-                + "  PDFSplit\n"
-                + "  PDFToImage\n"
-                + "  TextToPDF\n"
-                + "  WriteDecodedDoc";
-        
-        System.err.println(message);
-        System.exit(1);
+        throw new ParameterException(spec.commandLine(), "Error: Subcommand required");
     }
 }

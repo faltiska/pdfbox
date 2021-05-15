@@ -21,14 +21,15 @@
 
 package org.apache.xmpbox;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.xmpbox.schema.DublinCoreSchema;
 import org.apache.xmpbox.schema.XMPSchema;
 import org.apache.xmpbox.type.StructuredType;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test with 2 dublinCore with different prefix (Test comportment of XMPMetadata)
@@ -36,19 +37,13 @@ import org.junit.Test;
  * @author a183132
  * 
  */
-public class DoubleSameTypeSchemaTest
+class DoubleSameTypeSchemaTest
 {
 
-    protected XMPMetadata metadata;
-
-    @Before
-    public void testInit() throws Exception
-    {
-        metadata = XMPMetadata.createXMPMetadata();
-    }
+    private final  XMPMetadata metadata = XMPMetadata.createXMPMetadata();
 
     @Test
-    public void testDoubleDublinCore() throws Exception
+    void testDoubleDublinCore() throws Exception
     {
         DublinCoreSchema dc1 = metadata.createAndAddDublinCoreSchema();
         String ownPrefix = "test";
@@ -73,9 +68,9 @@ public class DoubleSameTypeSchemaTest
 
         // We can't use metadata.getDublinCoreSchema() due to specification of
         // XMPBox (see Javadoc of XMPMetadata)
-        Assert.assertEquals(format,
+        assertEquals(format,
                 ((DublinCoreSchema) metadata.getSchema(stDub.preferedPrefix(), stDub.namespace())).getFormat());
-        Assert.assertEquals(coverage,
+        assertEquals(coverage,
                 ((DublinCoreSchema) metadata.getSchema(ownPrefix, stDub.namespace())).getCoverage());
 
         List<XMPSchema> schems = metadata.getAllSchemas();
@@ -83,7 +78,7 @@ public class DoubleSameTypeSchemaTest
         for (XMPSchema xmpSchema : schems)
         {
             dc = (DublinCoreSchema) xmpSchema;
-            Assert.assertTrue(dc.getCreators().containsAll(creators));
+            assertTrue(dc.getCreators().containsAll(creators));
         }
 
     }

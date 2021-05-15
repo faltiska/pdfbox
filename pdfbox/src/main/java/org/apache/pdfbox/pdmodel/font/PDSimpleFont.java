@@ -331,6 +331,19 @@ public abstract class PDSimpleFont extends PDFont
                 return 250f;
             }
 
+            if ("nbspace".equals(nameInAFM))
+            {
+                // PDFBOX-4944: nbspace is missing in AFM files,
+                // but PDF specification tells "it shall be typographically the same as SPACE"
+                nameInAFM = "space";
+            }
+            else if ("sfthyphen".equals(nameInAFM))
+            {
+                // PDFBOX-5115: sfthyphen is missing in AFM files,
+                // but PDF specification tells "it shall be typographically the same as hyphen"
+                nameInAFM = "hyphen";
+            }
+
             return getStandard14AFM().getCharacterWidth(nameInAFM);
         }
         throw new IllegalStateException("No AFM");

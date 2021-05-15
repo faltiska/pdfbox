@@ -17,7 +17,7 @@
 
 package org.apache.pdfbox.text;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -33,15 +33,15 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test for the PDButton class.
  *
  */
-public class BidiTest
+class BidiTest
 {
     /**
      * Logger instance.
@@ -56,40 +56,35 @@ public class BidiTest
 
     private PDDocument document;
     private PDFTextStripper stripper;
-    
-    private boolean bFail = false;
 
-    @Before
+    @BeforeEach
     public void setUp() throws IOException
     {
-        if (!outDir.exists()) 
+        if (!outDir.exists() && !outDir.mkdirs())
         {
-            if (!outDir.mkdirs()) 
-            {
-                throw (new IOException("Error creating " + outDir.getAbsolutePath() + " directory"));
-            }
+            throw (new IOException("Error creating " + outDir.getAbsolutePath() + " directory"));
         }
-        
+
         document = Loader.loadPDF(new File(IN_DIR, NAME_OF_PDF));
         stripper = new PDFTextStripper();
         stripper.setLineSeparator("\n");
     }
 
     @Test
-    public void testSorted() throws IOException
+    void testSorted() throws IOException
     {
         File testFile = new File(IN_DIR, NAME_OF_PDF);
         doTestFile(testFile, outDir, false, true);
     }
 
     @Test
-    public void testNotSorted() throws IOException
+    void testNotSorted() throws IOException
     {
         File testFile = new File(IN_DIR, NAME_OF_PDF);
         doTestFile(testFile, outDir, false, false);
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws IOException
     {
         document.close();
@@ -104,7 +99,7 @@ public class BidiTest
      * @param bSort Whether or not the extracted text is sorted
      * @throws Exception when there is an exception
      */
-    public void doTestFile(File inFile, File outDir, boolean bLogResult, boolean bSort)
+    private void doTestFile(File inFile, File outDir, boolean bLogResult, boolean bSort)
     throws IOException
     {
         if(bSort)
@@ -116,71 +111,48 @@ public class BidiTest
             log.info("Preparing to parse " + inFile.getName() + " for standard test");
         }
 
-        if (!outDir.exists()) 
+        File outFile;
+        File expectedFile;
+
+        if (bSort)
         {
-            if (!outDir.mkdirs()) 
-            {
-                throw (new IOException("Error creating " + outDir.getAbsolutePath() + " directory"));
-            }
+            outFile = new File(outDir, inFile.getName() + "-sorted.txt");
+            expectedFile = new File(inFile.getParentFile(), inFile.getName() + "-sorted.txt");
+        }
+        else
+        {
+            outFile = new File(outDir, inFile.getName() + ".txt");
+            expectedFile = new File(inFile.getParentFile(), inFile.getName() + ".txt");
         }
 
-        PDDocument document = Loader.loadPDF(inFile);
-        try
-        {            
-            File outFile;
-            File expectedFile;
+        try (OutputStream os = new FileOutputStream(outFile);
+             Writer writer = new OutputStreamWriter(os, ENCODING))
+        {
+            //Allows for sorted tests
+            stripper.setSortByPosition(bSort);
+            stripper.writeText(document, writer);
 
-            if(bSort)
-            {
-                outFile = new File(outDir,  inFile.getName() + "-sorted.txt");
-                expectedFile = new File(inFile.getParentFile(), inFile.getName() + "-sorted.txt");
-            }
-            else
-            {
-                outFile = new File(outDir, inFile.getName() + ".txt");
-                expectedFile = new File(inFile.getParentFile(), inFile.getName() + ".txt");
-            }
+            // close the written file before reading it again
+        }
 
-            OutputStream os = new FileOutputStream(outFile);
-            try
-            {
-                Writer writer = new OutputStreamWriter(os, ENCODING);
-                try
-                {
-                    //Allows for sorted tests 
-                    stripper.setSortByPosition(bSort);
-                    stripper.writeText(document, writer);
-                }
-                finally
-                {
-                    // close the written file before reading it again
-                    writer.close();
-                }
-            }
-            finally
-            {
-                os.close();
-            }
+        if (bLogResult)
+        {
+            log.info("Text for " + inFile.getName() + ":");
+            log.info(stripper.getText(document));
+        }
 
-            if (bLogResult)
-            {
-                log.info("Text for " + inFile.getName() + ":");
-                log.info(stripper.getText(document));
-            }
+        if (!expectedFile.exists())
+        {
+            fail("FAILURE: Input verification file: " + expectedFile.getAbsolutePath() +
+                    " did not exist");
+            return;
+        }
 
-            if (!expectedFile.exists())
-            {
-                this.bFail = true;
-                fail("FAILURE: Input verification file: " + expectedFile.getAbsolutePath() +
-                        " did not exist");
-                return;
-            }
-
-            LineNumberReader expectedReader =
+        try (LineNumberReader expectedReader =
                 new LineNumberReader(new InputStreamReader(new FileInputStream(expectedFile), ENCODING));
-            LineNumberReader actualReader =
-                new LineNumberReader(new InputStreamReader(new FileInputStream(outFile), ENCODING));
-
+             LineNumberReader actualReader =
+                new LineNumberReader(new InputStreamReader(new FileInputStream(outFile), ENCODING)))
+        {
             while (true)
             {
                 String expectedLine = expectedReader.readLine();
@@ -195,29 +167,22 @@ public class BidiTest
                 }
                 if (!stringsEqual(expectedLine, actualLine))
                 {
-                    this.bFail = true;
                     fail("FAILURE: Line mismatch for file " + inFile.getName() +
                             " (sort = "+bSort+")" +
-                            " at expected line: " + expectedReader.getLineNumber() +
+                                    " at expected line: " + expectedReader.getLineNumber() +
                             " at actual line: " + actualReader.getLineNumber() +
                             "\nexpected line was: \"" + expectedLine + "\"" +
-                            "\nactual line was:   \"" + actualLine + "\"" + "\n");
+                                    "\nactual line was:   \"" + actualLine + "\"" + "\n");
 
                     //lets report all lines, even though this might produce some verbose logging
                     //break;
                 }
 
-                if( expectedLine == null || actualLine==null)
+                if (expectedLine == null || actualLine == null)
                 {
                     break;
                 }
             }
-            expectedReader.close();
-            actualReader.close();
-        }
-        finally
-        {
-            document.close();
         }
     }
     

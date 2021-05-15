@@ -16,21 +16,21 @@
  */
 package org.apache.pdfbox.pdmodel.interactive.pagenavigation;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.apache.pdfbox.cos.COSInteger;
 import org.apache.pdfbox.cos.COSName;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * @author Andrea Vacondio
  *
  */
-public class PDTransitionDirectionTest
+class PDTransitionDirectionTest
 {
 
     @Test
-    public void getCOSBase()
+    void getCOSBase()
     {
         assertEquals(COSName.NONE, PDTransitionDirection.NONE.getCOSBase());
         assertEquals(0, ((COSInteger) PDTransitionDirection.LEFT_TO_RIGHT.getCOSBase()).intValue());

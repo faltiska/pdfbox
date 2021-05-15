@@ -25,7 +25,7 @@ package org.apache.pdfbox.cos;
 public class COSObjectKey implements Comparable<COSObjectKey>
 {
     private final long number;
-    private int generation;
+    private final int generation;
     
     /**
      * Constructor.
@@ -72,16 +72,6 @@ public class COSObjectKey implements Comparable<COSObjectKey>
     }
 
     /**
-     * This will set the generation number. It is intended for fixes only.
-     * 
-     * @param genNumber the new generation number.
-     */
-    public void fixGeneration(int genNumber)
-    {
-        generation = genNumber;
-    }
-
-    /**
      * This will get the objects id.
      *
      * @return The object's id.
@@ -105,7 +95,7 @@ public class COSObjectKey implements Comparable<COSObjectKey>
     @Override
     public String toString()
     {
-        return Long.toString(number) + " " +  Integer.toString(generation) + " R";
+        return number + " " + generation + " R";
     }
 
     @Override

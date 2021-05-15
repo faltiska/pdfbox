@@ -57,6 +57,11 @@ import org.bouncycastle.asn1.ocsp.OCSPObjectIdentifiers;
 import org.bouncycastle.cert.ocsp.BasicOCSPResp;
 import org.bouncycastle.cert.ocsp.OCSPException;
 import org.bouncycastle.cert.ocsp.OCSPResp;
+import org.bouncycastle.cms.CMSException;
+import org.bouncycastle.cms.CMSSignedData;
+import org.bouncycastle.tsp.TSPException;
+import org.bouncycastle.tsp.TimeStampToken;
+import org.bouncycastle.tsp.TimeStampTokenInfo;
 
 /**
  * An example for adding Validation Information to a signed PDF, inspired by ETSI TS 102 778-4
@@ -98,12 +103,28 @@ public class AddValidationInformation
     {
         if (inFile == null || !inFile.exists())
         {
-            throw new FileNotFoundException("Document for signing does not exist");
+            String err = "Document for signing ";
+            if (null == inFile)
+            {
+                err += "is null";
+            }
+            else
+            {
+                err += "does not exist: " + inFile.getAbsolutePath();
+            }
+            throw new FileNotFoundException(err);
         }
 
         try (PDDocument doc = Loader.loadPDF(inFile);
-                FileOutputStream fos = new FileOutputStream(outFile))
+             FileOutputStream fos = new FileOutputStream(outFile))
         {
+            int accessPermissions = SigUtils.getMDPPermission(doc);
+            if (accessPermissions == 1)
+            {
+                System.out.println("PDF is certified to forbid changes, "
+                        + "some readers may report the document as invalid despite that "
+                        + "the PDF specification allows DSS additions");
+            }
             document = doc;
             doValidation(inFile.getAbsolutePath(), fos);
         }
@@ -113,7 +134,6 @@ public class AddValidationInformation
      * Fetches certificate information from the last signature of the document and appends a DSS
      * with the validation information to the document.
      *
-     * @param document containing the Signature
      * @param filename in file to extract signature
      * @param output where to write the changed document
      * @throws IOException
@@ -129,9 +149,17 @@ public class AddValidationInformation
             {
                 certInfo = certInformationHelper.getLastCertInfo(signature, filename);
                 signDate = signature.getSignDate();
+                if ("ETSI.RFC3161".equals(signature.getSubFilter()))
+                {
+                    byte[] contents = signature.getContents();
+                    TimeStampToken timeStampToken = new TimeStampToken(new CMSSignedData(contents));
+                    TimeStampTokenInfo timeStampInfo = timeStampToken.getTimeStampInfo();
+                    signDate = Calendar.getInstance();
+                    signDate.setTime(timeStampInfo.getGenTime());
+                }
             }
         }
-        catch (CertificateProccessingException e)
+        catch (TSPException | CMSException | CertificateProccessingException e)
         {
             throw new IOException("An Error occurred processing the Signature", e);
         }
@@ -584,7 +612,7 @@ public class AddValidationInformation
         String name = inFile.getName();
         String substring = name.substring(0, name.lastIndexOf('.'));
 
-        File outFile = new File(inFile.getParent(), substring + "_ocsp.pdf");
+        File outFile = new File(inFile.getParent(), substring + "_LTV.pdf");
         addOcspInformation.validateSignature(inFile, outFile);
     }
 

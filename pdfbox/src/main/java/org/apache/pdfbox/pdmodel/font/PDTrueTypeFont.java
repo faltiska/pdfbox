@@ -42,9 +42,10 @@ import org.apache.pdfbox.pdmodel.font.encoding.BuiltInEncoding;
 import org.apache.pdfbox.pdmodel.font.encoding.Encoding;
 import org.apache.pdfbox.pdmodel.font.encoding.GlyphList;
 import org.apache.pdfbox.pdmodel.font.encoding.MacOSRomanEncoding;
+import org.apache.pdfbox.pdmodel.font.encoding.MacRomanEncoding;
 import org.apache.pdfbox.pdmodel.font.encoding.StandardEncoding;
 import org.apache.pdfbox.pdmodel.font.encoding.Type1Encoding;
-
+import org.apache.pdfbox.pdmodel.font.encoding.WinAnsiEncoding;
 
 import static org.apache.pdfbox.pdmodel.font.UniUtil.getUniNameOfCodePoint;
 
@@ -581,8 +582,32 @@ public class PDTrueTypeFont extends PDSimpleFont implements PDVectorFont
         }
         else // symbolic
         {
+            // PDFBOX-4755 / PDF.js #5501
+            // PDFBOX-3965: fallback for font has that the symbol flag but isn't
+            if (cmapWinUnicode != null)
+            {
+                if (encoding instanceof WinAnsiEncoding || encoding instanceof MacRomanEncoding)
+                {
+                    String name = encoding.getName(code);
+                    if (".notdef".equals(name))
+                    {
+                        return 0;
+                    }
+                    String unicode = GlyphList.getAdobeGlyphList().toUnicode(name);
+                    if (unicode != null)
+                    {
+                        int uni = unicode.codePointAt(0);
+                        gid = cmapWinUnicode.getGlyphId(uni);
+                    }
+                }
+                else
+                {
+                    gid = cmapWinUnicode.getGlyphId(code);
+                }
+            }
+
             // (3, 0) - (Windows, Symbol)
-            if (cmapWinSymbol != null)
+            if (gid == 0 && cmapWinSymbol != null)
             {
                 gid = cmapWinSymbol.getGlyphId(code);
                 if (code >= 0 && code <= 0xFF)
@@ -612,28 +637,6 @@ public class PDTrueTypeFont extends PDSimpleFont implements PDVectorFont
             if (gid == 0 && cmapMacRoman != null)
             {
                 gid = cmapMacRoman.getGlyphId(code);
-            }
-
-            // PDFBOX-4755 / PDF.js #5501
-            if (gid == 0 && cmapWinUnicode != null)
-            {
-                gid = cmapWinUnicode.getGlyphId(code);
-            }
-
-            // PDFBOX-3965: fallback for font has that the symbol flag but isn't
-            if (gid == 0 && cmapWinUnicode != null && encoding != null)
-            {
-                String name = encoding.getName(code);
-                if (".notdef".equals(name))
-                {
-                    return 0;
-                }
-                String unicode = GlyphList.getAdobeGlyphList().toUnicode(name);
-                if (unicode != null)
-                {
-                    int uni = unicode.codePointAt(0);
-                    gid = cmapWinUnicode.getGlyphId(uni);
-                }
             }
         }
 

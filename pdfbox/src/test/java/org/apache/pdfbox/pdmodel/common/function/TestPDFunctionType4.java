@@ -16,17 +16,19 @@
  */
 package org.apache.pdfbox.pdmodel.common.function;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import junit.framework.TestCase;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSStream;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests the {@link PDFunctionType4} class.
  */
-public class TestPDFunctionType4 extends TestCase
+class TestPDFunctionType4
 {
 
     private PDFunctionType4 createFunction(String function, float[] domain, float[] range)
@@ -54,7 +56,8 @@ public class TestPDFunctionType4 extends TestCase
      * Checks the {@link PDFunctionType4}.
      * @throws Exception if an error occurs
      */
-    public void testFunctionSimple() throws Exception
+    @Test
+    void testFunctionSimple() throws Exception
     {
         String functionText = "{ add }";
         //Simply adds the two arguments and returns the result
@@ -86,7 +89,8 @@ public class TestPDFunctionType4 extends TestCase
      * Checks the handling of the argument order for a {@link PDFunctionType4}.
      * @throws Exception if an error occurs
      */
-    public void testFunctionArgumentOrder() throws Exception
+    @Test
+    void testFunctionArgumentOrder() throws Exception
     {
         String functionText = "{ pop }";
         // pops an argument (2nd) and returns the next argument (1st)

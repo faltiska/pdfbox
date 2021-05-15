@@ -17,35 +17,45 @@
 
 package org.apache.pdfbox.cos;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.io.IOException;
+
+import org.junit.jupiter.api.Test;
 
 /**
  * Test class for {@link COSNumber}
  */
-public abstract class TestCOSNumber extends TestCOSBase
+abstract class TestCOSNumber extends TestCOSBase
 {
     /**
      * Test floatValue() - test that the correct float value is returned.
      */
-    public abstract void testFloatValue();
+    abstract void testFloatValue();
 
     /**
      * Test intValue() - test that the correct int value is returned.
      */
-    public abstract void testIntValue();
+    abstract void testIntValue();
 
     /**
      * Test longValue() - test that the correct long value is returned.
      */
-    public abstract void testLongValue();
+    abstract void testLongValue();
 
     /**
      * Tests get() - tests a static constructor for COSNumber classes.
      */
-    public void testGet()
+    @Test
+    void testGet()
     {
         try
         {
+            
             // Ensure the basic static numbers are recognized
             assertEquals(COSInteger.ZERO, COSNumber.get("0"));
             assertEquals(COSInteger.ONE, COSNumber.get("1"));
@@ -64,16 +74,10 @@ public abstract class TestCOSNumber extends TestCOSBase
             // but obviously there some
             assertNotNull(COSNumber.get("-2e-006"));
             assertNotNull(COSNumber.get("-8e+05"));
-            try
-            {
-                assertEquals("Null Value...", COSNumber.get(null));
-                fail("Failed to throw a NullPointerException");
-            }
-            catch (NullPointerException e)
-            {
-                // PASS
-            }
 
+            assertThrows(NullPointerException.class, () -> {
+                    COSNumber.get(null);
+            });
         }
         catch (IOException e)
         {
@@ -86,9 +90,24 @@ public abstract class TestCOSNumber extends TestCOSBase
      * 
      * @throws IOException
      */
-    public void testLargeNumber() throws IOException
+    @Test
+    void testLargeNumber() throws IOException
     {
         assertNull(COSNumber.get("18446744073307448448"));
         assertNull(COSNumber.get("-18446744073307448448"));
     }
+
+    @Test
+    void testInvalidNumber()
+    {
+        try
+        {
+            COSNumber.get("18446744073307F448448");
+            fail("Was expecting an IOException");
+        }
+        catch (IOException e)
+        {
+        }
+    }
+
 }

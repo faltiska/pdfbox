@@ -28,24 +28,25 @@ import java.util.Arrays;
 import java.util.Locale;
 
 import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdfwriter.compress.CompressParameters;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test case introduced with PDFBOX-1581.
  * 
  */
-public class TestPDDocument
+class TestPDDocument
 {
     static private final File TESTRESULTSDIR = new File("target/test-output");
 
-    @BeforeClass
+    @BeforeAll
     static public void setUp() throws Exception
     {
         TESTRESULTSDIR.mkdirs();
@@ -56,7 +57,7 @@ public class TestPDDocument
      * @throws IOException if something went wrong
      */
     @Test
-    public void testSaveLoadStream() throws IOException
+    void testSaveLoadStream() throws IOException
     {
         ByteArrayOutputStream baos;
         // Create PDF with one blank page
@@ -65,7 +66,7 @@ public class TestPDDocument
             document.addPage(new PDPage());
             // Save
             baos = new ByteArrayOutputStream();
-            document.save(baos);
+            document.save(baos, CompressParameters.NO_COMPRESSION);
         }
 
         // Verify content
@@ -86,7 +87,7 @@ public class TestPDDocument
      * @throws IOException if something went wrong
      */
     @Test
-    public void testSaveLoadFile() throws IOException
+    void testSaveLoadFile() throws IOException
     {
         File targetFile = new File(TESTRESULTSDIR, "pddocument-saveloadfile.pdf");
 
@@ -94,7 +95,7 @@ public class TestPDDocument
         try (PDDocument document = new PDDocument())
         {
             document.addPage(new PDPage());
-            document.save(targetFile);
+            document.save(targetFile, CompressParameters.NO_COMPRESSION);
         }
 
         // Verify content
@@ -118,7 +119,7 @@ public class TestPDDocument
      * @throws IOException if something went wrong
      */
     @Test
-    public void testVersions() throws IOException
+    void testVersions() throws IOException
     {
         // test default version
         try (PDDocument document = new PDDocument())
@@ -162,15 +163,14 @@ public class TestPDDocument
      * @throws java.io.IOException
      */
     @Test
-    public void testDeleteBadFile() throws IOException
+    void testDeleteBadFile() throws IOException
     {
         File f = new File(TESTRESULTSDIR, "testDeleteBadFile.pdf");
-        System.out.println("f: " + f.getAbsolutePath());
         try (PrintWriter pw = new PrintWriter(new FileOutputStream(f)))
         {
             pw.write("<script language='JavaScript'>");
         }
-        assertThrows("parsing should fail", IOException.class, () -> Loader.loadPDF(f));
+        assertThrows(IOException.class, () -> Loader.loadPDF(f), "parsing should fail");
         try
         {
             Files.delete(f.toPath());
@@ -187,7 +187,7 @@ public class TestPDDocument
      * @throws java.io.IOException
      */
     @Test
-    public void testDeleteGoodFile() throws IOException
+    void testDeleteGoodFile() throws IOException
     {
         File f = new File(TESTRESULTSDIR, "testDeleteGoodFile.pdf");
         try (PDDocument doc = new PDDocument())
@@ -215,7 +215,7 @@ public class TestPDDocument
      * @throws java.io.IOException
      */
     @Test
-    public void testSaveArabicLocale() throws IOException
+    void testSaveArabicLocale() throws IOException
     {
         Locale defaultLocale = Locale.getDefault();
         Locale arabicLocale = new Locale.Builder().setLanguageTag("ar-EG-u-nu-arab").build();

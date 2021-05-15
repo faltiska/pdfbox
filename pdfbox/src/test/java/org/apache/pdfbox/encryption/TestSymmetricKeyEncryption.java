@@ -16,6 +16,13 @@
  */
 package org.apache.pdfbox.encryption;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -30,7 +37,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import javax.crypto.Cipher;
-import junit.framework.TestCase;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.Loader;
@@ -50,7 +57,9 @@ import org.apache.pdfbox.pdmodel.encryption.StandardProtectionPolicy;
 import org.apache.pdfbox.pdmodel.encryption.StandardSecurityHandler;
 import org.apache.pdfbox.pdmodel.graphics.image.ValidateXImage;
 import org.apache.pdfbox.rendering.PDFRenderer;
-import org.junit.Assert;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
 
 /**
  * Tests for symmetric key encryption.
@@ -64,25 +73,22 @@ import org.junit.Assert;
  * @author Tilman Hausherr
  *
  */
-public class TestSymmetricKeyEncryption extends TestCase
+class TestSymmetricKeyEncryption
 {
     /**
      * Logger instance.
      */
     private static final Log LOG = LogFactory.getLog(TestSymmetricKeyEncryption.class);
 
-    private final File testResultsDir = new File("target/test-output/crypto");
+    private static final File testResultsDir = new File("target/test-output/crypto");
 
-    private AccessPermission permission;
+    private static AccessPermission permission;
 
     static final String USERPASSWORD = "1234567890abcdefghijk1234567890abcdefghijk";
     static final String OWNERPASSWORD = "abcdefghijk1234567890abcdefghijk1234567890";
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void setUp() throws Exception
+    @BeforeAll
+    static void setUp() throws Exception
     {
         testResultsDir.mkdirs();
 
@@ -115,7 +121,8 @@ public class TestSymmetricKeyEncryption extends TestCase
      * 
      * @throws java.io.IOException
      */
-    public void testPermissions() throws IOException
+    @Test
+    void testPermissions() throws IOException
     {
         AccessPermission fullAP = new AccessPermission();
         AccessPermission restrAP = new AccessPermission();
@@ -198,21 +205,23 @@ public class TestSymmetricKeyEncryption extends TestCase
      *
      * @throws Exception If there is an unexpected error during the test.
      */
-    public void testProtection() throws Exception
+    @Test
+    void testProtection() throws Exception
     {
-        byte[] inputFileAsByteArray = getFileResourceAsByteArray("Acroform-PDFBOX-2333.pdf");
+        String filename = "Acroform-PDFBOX-2333.pdf";
+        byte[] inputFileAsByteArray = getFileResourceAsByteArray(filename);
         int sizePriorToEncryption = inputFileAsByteArray.length;
 
-        testSymmEncrForKeySize(40, false, sizePriorToEncryption, inputFileAsByteArray, 
+        testSymmEncrForKeySize(filename, 40, false, sizePriorToEncryption, inputFileAsByteArray,
                 USERPASSWORD, OWNERPASSWORD, permission);
 
-        testSymmEncrForKeySize(128, false, sizePriorToEncryption, inputFileAsByteArray, 
+        testSymmEncrForKeySize(filename, 128, false, sizePriorToEncryption, inputFileAsByteArray,
                 USERPASSWORD, OWNERPASSWORD, permission);
 
-        testSymmEncrForKeySize(128, true, sizePriorToEncryption, inputFileAsByteArray, 
+        testSymmEncrForKeySize(filename, 128, true, sizePriorToEncryption, inputFileAsByteArray,
                 USERPASSWORD, OWNERPASSWORD, permission);
 
-        testSymmEncrForKeySize(256, true, sizePriorToEncryption, inputFileAsByteArray, 
+        testSymmEncrForKeySize(filename, 256, true, sizePriorToEncryption, inputFileAsByteArray,
                 USERPASSWORD, OWNERPASSWORD, permission);
     }
 
@@ -227,12 +236,14 @@ public class TestSymmetricKeyEncryption extends TestCase
      *
      * @throws IOException
      */
-    public void testPDFBox4308() throws IOException
+    @Test
+    void testPDFBox4308() throws IOException
     {
-        byte[] inputFileAsByteArray = Files.readAllBytes(Paths.get("target/pdfs/PDFBOX-4308.pdf"));
+        String filename = "PDFBOX-4308.pdf";
+        byte[] inputFileAsByteArray = Files.readAllBytes(Paths.get("target/pdfs/" + filename));
         int sizePriorToEncryption = inputFileAsByteArray.length;
 
-        testSymmEncrForKeySize(40, false, sizePriorToEncryption, inputFileAsByteArray,
+        testSymmEncrForKeySize(filename, 40, false, sizePriorToEncryption, inputFileAsByteArray,
                 USERPASSWORD, OWNERPASSWORD, permission);
     }
 
@@ -242,7 +253,8 @@ public class TestSymmetricKeyEncryption extends TestCase
      *
      * @throws Exception If there is an unexpected error during the test.
      */
-    public void testProtectionInnerAttachment() throws Exception
+    @Test
+    void testProtectionInnerAttachment() throws Exception
     {
         String testFileName = "preEnc_20141025_105451.pdf";
         byte[] inputFileWithEmbeddedFileAsByteArray = getFileResourceAsByteArray(testFileName);
@@ -270,7 +282,8 @@ public class TestSymmetricKeyEncryption extends TestCase
      * 
      * @throws IOException 
      */
-    public void testPDFBox4453() throws IOException
+    @Test
+    void testPDFBox4453() throws IOException
     {
         final int TESTCOUNT = 1000;
         File file = new File(testResultsDir,"PDFBOX-4453.pdf");
@@ -300,24 +313,24 @@ public class TestSymmetricKeyEncryption extends TestCase
 
         try (PDDocument doc = Loader.loadPDF(file))
         {
-            Assert.assertTrue(doc.isEncrypted());
+            assertTrue(doc.isEncrypted());
             for (int i = 0; i < TESTCOUNT; ++i)
             {
                 COSDictionary dict =
                         doc.getPage(0).getCOSObject().getCOSDictionary(COSName.getPDFName("_Test-" + i));
-                Assert.assertEquals("3", dict.getString("key1"));
-                Assert.assertEquals("0", dict.getString("key2"));
+                assertEquals("3", dict.getString("key1"));
+                assertEquals("0", dict.getString("key2"));
             }
         }
     }
 
-    private void testSymmEncrForKeySize(int keyLength, boolean preferAES,
+    private void testSymmEncrForKeySize(String filename, int keyLength, boolean preferAES,
             int sizePriorToEncr, byte[] inputFileAsByteArray,
             String userpassword, String ownerpassword,
             AccessPermission permission) throws IOException
     {
         PDDocument document = Loader.loadPDF(inputFileAsByteArray);
-        String prefix = "Simple-";
+        String prefix = filename + "-Simple-";
         int numSrcPages = document.getNumberOfPages();
         PDFRenderer pdfRenderer = new PDFRenderer(document);
         List<BufferedImage> srcImgTab = new ArrayList<>();
@@ -334,7 +347,7 @@ public class TestSymmetricKeyEncryption extends TestCase
         try (PDDocument encryptedDoc = encrypt(keyLength, preferAES, sizePriorToEncr, document,
                 prefix, permission, userpassword, ownerpassword))
         {
-            Assert.assertEquals(numSrcPages, encryptedDoc.getNumberOfPages());
+            assertEquals(numSrcPages, encryptedDoc.getNumberOfPages());
             pdfRenderer = new PDFRenderer(encryptedDoc);
             for (int i = 0; i < encryptedDoc.getNumberOfPages(); ++i)
             {
@@ -346,9 +359,7 @@ public class TestSymmetricKeyEncryption extends TestCase
                 try (InputStream unfilteredStream = encryptedDoc.getPage(i).getContents())
                 {
                     byte[] bytes = IOUtils.toByteArray(unfilteredStream);
-                    Assert.assertArrayEquals("content stream of page " + i + " not identical",
-                            srcContentStreamTab.get(i),
-                            bytes);
+                    assertArrayEquals(srcContentStreamTab.get(i),bytes, "content stream of page " + i + " not identical");
                 }
             }
             
@@ -379,14 +390,13 @@ public class TestSymmetricKeyEncryption extends TestCase
         doc.save(pdfFile);
         doc.close();
         long sizeEncrypted = pdfFile.length();
-        Assert.assertTrue(keyLength
-                + "-bit " + (preferAES ? "AES" : "RC4") + " encrypted pdf should not have same size as plain one",
-                sizeEncrypted != sizePriorToEncr);
+        assertNotEquals(sizeEncrypted, sizePriorToEncr,
+            keyLength + "-bit " + (preferAES ? "AES" : "RC4") + " encrypted pdf should not have same size as plain one");
 
         // test with owner password => full permissions
         PDDocument encryptedDoc = Loader.loadPDF(pdfFile, ownerpassword);
-        Assert.assertTrue(encryptedDoc.isEncrypted());
-        Assert.assertTrue(encryptedDoc.getCurrentAccessPermission().isOwnerPermission());
+        assertTrue(encryptedDoc.isEncrypted());
+        assertTrue(encryptedDoc.getCurrentAccessPermission().isOwnerPermission());
 
         // Older encryption allows to get the user password when the owner password is known
         PDEncryption encryption = encryptedDoc.getEncryption();
@@ -400,15 +410,15 @@ public class TestSymmetricKeyEncryption extends TestCase
                     encryption.getOwnerKey(),
                     revision,
                     keyLengthInBytes);
-            Assert.assertEquals(userpassword.substring(0, 32), new String(computedUserPassword, StandardCharsets.ISO_8859_1));
+            assertEquals(userpassword.substring(0, 32), new String(computedUserPassword, StandardCharsets.ISO_8859_1));
         }
 
         encryptedDoc.close();
 
         // test with user password => restricted permissions
         encryptedDoc = Loader.loadPDF(pdfFile, userpassword);
-        Assert.assertTrue(encryptedDoc.isEncrypted());
-        Assert.assertFalse(encryptedDoc.getCurrentAccessPermission().isOwnerPermission());
+        assertTrue(encryptedDoc.isEncrypted());
+        assertFalse(encryptedDoc.getCurrentAccessPermission().isOwnerPermission());
 
         assertEquals(permission.getPermissionBytes(), encryptedDoc.getCurrentAccessPermission().getPermissionBytes());
 
@@ -423,7 +433,7 @@ public class TestSymmetricKeyEncryption extends TestCase
         PDDocumentNameDictionary names = catalog.getNames();
         PDEmbeddedFilesNameTreeNode embeddedFiles = names.getEmbeddedFiles();
         Map<String, PDComplexFileSpecification> embeddedFileNames = embeddedFiles.getNames();
-        Assert.assertEquals(1, embeddedFileNames.size());
+        assertEquals(1, embeddedFileNames.size());
         Map.Entry<String, PDComplexFileSpecification> entry = embeddedFileNames.entrySet().iterator().next();
         LOG.info("Processing embedded file " + entry.getKey() + ":");
         PDComplexFileSpecification complexFileSpec = entry.getValue();
@@ -456,11 +466,11 @@ public class TestSymmetricKeyEncryption extends TestCase
             
             File extractedEmbeddedFile = extractEmbeddedFile(new FileInputStream(decryptedFile), "decryptedInnerFile-" + keyLength + "-bit-" + (preferAES ? "AES" : "RC4") + ".pdf");
             
-            Assert.assertEquals(keyLength + "-bit " + (preferAES ? "AES" : "RC4") + " decrypted inner attachment pdf should have same size as plain one",
-                    embeddedFilePriorToEncryption.length(), extractedEmbeddedFile.length());
+            assertEquals(embeddedFilePriorToEncryption.length(), extractedEmbeddedFile.length(),
+                    keyLength + "-bit " + (preferAES ? "AES" : "RC4") + " decrypted inner attachment pdf should have same size as plain one");
             
             // compare the two embedded files
-            Assert.assertArrayEquals(
+            assertArrayEquals(
                     getFileAsByteArray(embeddedFilePriorToEncryption),
                     getFileAsByteArray(extractedEmbeddedFile));
         }

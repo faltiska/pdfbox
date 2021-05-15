@@ -21,6 +21,12 @@
 
 package org.apache.xmpbox;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
@@ -31,10 +37,7 @@ import org.apache.xmpbox.schema.XMPSchema;
 import org.apache.xmpbox.xml.DomXmpParser;
 import org.apache.xmpbox.xml.XmpParsingException;
 import org.apache.xmpbox.xml.XmpSerializationException;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.w3c.dom.Document;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test XMP MetaData Transformer
@@ -42,19 +45,14 @@ import org.w3c.dom.Document;
  * @author a183132
  * 
  */
-public class XMPMetaDataTest
+class XMPMetaDataTest
 {
-
-    protected XMPMetadata metadata;
-    protected Document parent;
-    protected XMPSchema tmp, tmp2;
-
-    @Before
-    public void init() throws Exception
+    @Test
+    void testAddingSchem()
     {
-        metadata = XMPMetadata.createXMPMetadata();
+        XMPMetadata metadata = XMPMetadata.createXMPMetadata();
         String tmpNsURI = "http://www.test.org/schem/";
-        tmp = new XMPSchema(metadata, tmpNsURI, "test");
+        XMPSchema tmp = new XMPSchema(metadata, tmpNsURI, "test");
         tmp.addQualifiedBagValue("BagContainer", "Value1");
         tmp.addQualifiedBagValue("BagContainer", "Value2");
         tmp.addQualifiedBagValue("BagContainer", "Value3");
@@ -65,7 +63,7 @@ public class XMPMetaDataTest
 
         tmp.addProperty(metadata.getTypeMapping().createText(null, "test", "simpleProperty", "YEP"));
 
-        tmp2 = new XMPSchema(metadata, "http://www.space.org/schem/", "space", "space");
+        XMPSchema tmp2 = new XMPSchema(metadata, "http://www.space.org/schem/", "space", "space");
         tmp2.addUnqualifiedSequenceValue("SeqSpContainer", "ValueSpace1");
         tmp2.addUnqualifiedSequenceValue("SeqSpContainer", "ValueSpace2");
         tmp2.addUnqualifiedSequenceValue("SeqSpContainer", "ValueSpace3");
@@ -75,17 +73,12 @@ public class XMPMetaDataTest
         metadata.addSchema(tmp2);
 
         // Check schema getting
-        Assert.assertEquals(tmp, metadata.getSchema(tmpNsURI));
-        Assert.assertNull(metadata.getSchema("THIS URI NOT EXISTS !"));
-    }
-
-    @Test
-    public void testAddingSchem()
-    {
+        assertEquals(tmp, metadata.getSchema(tmpNsURI));
+        assertNull(metadata.getSchema("THIS URI NOT EXISTS !"));
 
         List<XMPSchema> vals = metadata.getAllSchemas();
-        Assert.assertTrue(vals.contains(tmp));
-        Assert.assertTrue(vals.contains(tmp2));
+        assertTrue(vals.contains(tmp));
+        assertTrue(vals.contains(tmp2));
     }
 
     /*
@@ -96,27 +89,31 @@ public class XMPMetaDataTest
      * }
      */
 
-    @Test(expected = org.apache.xmpbox.xml.XmpSerializationException.class)
-    public void testTransformerExceptionMessage() throws XmpSerializationException
+    @Test
+    void testTransformerExceptionMessage() throws XmpSerializationException
     {
-        throw new XmpSerializationException("TEST");
-    }
-
-    @Test(expected = org.apache.xmpbox.xml.XmpSerializationException.class)
-    public void testTransformerExceptionWithCause() throws XmpSerializationException
-    {
-        throw new XmpSerializationException("TEST", new Throwable());
+        assertThrows(org.apache.xmpbox.xml.XmpSerializationException.class, () -> {
+	        throw new XmpSerializationException("TEST");
+	    });  
     }
 
     @Test
-    public void testInitMetaDataWithInfo() throws Exception
+    void testTransformerExceptionWithCause() throws XmpSerializationException
+    {
+        assertThrows(org.apache.xmpbox.xml.XmpSerializationException.class, () -> {
+	        throw new XmpSerializationException("TEST", new Throwable());
+	    });
+    }
+
+    @Test
+    void testInitMetaDataWithInfo() throws Exception
     {
         String xpacketBegin = "TESTBEG", xpacketId = "TESTID", xpacketBytes = "TESTBYTES", xpacketEncoding = "TESTENCOD";
-        metadata = XMPMetadata.createXMPMetadata(xpacketBegin, xpacketId, xpacketBytes, xpacketEncoding);
-        Assert.assertEquals(xpacketBegin, metadata.getXpacketBegin());
-        Assert.assertEquals(xpacketId, metadata.getXpacketId());
-        Assert.assertEquals(xpacketBytes, metadata.getXpacketBytes());
-        Assert.assertEquals(xpacketEncoding, metadata.getXpacketEncoding());
+        XMPMetadata metadata = XMPMetadata.createXMPMetadata(xpacketBegin, xpacketId, xpacketBytes, xpacketEncoding);
+        assertEquals(xpacketBegin, metadata.getXpacketBegin());
+        assertEquals(xpacketId, metadata.getXpacketId());
+        assertEquals(xpacketBytes, metadata.getXpacketBytes());
+        assertEquals(xpacketEncoding, metadata.getXpacketEncoding());
     }
     
     /**
@@ -128,7 +125,7 @@ public class XMPMetaDataTest
      * @throws XmpParsingException 
      */
     @Test
-    public void testPDFBOX3257() throws IOException, XmpParsingException
+    void testPDFBOX3257() throws IOException, XmpParsingException
     {
         // taken from file test-landscape2.pdf
         String xmpmeta = "<?xpacket id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n"
@@ -183,12 +180,12 @@ public class XMPMetaDataTest
         Calendar createDate1 = basicSchema.getCreateDate();
         basicSchema.setCreateDate(new GregorianCalendar());
         Calendar createDate2 = basicSchema.getCreateDate();
-        Assert.assertFalse("CreateDate has not been set", createDate1.equals(createDate2));
+        assertNotEquals(createDate1, createDate2, "CreateDate has not been set");
         
         // check that bugfix does not interfere with lists of properties with same name
         DublinCoreSchema dublinCoreSchema = xmp.getDublinCoreSchema();
         List<String> subjects = dublinCoreSchema.getSubjects();
-        Assert.assertEquals(4, subjects.size());
+        assertEquals(4, subjects.size());
     }
 
 }

@@ -21,43 +21,52 @@
 
 package org.apache.xmpbox.schema;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.stream.Stream;
 
 import org.apache.xmpbox.XMPMetadata;
 import org.apache.xmpbox.type.PropertyType;
 import org.apache.xmpbox.type.Types;
-import org.junit.Before;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RunWith(Parameterized.class)
-public class PDFAIdentificationTest extends AbstractXMPSchemaTest
+class PDFAIdentificationTest
 {
+    private XMPMetadata metadata;
+    private XMPSchema schema;
+    private Class<?> schemaClass;
 
-    @Before
-    public void initTempMetaData() throws Exception
+    @BeforeEach
+    void initMetadata()
     {
         metadata = XMPMetadata.createXMPMetadata();
         schema = metadata.createAndAddPFAIdentificationSchema();
         schemaClass = PDFAIdentificationSchema.class;
     }
-
-    @Parameters
-    public static Collection<Object[]> initializeParameters() throws Exception
+    
+    @ParameterizedTest
+    @MethodSource("initializeParameters")
+    void testElementValue(String property, PropertyType type, Object value) throws Exception
     {
-        List<Object[]> data = new ArrayList<>();
-        data.add(wrapProperty("part", Types.Integer, 1));
-        data.add(wrapProperty("amd", Types.Text, "2005"));
-        data.add(wrapProperty("conformance", Types.Text, "B"));
-        return data;
+        XMPSchemaTester xmpSchemaTester = new XMPSchemaTester(metadata, schema, schemaClass, property, type, value);
+        xmpSchemaTester.testGetSetValue();
     }
 
-    public PDFAIdentificationTest(String property, PropertyType type, Object value)
+    @ParameterizedTest
+    @MethodSource("initializeParameters")
+    void testElementProperty(String property, PropertyType type, Object value) throws Exception
     {
-        super(property, type, value);
+        XMPSchemaTester xmpSchemaTester = new XMPSchemaTester(metadata, schema, schemaClass, property, type, value);
+        xmpSchemaTester.testGetSetProperty();
     }
 
+    static Stream<Arguments> initializeParameters() throws Exception
+    {
+        return Stream.of(
+            Arguments.of("part", XMPSchemaTester.createPropertyType(Types.Integer), 1),
+            Arguments.of("amd", XMPSchemaTester.createPropertyType(Types.Text), "2005"),
+            Arguments.of("conformance", XMPSchemaTester.createPropertyType(Types.Text), "B")
+        );
+    }
 }

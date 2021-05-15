@@ -17,22 +17,27 @@
 
 package org.apache.pdfbox.cos;
 
-import junit.framework.TestCase;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+
+import org.junit.jupiter.api.Test;
 
 /**
  * Test class for {@link COSBase}.
  */
-public abstract class TestCOSBase extends TestCase
+abstract class TestCOSBase
 {
     /** The COSBase abstraction of the object being tested. */
-    protected COSBase testCOSBase;
+    protected static COSBase testCOSBase;
 
     /**
      * Tests getCOSObject() - tests that the underlying object is returned.
      */
-    public void testGetCOSObject()
+    @Test
+    void testGetCOSObject()
     {
         assertEquals(testCOSBase, testCOSBase.getCOSObject());
     }
@@ -40,12 +45,13 @@ public abstract class TestCOSBase extends TestCase
     /**
      * Test accept() - tests the interface for visiting a document at the COS level.
      */
-    public abstract void testAccept() throws IOException;
+    abstract void testAccept() throws IOException;
 
     /**
      * Tests isDirect() and setDirect() - tests the getter/setter methods.
      */
-    public void testIsSetDirect()
+    @Test
+    void testIsSetDirect()
     {
         testCOSBase.setDirect(true);
         assertTrue(testCOSBase.isDirect());
@@ -58,6 +64,7 @@ public abstract class TestCOSBase extends TestCase
      * @param byteArr1 the expected byte array
      * @param byteArr2 the byte array being compared
      */
+    @SuppressWarnings({"java:S5863"}) // don't flag tests for reflexivity
     protected void testByteArrays(byte[] byteArr1, byte[] byteArr2)
     {
         assertEquals(byteArr1.length, byteArr1.length);

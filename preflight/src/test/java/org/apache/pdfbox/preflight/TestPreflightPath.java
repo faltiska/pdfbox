@@ -21,17 +21,17 @@
 
 package org.apache.pdfbox.preflight;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class TestPreflightPath
+class TestPreflightPath
 {
 
     @Test
-    public void test()
+    void test()
     {
         PreflightPath path = new PreflightPath();
 
@@ -81,7 +81,7 @@ public class TestPreflightPath
     }
 
     @Test
-    public void testPush()
+    void testPush()
     {
         PreflightPath path = new PreflightPath();
         assertTrue(path.pushObject("a"));

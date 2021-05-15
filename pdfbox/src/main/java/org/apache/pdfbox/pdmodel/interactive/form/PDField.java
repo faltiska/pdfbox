@@ -25,7 +25,6 @@ import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.cos.COSStream;
 import org.apache.pdfbox.cos.COSString;
-import org.apache.pdfbox.pdmodel.common.COSArrayList;
 import org.apache.pdfbox.pdmodel.common.COSObjectable;
 import org.apache.pdfbox.pdmodel.fdf.FDFField;
 import org.apache.pdfbox.pdmodel.interactive.action.PDFormFieldAdditionalActions;
@@ -224,12 +223,8 @@ public abstract class PDField implements COSObjectable
      */
     public PDFormFieldAdditionalActions getActions()
     {
-        COSDictionary aa = (COSDictionary) dictionary.getDictionaryObject(COSName.AA);
-        if (aa != null)
-        {
-            return new PDFormFieldAdditionalActions(aa);
-        }
-        return null;
+        COSDictionary aa = dictionary.getCOSDictionary(COSName.AA);
+        return aa != null ? new PDFormFieldAdditionalActions(aa) : null;
     }
 
    /**
@@ -260,7 +255,7 @@ public abstract class PDField implements COSObjectable
             }
             else if (fieldValue instanceof COSArray && this instanceof PDChoice)
             {
-                ((PDChoice) this).setValue(COSArrayList.convertCOSStringCOSArrayToList((COSArray) fieldValue));
+                ((PDChoice) this).setValue(((COSArray) fieldValue).toCOSStringStringList());
             }
             else
             {
@@ -336,7 +331,7 @@ public abstract class PDField implements COSObjectable
     PDField findKid(String[] name, int nameIndex)
     {
         PDField retval = null;
-        COSArray kids = (COSArray) dictionary.getDictionaryObject(COSName.KIDS);
+        COSArray kids = dictionary.getCOSArray(COSName.KIDS);
         if (kids != null)
         {
             for (int i = 0; retval == null && i < kids.size(); i++)
@@ -386,13 +381,20 @@ public abstract class PDField implements COSObjectable
     {
         return dictionary.getString(COSName.T);
     }
+
     /**
      * This will set the partial name of the field.
      * 
      * @param name The new name for the field.
+     * @throws IllegalArgumentException If the name contains a period character.
      */
     public void setPartialName(String name)
     {
+        if (name.contains("."))
+        {
+            throw new IllegalArgumentException(
+                    "A field partial name shall not contain a period character: " + name);
+        }
         dictionary.setString(COSName.T, name);
     }
 

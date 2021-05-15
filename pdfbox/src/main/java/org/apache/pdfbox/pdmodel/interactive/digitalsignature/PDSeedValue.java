@@ -16,14 +16,13 @@
  */
 package org.apache.pdfbox.pdmodel.interactive.digitalsignature;
 
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.pdfbox.cos.COSArray;
-import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
-import org.apache.pdfbox.pdmodel.common.COSArrayList;
 import org.apache.pdfbox.pdmodel.common.COSObjectable;
 
 /**
@@ -33,6 +32,14 @@ import org.apache.pdfbox.pdmodel.common.COSObjectable;
  */
 public class PDSeedValue implements COSObjectable
 {
+
+    private static final List<String> allowedDigestNames = Arrays.asList(
+            COSName.DIGEST_SHA1.getName(), //
+            COSName.DIGEST_SHA256.getName(), //
+            COSName.DIGEST_SHA384.getName(), //
+            COSName.DIGEST_SHA512.getName(), //
+            COSName.DIGEST_RIPEMD160.getName());
+
     /**
      * A Ff flag.
      */
@@ -271,23 +278,8 @@ public class PDSeedValue implements COSObjectable
      */
     public List<String> getSubFilter()
     {
-        List<String> retval = null;
-        COSArray fields = (COSArray)dictionary.getDictionaryObject(COSName.SUB_FILTER);
-
-        if (fields != null)
-        {
-            List<String> actuals = new ArrayList<>();
-            for ( int i = 0; i < fields.size(); i++ )
-            {
-                String element = fields.getName(i);
-                if (element != null)
-                {
-                    actuals.add(element);
-                }
-            }
-            retval = new COSArrayList<>(actuals, fields);
-        }
-        return retval;
+        COSArray fields = dictionary.getCOSArray(COSName.SUB_FILTER);
+        return fields != null ? fields.toCOSNameStringList() : Collections.emptyList();
     }
 
     /**
@@ -297,9 +289,10 @@ public class PDSeedValue implements COSObjectable
      *
      * @param subfilter is the name that shall be used for encoding
      */
-    public void setSubFilter(List<COSName> subfilter)
+    public void setSubFilter(List<String> subfilter)
     {
-        dictionary.setItem(COSName.SUB_FILTER, COSArrayList.converterToCOSArray(subfilter));
+        dictionary.setItem(COSName.SUB_FILTER,
+                COSArray.ofCOSNames(subfilter));
     }
 
     /**
@@ -311,23 +304,8 @@ public class PDSeedValue implements COSObjectable
      */
     public List<String> getDigestMethod()
     {
-        List<String> retval = null;
-        COSArray fields = (COSArray)dictionary.getDictionaryObject(COSName.DIGEST_METHOD);
-
-        if (fields != null)
-        {
-            List<String> actuals = new ArrayList<>();
-            for ( int i = 0; i < fields.size(); i++ )
-            {
-                String element = fields.getName(i);
-                if (element != null)
-                {
-                    actuals.add(element);
-                }
-            }
-            retval = new COSArrayList<>(actuals, fields);
-        }
-        return retval;
+        COSArray fields = dictionary.getCOSArray(COSName.DIGEST_METHOD);
+        return fields != null ? fields.toCOSNameStringList() : Collections.emptyList();
     }
 
     /**
@@ -342,21 +320,19 @@ public class PDSeedValue implements COSObjectable
      * @param digestMethod is a list of possible names of the digests, that should be
      * used for signing.
      */
-    public void setDigestMethod(List<COSName> digestMethod)
+    public void setDigestMethod(List<String> digestMethod)
     {
         // integrity check
-        for ( COSName cosName : digestMethod )
+        for (String digestName : digestMethod)
         {
-            if (!(cosName.equals(COSName.DIGEST_SHA1) 
-                    || cosName.equals(COSName.DIGEST_SHA256)
-                    || cosName.equals(COSName.DIGEST_SHA384)
-                    || cosName.equals(COSName.DIGEST_SHA512)
-                    || cosName.equals(COSName.DIGEST_RIPEMD160)))
+            if (!allowedDigestNames.contains(digestName))
             {
-                throw new IllegalArgumentException("Specified digest " + cosName.getName() + " isn't allowed.");
+                throw new IllegalArgumentException(
+                        "Specified digest " + digestName + " isn't allowed.");
             }
         }
-        dictionary.setItem(COSName.DIGEST_METHOD, COSArrayList.converterToCOSArray(digestMethod));
+        dictionary.setItem(COSName.DIGEST_METHOD,
+                COSArray.ofCOSNames(digestMethod));
     }
 
     /**
@@ -400,23 +376,8 @@ public class PDSeedValue implements COSObjectable
      */
     public List<String> getReasons()
     {
-        List<String> retval = null;
-        COSArray fields = (COSArray)dictionary.getDictionaryObject(COSName.REASONS);
-
-        if (fields != null)
-        {
-            List<String> actuals = new ArrayList<>();
-            for ( int i = 0; i < fields.size(); i++ )
-            {
-                String element = fields.getString(i);
-                if (element != null)
-                {
-                    actuals.add(element);
-                }
-            }
-            retval = new COSArrayList<>(actuals, fields);
-        }
-        return retval;
+        COSArray fields = dictionary.getCOSArray(COSName.REASONS);
+        return fields != null ? fields.toCOSNameStringList() : Collections.emptyList();
     }
 
     /**
@@ -428,7 +389,7 @@ public class PDSeedValue implements COSObjectable
      */
     public void setReasons(List<String> reasons)
     {
-        dictionary.setItem(COSName.REASONS, COSArrayList.converterToCOSArray(reasons));
+        dictionary.setItem(COSName.REASONS, COSArray.ofCOSStrings(reasons));
     }
 
     /**
@@ -447,12 +408,7 @@ public class PDSeedValue implements COSObjectable
     public PDSeedValueMDP getMDP()
     {
         COSDictionary dict = dictionary.getCOSDictionary(COSName.MDP);
-        PDSeedValueMDP mdp = null;
-        if (dict != null)
-        {
-            mdp = new PDSeedValueMDP(dict);
-        }
-        return mdp;
+        return dict != null ? new PDSeedValueMDP(dict) : null;
     }
 
     /**
@@ -484,14 +440,8 @@ public class PDSeedValue implements COSObjectable
      */
     public PDSeedValueCertificate getSeedValueCertificate()
     {
-        COSBase base = dictionary.getDictionaryObject(COSName.CERT);
-        PDSeedValueCertificate certificate = null;
-        if (base instanceof COSDictionary)
-        {
-            COSDictionary dict = (COSDictionary) base;
-            certificate = new PDSeedValueCertificate(dict);
-        }
-        return certificate;
+        COSDictionary certificate = dictionary.getCOSDictionary(COSName.CERT);
+        return certificate != null ? new PDSeedValueCertificate(certificate) : null;
     }
 
     /**
@@ -515,12 +465,7 @@ public class PDSeedValue implements COSObjectable
     public PDSeedValueTimeStamp getTimeStamp()
     {
         COSDictionary dict = dictionary.getCOSDictionary(COSName.TIME_STAMP);
-        PDSeedValueTimeStamp timestamp = null;
-        if (dict != null)
-        {
-            timestamp = new PDSeedValueTimeStamp(dict);
-        }
-        return timestamp;
+        return dict != null ? new PDSeedValueTimeStamp(dict) : null;
     }
 
     /**
@@ -546,23 +491,8 @@ public class PDSeedValue implements COSObjectable
      */
     public List<String> getLegalAttestation()
     {
-        List<String> retval = null;
-        COSArray fields = (COSArray)dictionary.getDictionaryObject(COSName.LEGAL_ATTESTATION);
-
-        if (fields != null)
-        {
-            List<String> actuals = new ArrayList<>();
-            for ( int i = 0; i < fields.size(); i++ )
-            {
-                String element = fields.getString(i);
-                if (element != null)
-                {
-                    actuals.add(element);
-                }
-            }
-            retval = new COSArrayList<>(actuals, fields);
-        }
-        return retval;
+        COSArray fields = dictionary.getCOSArray(COSName.LEGAL_ATTESTATION);
+        return fields != null ? fields.toCOSNameStringList() : Collections.emptyList();
     }
 
     /**
@@ -574,6 +504,7 @@ public class PDSeedValue implements COSObjectable
      */
     public void setLegalAttestation(List<String> legalAttestation)
     {
-        dictionary.setItem(COSName.LEGAL_ATTESTATION, COSArrayList.converterToCOSArray(legalAttestation));
+        dictionary.setItem(COSName.LEGAL_ATTESTATION,
+                COSArray.ofCOSStrings(legalAttestation));
     }
 }

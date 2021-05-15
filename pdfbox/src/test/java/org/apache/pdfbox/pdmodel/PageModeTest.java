@@ -16,13 +16,15 @@
  */
 package org.apache.pdfbox.pdmodel;
 
-import org.junit.Assert;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class PageModeTest
+import org.junit.jupiter.api.Test;
+
+class PageModeTest
 {
     @Test
-    public void fromStringInputNotNullOutputNotNull()
+    void fromStringInputNotNullOutputNotNull()
     {
         // Arrange
         final String value = "FullScreen";
@@ -31,11 +33,11 @@ public class PageModeTest
         final PageMode retval = PageMode.fromString(value);
 
         // Assert result
-        Assert.assertEquals(PageMode.FULL_SCREEN, retval);
+        assertEquals(PageMode.FULL_SCREEN, retval);
     }
 
     @Test
-    public void fromStringInputNotNullOutputNotNull2()
+    void fromStringInputNotNullOutputNotNull2()
     {
         // Arrange
         final String value = "UseThumbs";
@@ -44,11 +46,11 @@ public class PageModeTest
         final PageMode retval = PageMode.fromString(value);
 
         // Assert result
-        Assert.assertEquals(PageMode.USE_THUMBS, retval);
+        assertEquals(PageMode.USE_THUMBS, retval);
     }
 
     @Test
-    public void fromStringInputNotNullOutputNotNull3()
+    void fromStringInputNotNullOutputNotNull3()
     {
         // Arrange
         final String value = "UseOC";
@@ -57,11 +59,11 @@ public class PageModeTest
         final PageMode retval = PageMode.fromString(value);
 
         // Assert result
-        Assert.assertEquals(PageMode.USE_OPTIONAL_CONTENT, retval);
+        assertEquals(PageMode.USE_OPTIONAL_CONTENT, retval);
     }
 
     @Test
-    public void fromStringInputNotNullOutputNotNull4()
+    void fromStringInputNotNullOutputNotNull4()
     {
         // Arrange
         final String value = "UseNone";
@@ -70,11 +72,11 @@ public class PageModeTest
         final PageMode retval = PageMode.fromString(value);
 
         // Assert result
-        Assert.assertEquals(PageMode.USE_NONE, retval);
+        assertEquals(PageMode.USE_NONE, retval);
     }
 
     @Test
-    public void fromStringInputNotNullOutputNotNull5()
+    void fromStringInputNotNullOutputNotNull5()
     {
         // Arrange
         final String value = "UseAttachments";
@@ -83,11 +85,11 @@ public class PageModeTest
         final PageMode retval = PageMode.fromString(value);
 
         // Assert result
-        Assert.assertEquals(PageMode.USE_ATTACHMENTS, retval);
+        assertEquals(PageMode.USE_ATTACHMENTS, retval);
     }
 
     @Test
-    public void fromStringInputNotNullOutputNotNull6()
+    void fromStringInputNotNullOutputNotNull6()
     {
         // Arrange
         final String value = "UseOutlines";
@@ -96,23 +98,23 @@ public class PageModeTest
         final PageMode retval = PageMode.fromString(value);
 
         // Assert result
-        Assert.assertEquals(PageMode.USE_OUTLINES, retval);
+        assertEquals(PageMode.USE_OUTLINES, retval);
     }
 
     @Test
-    public void fromStringInputNotNullOutputIllegalArgumentException()
+    void fromStringInputNotNullOutputIllegalArgumentException()
     {
-        Assert.assertThrows(IllegalArgumentException.class, () -> PageMode.fromString(""));
+        assertThrows(IllegalArgumentException.class, () -> PageMode.fromString(""));
     }
 
     @Test
-    public void fromStringInputNotNullOutputIllegalArgumentException2()
+    void fromStringInputNotNullOutputIllegalArgumentException2()
     {
-        Assert.assertThrows(IllegalArgumentException.class, () -> PageMode.fromString("Dulacb`ecj"));
+        assertThrows(IllegalArgumentException.class, () -> PageMode.fromString("Dulacb`ecj"));
     }
 
     @Test
-    public void stringValueOutputNotNull()
+    void stringValueOutputNotNull()
     {
         // Arrange
         final PageMode objectUnderTest = PageMode.USE_OPTIONAL_CONTENT;
@@ -121,6 +123,6 @@ public class PageModeTest
         final String retval = objectUnderTest.stringValue();
 
         // Assert result
-        Assert.assertEquals("UseOC", retval);
+        assertEquals("UseOC", retval);
     }
 }

@@ -20,17 +20,17 @@ package org.apache.pdfbox.cos;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import static org.junit.Assert.assertEquals;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test for PDFDocEncoding.
  *
  */
-public class PDFDocEncodingTest
+class PDFDocEncodingTest
 {
 
-    static List<String> deviations = new ArrayList<>();
+    static final List<String> deviations = new ArrayList<>();
     
     static
     {
@@ -81,13 +81,13 @@ public class PDFDocEncodingTest
     }
     
     @Test
-    public void testDeviations()
+    void testDeviations()
     {
-        for (String deviation: deviations)
+        deviations.forEach(deviation ->
         {
             COSString cosString = new COSString(deviation);
             assertEquals(cosString.getString(), deviation);
-        }
+        });
     }
 
     /**
@@ -97,7 +97,7 @@ public class PDFDocEncodingTest
      * @throws IOException
      */
     @Test
-    public void testPDFBox3864() throws IOException
+    void testPDFBox3864() throws IOException
     {
         for (int i = 0; i < 256; i++)
         {

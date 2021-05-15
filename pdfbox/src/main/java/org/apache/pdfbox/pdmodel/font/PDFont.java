@@ -36,7 +36,6 @@ import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.cos.COSNumber;
 import org.apache.pdfbox.cos.COSStream;
 import org.apache.pdfbox.io.IOUtils;
-import org.apache.pdfbox.pdmodel.common.COSArrayList;
 import org.apache.pdfbox.pdmodel.common.COSObjectable;
 import org.apache.pdfbox.pdmodel.font.encoding.GlyphList;
 import org.apache.pdfbox.util.Matrix;
@@ -115,7 +114,7 @@ public abstract class PDFont implements COSObjectable, PDFontLike
 
     private PDFontDescriptor loadFontDescriptor()
     {
-        COSDictionary fd = (COSDictionary) dict.getDictionaryObject(COSName.FONT_DESC);
+        COSDictionary fd = dict.getCOSDictionary(COSName.FONT_DESC);
         if (fd != null)
         {
             return new PDFontDescriptor(fd);
@@ -147,7 +146,7 @@ public abstract class PDFont implements COSObjectable, PDFontLike
                 LOG.warn("Invalid ToUnicode CMap in font " + getName());
                 String cmapName = cmap.getName() != null ? cmap.getName() : "";
                 String ordering = cmap.getOrdering() != null ? cmap.getOrdering() : "";
-                COSBase encoding = dict.getDictionaryObject(COSName.ENCODING);
+                COSName encoding = dict.getCOSName(COSName.ENCODING);
                 if (cmapName.contains("Identity") //
                         || ordering.contains("Identity") //
                         || COSName.IDENTITY_H.equals(encoding) //
@@ -155,6 +154,7 @@ public abstract class PDFont implements COSObjectable, PDFontLike
                 {
                     // assume that if encoding is identity, then the reverse is also true
                     cmap = CMapManager.getPredefinedCMap(COSName.IDENTITY_H.getName());
+                    LOG.warn("Using predefined identity CMap instead");
                 }
             }
         }
@@ -264,7 +264,8 @@ public abstract class PDFont implements COSObjectable, PDFontLike
         // embedded", however PDFBOX-427 shows that it also applies to embedded fonts.
 
         // Type1, Type1C, Type3
-        if (dict.getDictionaryObject(COSName.WIDTHS) != null || dict.containsKey(COSName.MISSING_WIDTH))
+        if (dict.getDictionaryObject(COSName.WIDTHS) != null
+                || dict.containsKey(COSName.MISSING_WIDTH))
         {
             int firstChar = dict.getInt(COSName.FIRST_CHAR, -1);
             int lastChar = dict.getInt(COSName.LAST_CHAR, -1);
@@ -392,7 +393,7 @@ public abstract class PDFont implements COSObjectable, PDFontLike
         {
             float totalWidth = 0.0f;
             float characterCount = 0.0f;
-            COSArray widths = (COSArray) dict.getDictionaryObject(COSName.WIDTHS);
+            COSArray widths = dict.getCOSArray(COSName.WIDTHS);
             if (widths != null)
             {
                 for (int i = 0; i < widths.size(); i++)
@@ -453,8 +454,8 @@ public abstract class PDFont implements COSObjectable, PDFontLike
         {
             if (toUnicodeCMap.getName() != null && 
                 toUnicodeCMap.getName().startsWith("Identity-") && 
-                    (dict.getDictionaryObject(COSName.TO_UNICODE) instanceof COSName ||
-                     !toUnicodeCMap.hasUnicodeMappings()))
+                    (dict.getCOSName(COSName.TO_UNICODE) != null
+                            || !toUnicodeCMap.hasUnicodeMappings()))
             {
                 // handle the undocumented case of using Identity-H/V as a ToUnicode CMap, this
                 // isn't actually valid as the Identity-x CMaps are code->CID maps, not
@@ -467,15 +468,13 @@ public abstract class PDFont implements COSObjectable, PDFontLike
             {
                 if (code < 256 && !(this instanceof PDType0Font))
                 {
-                    COSBase encoding = dict.getDictionaryObject(COSName.ENCODING);
-                    boolean isIdentity = encoding instanceof COSName
-                            && ((COSName) encoding).getName().startsWith("Identity");
-                    if (encoding != null && !isIdentity)
+                    COSName encoding = dict.getCOSName(COSName.ENCODING);
+                    if (encoding != null && !encoding.getName().startsWith("Identity"))
                     {
                         // due to the conversion to an int it is no longer possible to determine
                         // if the code is based on a one or two byte value. We should consider to
                         // refactor that part of the code.
-                        // However simple fonts with an encoding are using one byte codes so that
+                        // However, simple fonts with a predefined encoding are using one byte codes so that
                         // we can limit the CMap mappings to one byte codes by passing the origin length
                         return toUnicodeCMap.toUnicode(code, 1);
                     }
@@ -516,10 +515,10 @@ public abstract class PDFont implements COSObjectable, PDFontLike
     {
         if (widths == null)
         {
-            COSArray array = (COSArray) dict.getDictionaryObject(COSName.WIDTHS);
+            COSArray array = dict.getCOSArray(COSName.WIDTHS);
             if (array != null)
             {
-                widths = COSArrayList.convertFloatCOSArrayToList(array);              
+                widths = array.toCOSNumberFloatList();
             }
             else
             {
@@ -544,10 +543,9 @@ public abstract class PDFont implements COSObjectable, PDFontLike
     {
         if (Float.compare(fontWidthOfSpace, -1f) == 0)
         {
-            COSBase toUnicode = dict.getDictionaryObject(COSName.TO_UNICODE);
             try
             {
-                if (toUnicode != null && toUnicodeCMap != null)
+                if (dict.containsKey(COSName.TO_UNICODE) && toUnicodeCMap != null)
                 {
                     int spaceMapping = toUnicodeCMap.getSpaceMapping();
                     if (spaceMapping > -1)
@@ -637,5 +635,15 @@ public abstract class PDFont implements COSObjectable, PDFontLike
     public String toString()
     {
         return getClass().getSimpleName() + " " + getName();
+    }
+
+    /**
+     * Get the /ToUnicode CMap.
+     *
+     * @return The /ToUnicode CMap or null if there is none.
+     */
+    protected CMap getToUnicodeCMap()
+    {
+        return toUnicodeCMap;
     }
 }

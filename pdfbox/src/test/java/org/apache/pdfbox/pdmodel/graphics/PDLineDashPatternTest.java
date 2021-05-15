@@ -20,24 +20,25 @@
 
 package org.apache.pdfbox.pdmodel.graphics;
 
-import static junit.framework.TestCase.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSFloat;
 import org.apache.pdfbox.cos.COSInteger;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  *
  * @author Tilman Hausherr
  */
-public class PDLineDashPatternTest
+class PDLineDashPatternTest
 {
 
     /**
      * Test of getCOSObject method, of class PDLineDashPattern.
      */
     @Test
-    public void testGetCOSObject()
+    void testGetCOSObject()
     {
         COSArray ar = new COSArray();
         ar.add(COSInteger.ONE);

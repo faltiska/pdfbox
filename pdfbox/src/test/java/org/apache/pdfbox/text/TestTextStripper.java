@@ -21,6 +21,13 @@ import difflib.DeleteDelta;
 import difflib.DiffUtils;
 import difflib.InsertDelta;
 import difflib.Patch;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -38,22 +45,19 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.fontbox.util.BoundingBox;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.TestPDPageTree;
 import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.font.PDFontDescriptor;
 import org.apache.pdfbox.pdmodel.font.PDType3Font;
 import org.apache.pdfbox.pdmodel.interactive.documentnavigation.destination.PDPageDestination;
 import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDDocumentOutline;
 import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlineItem;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 
 /**
@@ -101,7 +105,7 @@ import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlin
  * @author Robert Dickinson
  * @author Ben Litchfield
  */
-public class TestTextStripper extends TestCase
+class TestTextStripper
 {
 
     /**
@@ -110,32 +114,21 @@ public class TestTextStripper extends TestCase
     private static final Log log = LogFactory.getLog(TestTextStripper.class);
 
     private boolean bFail = false;
-    private PDFTextStripper stripper = null;
+    private static PDFTextStripper stripper;
     private static final String ENCODING = "UTF-8";
 
     /**
-     * Test class constructor.
+     * Test class initialization.
      *
-     * @param name The name of the test class.
-     *
-     * @throws IOException If there is an error creating the test.
+     * @throws IOException If there is an error initializing the test.
      */
-    public TestTextStripper( String name ) throws IOException
+    @BeforeAll
+    static void init() throws IOException
     {
-        super( name );
         stripper = new PDFTextStripper();
         stripper.setLineSeparator("\n");
-    }
-
-    /**
-     * Test suite setup.
-     */
-    @Override
-    public void setUp()
-    {
         // If you want to test a single file using DEBUG logging, from an IDE,
         // you can do something like this:
-        //
         // System.setProperty("org.apache.pdfbox.util.TextStripper.file", "FVS318Ref.pdf");
     }
 
@@ -233,7 +226,7 @@ public class TestTextStripper extends TestCase
      * @param bSort Whether or not the extracted text is sorted
      * @throws Exception when there is an exception
      */
-    public void doTestFile(File inFile, File outDir, boolean bLogResult, boolean bSort)
+    private void doTestFile(File inFile, File outDir, boolean bLogResult, boolean bSort)
     throws Exception
     {
         if(bSort)
@@ -370,21 +363,21 @@ public class TestTextStripper extends TestCase
                 {
                     if (delta instanceof ChangeDelta)
                     {
-                        ChangeDelta cdelta = (ChangeDelta) delta;
+                        ChangeDelta<String> cdelta = (ChangeDelta<String>) delta;
                         diffPS.println("Org: " + cdelta.getOriginal());
                         diffPS.println("New: " + cdelta.getRevised());
                         diffPS.println();
                     }
                     else if (delta instanceof DeleteDelta)
                     {
-                        DeleteDelta ddelta = (DeleteDelta) delta;
+                        DeleteDelta<String> ddelta = (DeleteDelta<String>) delta;
                         diffPS.println("Org: " + ddelta.getOriginal());
                         diffPS.println("New: " + ddelta.getRevised());
                         diffPS.println();
                     }
                     else if (delta instanceof InsertDelta)
                     {
-                        InsertDelta idelta = (InsertDelta) delta;
+                        InsertDelta<String> idelta = (InsertDelta<String>) delta;
                         diffPS.println("Org: " + idelta.getOriginal());
                         diffPS.println("New: " + idelta.getRevised());
                         diffPS.println();
@@ -439,10 +432,11 @@ public class TestTextStripper extends TestCase
      * @throws IOException
      * @throws URISyntaxException
      */
-    public void testStripByOutlineItems() throws IOException, URISyntaxException
+    @Test
+    void testStripByOutlineItems() throws IOException, URISyntaxException
     {
         PDDocument doc = Loader
-                .loadPDF(new File(TestPDPageTree.class.getResource("with_outline.pdf").toURI()));
+                .loadPDF(new File(this.getClass().getResource("../pdmodel/with_outline.pdf").toURI()));
         PDDocumentOutline outline = doc.getDocumentCatalog().getDocumentOutline();
         Iterable<PDOutlineItem> children = outline.children();
         Iterator<PDOutlineItem> it = children.iterator();
@@ -483,7 +477,7 @@ public class TestTextStripper extends TestCase
         stripper.setEndBookmark(oi3);
         String textoi23 = stripper.getText(doc);
         assertFalse(textoi23.isEmpty());
-        assertFalse(textoi23.equals(textFull));
+        assertNotEquals(textoi23, textFull);
         
         String expectedTextoi23 = 
                 "Second at level 1\n"
@@ -503,18 +497,17 @@ public class TestTextStripper extends TestCase
         stripper.setEndPage(4);
         String textp34 = stripper.getText(doc);
         assertFalse(textp34.isEmpty());
-        assertFalse(textoi23.equals(textFull));
-        assertTrue(textoi23.equals(textp34));
-        
-        
+        assertNotEquals(textoi23, textFull);
+        assertEquals(textoi23, textp34);        
+
         // this should grab 0-based page 2, i.e. 1-based page 3
         // by the bookmark
         stripper.setStartBookmark(oi2);
         stripper.setEndBookmark(oi2);
         String textoi2 = stripper.getText(doc);
         assertFalse(textoi2.isEmpty());
-        assertFalse(textoi2.equals(textoi23));
-        assertFalse(textoi23.equals(textFull));
+        assertNotEquals(textoi2, textoi23);
+        assertNotEquals(textoi23, textFull);
         
         String expectedTextoi2 = 
                 "Second at level 1\n"
@@ -531,10 +524,10 @@ public class TestTextStripper extends TestCase
         stripper.setEndPage(3);
         String textp3 = stripper.getText(doc);
         assertFalse(textp3.isEmpty());
-        assertFalse(textp3.equals(textp34));
-        assertFalse(textoi23.equals(textFull));
-        assertTrue(textoi2.equals(textp3));
-        
+        assertNotEquals(textp3, textp34);
+        assertNotEquals(textoi23, textFull);
+        assertEquals(textoi2, textp3);
+
         // Test with orphan bookmark
         PDOutlineItem oiOrphan = new PDOutlineItem();
         stripper.setStartBookmark(oiOrphan);
@@ -568,7 +561,8 @@ public class TestTextStripper extends TestCase
      *
      * @throws Exception when there is an exception
      */
-    public void testExtract() throws Exception
+    @Test
+    void testExtract() throws Exception
     {
         String filename = System.getProperty("org.apache.pdfbox.util.TextStripper.file");
         File inDir = new File("src/test/resources/input");
@@ -598,7 +592,8 @@ public class TestTextStripper extends TestCase
             }
     }
 
-    public void testTabula() throws IOException
+    @Test
+    void testTabula() throws IOException
     {
         File pdfFile = new File("src/test/resources/input","eu-001.pdf");
         File outFile = new File("target/test-output","eu-001.pdf-tabula.txt");
@@ -680,24 +675,4 @@ public class TestTextStripper extends TestCase
         }
     }
 
-    /**
-     * Set the tests in the suite for this test class.
-     *
-     * @return the Suite.
-     */
-    public static Test suite()
-    {
-        return new TestSuite( TestTextStripper.class );
-    }
-
-    /**
-     * Command line execution.
-     *
-     * @param args Command line arguments.
-     */
-    public static void main( String[] args )
-    {
-        String[] arg = {TestTextStripper.class.getName() };
-        junit.textui.TestRunner.main( arg );
-    }
 }

@@ -25,9 +25,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSDictionary;
-import org.apache.pdfbox.cos.COSInteger;
 import org.apache.pdfbox.cos.COSName;
-import org.apache.pdfbox.pdmodel.common.COSArrayList;
 import org.apache.pdfbox.pdmodel.fdf.FDFField;
 import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationWidget;
 
@@ -70,14 +68,8 @@ public class PDNonTerminalField extends PDField
     @Override
     public int getFieldFlags()
     {
-        int retval = 0;
-        COSInteger ff = (COSInteger) getCOSObject().getDictionaryObject(COSName.FF);
-        if (ff != null)
-        {
-            retval = ff.intValue();
-        }
         // There is no need to look up the parent hierarchy within a non terminal field
-        return retval;
+        return getCOSObject().getInt(COSName.FF, 0);
     }
 
     @Override
@@ -87,7 +79,11 @@ public class PDNonTerminalField extends PDField
         
         List<FDFField> fdfKids = fdfField.getKids();
         List<PDField> children = getChildren();
-        for (int i = 0; fdfKids != null && i < fdfKids.size(); i++)
+        if (fdfKids == null)
+        {
+            return;
+        }
+        for (int i = 0; i < fdfKids.size(); i++)
         {
             for (PDField pdChild : children)
             {
@@ -109,7 +105,7 @@ public class PDNonTerminalField extends PDField
         fdfField.setValue(getValue());
 
         List<PDField> children = getChildren();
-        List<FDFField> fdfChildren = new ArrayList<>();
+        List<FDFField> fdfChildren = new ArrayList<>(children.size());
         for (PDField child : children)
         {
             fdfChildren.add(child.exportFDF());
@@ -131,7 +127,11 @@ public class PDNonTerminalField extends PDField
         //TODO: why not return a COSArrayList like in PDPage.getAnnotations() ?
  
         List<PDField> children = new ArrayList<>();
-        COSArray kids = (COSArray)getCOSObject().getDictionaryObject(COSName.KIDS);
+        COSArray kids = getCOSObject().getCOSArray(COSName.KIDS);
+        if (kids == null)
+        {
+            return children;
+        }
         for (int i = 0; i < kids.size(); i++)
         {
             COSBase kid = kids.getObject(i);
@@ -159,7 +159,7 @@ public class PDNonTerminalField extends PDField
      */
     public void setChildren(List<PDField> children)
     {
-        COSArray kidsArray = COSArrayList.converterToCOSArray(children);
+        COSArray kidsArray = new COSArray(children);
         getCOSObject().setItem(COSName.KIDS, kidsArray);
     }
 
@@ -256,7 +256,6 @@ public class PDNonTerminalField extends PDField
     @Override
     public List<PDAnnotationWidget> getWidgets()
     {
-        List<PDAnnotationWidget> emptyList = Collections.emptyList();
-        return Collections.unmodifiableList(emptyList);
+        return Collections.emptyList();
     }
 }

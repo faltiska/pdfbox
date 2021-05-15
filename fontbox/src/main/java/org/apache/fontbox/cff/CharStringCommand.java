@@ -17,8 +17,7 @@
 package org.apache.fontbox.cff;
 
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -29,7 +28,7 @@ import java.util.Map;
 public class CharStringCommand
 {
 
-    private Key commandKey = null;
+    private final Key commandKey;
 
     /**
      * Constructor with one value.
@@ -38,7 +37,7 @@ public class CharStringCommand
      */
     public CharStringCommand(int b0)
     {
-        setKey(new Key(b0));
+        commandKey = new Key(b0);
     }
 
     /**
@@ -49,7 +48,7 @@ public class CharStringCommand
      */
     public CharStringCommand(int b0, int b1)
     {
-        setKey(new Key(b0, b1));
+        commandKey = new Key(b0, b1);
     }
 
     /**
@@ -59,7 +58,7 @@ public class CharStringCommand
      */
     public CharStringCommand(int[] values)
     {
-        setKey(new Key(values));
+        commandKey = new Key(values);
     }
 
     /**
@@ -71,9 +70,14 @@ public class CharStringCommand
         return commandKey;
     }
 
-    private void setKey(Key key)
+    public Type1KeyWord getType1KeyWord()
     {
-        commandKey = key;
+        return Type1KeyWord.valueOfKey(commandKey);
+    }
+
+    public Type2KeyWord getType2KeyWord()
+    {
+        return Type2KeyWord.valueOfKey(commandKey);
     }
 
     /**
@@ -82,14 +86,23 @@ public class CharStringCommand
     @Override
     public String toString()
     {
-        String str = TYPE2_VOCABULARY.get(getKey());
-        if (str == null)
+        String str = null;
+        Type2KeyWord type2KeyWord = getType2KeyWord();
+        if (type2KeyWord != null)
         {
-            str = TYPE1_VOCABULARY.get(getKey());
+            str = type2KeyWord.toString();
+        }
+        else
+        {
+            Type1KeyWord type1KeyWord = getType1KeyWord();
+            if (type1KeyWord != null)
+            {
+                str = type1KeyWord.toString();
+            }
         }
         if (str == null)
         {
-            return getKey().toString() + '|';
+            str = getKey().toString();
         }
         return str + '|';
     }
@@ -123,7 +136,7 @@ public class CharStringCommand
     public static class Key
     {
 
-        private int[] keyValues = null;
+        private final int[] keyValues;
 
         /**
          * Constructor with one value.
@@ -132,7 +145,7 @@ public class CharStringCommand
          */
         public Key(int b0)
         {
-            setValue(new int[] { b0 });
+            keyValues = new int[] { b0 };
         }
 
         /**
@@ -143,7 +156,7 @@ public class CharStringCommand
          */
         public Key(int b0, int b1)
         {
-            setValue(new int[] { b0, b1 });
+            keyValues = new int[] { b0, b1 };
         }
 
         /**
@@ -153,7 +166,7 @@ public class CharStringCommand
          */
         public Key(int[] values)
         {
-            setValue(values);
+            keyValues = values;
         }
 
         /**
@@ -164,11 +177,6 @@ public class CharStringCommand
         public int[] getValue()
         {
             return keyValues;
-        }
-
-        private void setValue(int[] value)
-        {
-            keyValues = value;
         }
 
         /**
@@ -217,101 +225,82 @@ public class CharStringCommand
     }
 
     /**
-     * A map with the Type1 vocabulary.
+     * Enum of all valid type1 key words
      */
-    public static final Map<Key, String> TYPE1_VOCABULARY;
-
-    static
+    public enum Type1KeyWord
     {
-        Map<Key, String> map = new LinkedHashMap<>(26);
-        map.put(new Key(1), "hstem");
-        map.put(new Key(3), "vstem");
-        map.put(new Key(4), "vmoveto");
-        map.put(new Key(5), "rlineto");
-        map.put(new Key(6), "hlineto");
-        map.put(new Key(7), "vlineto");
-        map.put(new Key(8), "rrcurveto");
-        map.put(new Key(9), "closepath");
-        map.put(new Key(10), "callsubr");
-        map.put(new Key(11), "return");
-        map.put(new Key(12), "escape");
-        map.put(new Key(12, 0), "dotsection");
-        map.put(new Key(12, 1), "vstem3");
-        map.put(new Key(12, 2), "hstem3");
-        map.put(new Key(12, 6), "seac");
-        map.put(new Key(12, 7), "sbw");
-        map.put(new Key(12, 12), "div");
-        map.put(new Key(12, 16), "callothersubr");
-        map.put(new Key(12, 17), "pop");
-        map.put(new Key(12, 33), "setcurrentpoint");
-        map.put(new Key(13), "hsbw");
-        map.put(new Key(14), "endchar");
-        map.put(new Key(21), "rmoveto");
-        map.put(new Key(22), "hmoveto");
-        map.put(new Key(30), "vhcurveto");
-        map.put(new Key(31), "hvcurveto");
+        HSTEM(new Key(1)), VSTEM(new Key(3)), VMOVETO(new Key(4)), RLINETO(new Key(5)), //
+        HLINETO(new Key(6)), VLINETO(new Key(7)), RRCURVETO(new Key(8)), CLOSEPATH(new Key(9)), //
+        CALLSUBR(new Key(10)), RET(new Key(11)), ESCAPE(new Key(12)), DOTSECTION(new Key(12, 0)), //
+        VSTEM3(new Key(12, 1)), HSTEM3(new Key(12, 2)), SEAC(new Key(12, 6)), SBW(new Key(12, 7)), //
+        DIV(new Key(12, 12)), CALLOTHERSUBR(new Key(12, 16)), POP(new Key(12, 17)), //
+        SETCURRENTPOINT(new Key(12, 33)), HSBW(new Key(13)), ENDCHAR(new Key(14)), //
+        RMOVETO(new Key(21)), HMOVETO(new Key(22)), VHCURVETO(new Key(30)), HVCURVETO(new Key(31));
 
-        TYPE1_VOCABULARY = Collections.unmodifiableMap(map);
+        final Key key;
+
+        private Type1KeyWord(Key key)
+        {
+            this.key = key;
+        }
+
+        private static final Map<Key, Type1KeyWord> BY_KEY = new HashMap<>();
+            
+        static
+        {
+            for (Type1KeyWord e : values())
+            {
+                 BY_KEY.put(e.key, e);
+            }
+        }
+        
+        public static Type1KeyWord valueOfKey(Key key)
+        {
+            return BY_KEY.get(key);
+        }
+
     }
 
     /**
-     * A map with the Type2 vocabulary.
+     * Enum of all valid type2 key words
      */
-    public static final Map<Key, String> TYPE2_VOCABULARY;
-
-    static
+    public enum Type2KeyWord
     {
-        Map<Key, String> map = new LinkedHashMap<>(48);
-        map.put(new Key(1), "hstem");
-        map.put(new Key(3), "vstem");
-        map.put(new Key(4), "vmoveto");
-        map.put(new Key(5), "rlineto");
-        map.put(new Key(6), "hlineto");
-        map.put(new Key(7), "vlineto");
-        map.put(new Key(8), "rrcurveto");
-        map.put(new Key(10), "callsubr");
-        map.put(new Key(11), "return");
-        map.put(new Key(12), "escape");
-        map.put(new Key(12, 3), "and");
-        map.put(new Key(12, 4), "or");
-        map.put(new Key(12, 5), "not");
-        map.put(new Key(12, 9), "abs");
-        map.put(new Key(12, 10), "add");
-        map.put(new Key(12, 11), "sub");
-        map.put(new Key(12, 12), "div");
-        map.put(new Key(12, 14), "neg");
-        map.put(new Key(12, 15), "eq");
-        map.put(new Key(12, 18), "drop");
-        map.put(new Key(12, 20), "put");
-        map.put(new Key(12, 21), "get");
-        map.put(new Key(12, 22), "ifelse");
-        map.put(new Key(12, 23), "random");
-        map.put(new Key(12, 24), "mul");
-        map.put(new Key(12, 26), "sqrt");
-        map.put(new Key(12, 27), "dup");
-        map.put(new Key(12, 28), "exch");
-        map.put(new Key(12, 29), "index");
-        map.put(new Key(12, 30), "roll");
-        map.put(new Key(12, 34), "hflex");
-        map.put(new Key(12, 35), "flex");
-        map.put(new Key(12, 36), "hflex1");
-        map.put(new Key(12, 37), "flex1");
-        map.put(new Key(14), "endchar");
-        map.put(new Key(18), "hstemhm");
-        map.put(new Key(19), "hintmask");
-        map.put(new Key(20), "cntrmask");
-        map.put(new Key(21), "rmoveto");
-        map.put(new Key(22), "hmoveto");
-        map.put(new Key(23), "vstemhm");
-        map.put(new Key(24), "rcurveline");
-        map.put(new Key(25), "rlinecurve");
-        map.put(new Key(26), "vvcurveto");
-        map.put(new Key(27), "hhcurveto");
-        map.put(new Key(28), "shortint");
-        map.put(new Key(29), "callgsubr");
-        map.put(new Key(30), "vhcurveto");
-        map.put(new Key(31), "hvcurveto");
+        HSTEM(new Key(1)), VSTEM(new Key(3)), VMOVETO(new Key(4)), RLINETO(new Key(5)), //
+        HLINETO(new Key(6)), VLINETO(new Key(7)), RRCURVETO(new Key(8)), CALLSUBR(new Key(10)), //
+        RET(new Key(11)), ESCAPE(new Key(12)), AND(new Key(12, 3)), OR(new Key(12, 4)), //
+        NOT(new Key(12, 5)), ABS(new Key(12, 9)), ADD(new Key(12, 10)), SUB(new Key(12, 11)), //
+        DIV(new Key(12, 12)), NEG(new Key(12, 14)), EQ(new Key(12, 15)), DROP(new Key(12, 18)), //
+        PUT(new Key(12, 20)), GET(new Key(12, 21)), IFELSE(new Key(12, 22)), //
+        RANDOM(new Key(12, 23)), MUL(new Key(12, 24)), SQRT(new Key(12, 26)), DUP(new Key(12, 27)), //
+        EXCH(new Key(12, 28)), INDEX(new Key(12, 29)), ROLL(new Key(12, 30)), //
+        HFLEX(new Key(12, 34)), FLEX(new Key(12, 35)), HFLEX1(new Key(12, 36)), //
+        FLEX1(new Key(12, 37)), ENDCHAR(new Key(14)), HSTEMHM(new Key(18)), HINTMASK(new Key(19)), //
+        CNTRMASK(new Key(20)), RMOVETO(new Key(21)), HMOVETO(new Key(22)), VSTEMHM(new Key(23)), //
+        RCURVELINE(new Key(24)), RLINECURVE(new Key(25)), VVCURVETO(new Key(26)), //
+        HHCURVETO(new Key(27)), SHORTINT(new Key(28)), CALLGSUBR(new Key(29)), //
+        VHCURVETO(new Key(30)), HVCURVETO(new Key(31));
 
-        TYPE2_VOCABULARY = Collections.unmodifiableMap(map);
+        final Key key;
+
+        private Type2KeyWord(Key key)
+        {
+            this.key = key;
+        }
+
+        private static final Map<Key, Type2KeyWord> BY_KEY = new HashMap<>();
+            
+        static
+        {
+            for (Type2KeyWord e : values())
+            {
+                 BY_KEY.put(e.key, e);
+            }
+        }
+        
+        public static Type2KeyWord valueOfKey(Key key)
+        {
+            return BY_KEY.get(key);
+        }
     }
 }

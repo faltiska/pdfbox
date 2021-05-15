@@ -19,23 +19,26 @@
 
 package org.apache.pdfbox.io;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-import junit.framework.TestCase;
+import org.junit.jupiter.api.Test;
 
 /**
  * This is a unit test for {@link IOUtils}.
  */
-public class TestIOUtils extends TestCase
+class TestIOUtils
 {
 
     /**
      * Tests {@link IOUtils#populateBuffer(java.io.InputStream, byte[]).
      * @throws IOException if an I/O error occursn
      */
-    public void testPopulateBuffer() throws IOException
+    @Test
+    void testPopulateBuffer() throws IOException
     {
         byte[] data = "Hello World!".getBytes();
         byte[] buffer = new byte[data.length];

@@ -21,7 +21,6 @@ import java.text.AttributedString;
 import java.text.BreakIterator;
 import java.text.AttributedCharacterIterator.Attribute;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.apache.pdfbox.pdmodel.font.PDFont;
@@ -51,16 +50,24 @@ class PlainText
      */
     PlainText(String textValue)
     {
-        List<String> parts = Arrays.asList(textValue.replaceAll("\t", " ").split("\\r\\n|\\n|\\r|\\u2028|\\u2029"));
-        paragraphs = new ArrayList<>();
-        for (String part : parts)
+        if (textValue.isEmpty())
         {
-        	// Acrobat prints a space for an empty paragraph
-        	if (part.length() == 0)
-        	{
-        		part = " ";
-        	}
-            paragraphs.add(new Paragraph(part));
+            paragraphs = new ArrayList<>(1);
+            paragraphs.add(new Paragraph(""));
+        }
+        else
+        {
+            String[] parts = textValue.replace('\t', ' ').split("\\r\\n|\\n|\\r|\\u2028|\\u2029");
+            paragraphs = new ArrayList<>(parts.length);
+            for (String part : parts)
+            {
+                // Acrobat prints a space for an empty paragraph
+                if (part.isEmpty())
+                {
+                    part = " ";
+                }
+                paragraphs.add(new Paragraph(part));
+            }
         }
     }
     
@@ -74,11 +81,8 @@ class PlainText
      */
     PlainText(List<String> listValue)
     {
-        paragraphs = new ArrayList<>();
-        for (String part : listValue)
-        {
-            paragraphs.add(new Paragraph(part));
-        }
+        paragraphs = new ArrayList<>(listValue.size());
+        listValue.forEach(part -> paragraphs.add(new Paragraph(part)));
     }
     
     /**
@@ -200,7 +204,8 @@ class PlainText
                     while (true)
                     {
                         splitOffset--;
-                        String substring = word.trim().substring(0, splitOffset);
+
+                        String substring = word.substring(0, splitOffset);
                         float substringWidth = font.getStringWidth(substring) * scale;
                         if (substringWidth < width)
                         {
@@ -256,16 +261,18 @@ class PlainText
         {
             final float scale = fontSize/FONTSCALE;
             float calculatedWidth = 0f;
+            int indexOfWord = 0;
             for (Word word : words)
             {
                 calculatedWidth = calculatedWidth + 
                         (Float) word.getAttributes().getIterator().getAttribute(TextAttribute.WIDTH);
                 String text = word.getText();
-                if (words.indexOf(word) == words.size() -1 && Character.isWhitespace(text.charAt(text.length()-1)))
+                if (indexOfWord == words.size() -1 && Character.isWhitespace(text.charAt(text.length()-1)))
                 {
                     float whitespaceWidth = font.getStringWidth(text.substring(text.length()-1)) * scale;
                     calculatedWidth = calculatedWidth - whitespaceWidth;
                 }
+                ++indexOfWord;
             }
             return calculatedWidth;
         }

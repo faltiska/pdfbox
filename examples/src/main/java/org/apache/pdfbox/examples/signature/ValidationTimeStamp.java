@@ -17,6 +17,7 @@
 
 package org.apache.pdfbox.examples.signature;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -26,7 +27,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.pdfbox.io.IOUtils;
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
@@ -39,6 +39,7 @@ import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
 import org.bouncycastle.cms.CMSSignedData;
 import org.bouncycastle.cms.SignerInformation;
 import org.bouncycastle.cms.SignerInformationStore;
+import org.bouncycastle.tsp.TimeStampToken;
 
 /**
  * This class wraps the TSAClient and the work that has to be done with it. Like Adding Signed
@@ -74,7 +75,8 @@ public class ValidationTimeStamp
      */
     public byte[] getTimeStampToken(InputStream content) throws IOException
     {
-        return tsaClient.getTimeStampToken(IOUtils.toByteArray(content));
+        TimeStampToken timeStampToken = tsaClient.getTimeStampToken(content);
+        return timeStampToken.getEncoded();
     }
 
     /**
@@ -119,7 +121,9 @@ public class ValidationTimeStamp
             vector = unsignedAttributes.toASN1EncodableVector();
         }
 
-        byte[] token = tsaClient.getTimeStampToken(signer.getSignature());
+        TimeStampToken timeStampToken = tsaClient.getTimeStampToken(
+                new ByteArrayInputStream(signer.getSignature()));
+        byte[] token = timeStampToken.getEncoded();
         ASN1ObjectIdentifier oid = PKCSObjectIdentifiers.id_aa_signatureTimeStampToken;
         ASN1Encodable signatureTimeStamp = new Attribute(oid,
                 new DERSet(ASN1Primitive.fromByteArray(token)));

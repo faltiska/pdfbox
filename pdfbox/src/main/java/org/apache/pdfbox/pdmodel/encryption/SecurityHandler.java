@@ -56,8 +56,10 @@ import org.apache.pdfbox.pdmodel.PDDocument;
  * @author Ben Litchfield
  * @author Benoit Guillon
  * @author Manuel Kasper
+ * 
+ * @param <T_POLICY> the protection policy.
  */
-public abstract class SecurityHandler
+public abstract class SecurityHandler<T_POLICY extends ProtectionPolicy>
 {
     private static final Log LOG = LogFactory.getLog(SecurityHandler.class);
 
@@ -67,10 +69,10 @@ public abstract class SecurityHandler
     private static final byte[] AES_SALT = { (byte) 0x73, (byte) 0x41, (byte) 0x6c, (byte) 0x54 };
 
     /** The length in bits of the secret key used to encrypt the document. */
-    protected int keyLength = DEFAULT_KEY_LENGTH;
+    private int keyLength = DEFAULT_KEY_LENGTH;
 
     /** The encryption key that will used to encrypt / decrypt.*/
-    protected byte[] encryptionKey;
+    private byte[] encryptionKey;
 
     /** The RC4 implementation used for cryptographic functions. */
     private final RC4Cipher rc4 = new RC4Cipher();
@@ -91,6 +93,11 @@ public abstract class SecurityHandler
     private boolean useAES;
 
     /**
+     * The typed {@link ProtectionPolicy} to be used for encryption.
+     */
+    private T_POLICY protectionPolicy = null;
+    
+    /**
      * The access permission granted to the current user for the document. These
      * permissions are computed during decryption and are in read only mode.
      */
@@ -105,6 +112,24 @@ public abstract class SecurityHandler
      * The string filter name.
      */
     private COSName stringFilterName;
+
+    /**
+     * Constructor.
+     */
+    protected SecurityHandler()
+    {
+    }
+
+    /**
+     * Constructor used for encryption.
+     *
+     * @param protectionPolicy The protection policy.
+     */
+    protected SecurityHandler(T_POLICY protectionPolicy)
+    {
+        this.protectionPolicy = protectionPolicy;
+        keyLength = protectionPolicy.getEncryptionKeyLength();
+    }
 
     /**
      * Set whether to decrypt meta data.
@@ -357,7 +382,7 @@ public abstract class SecurityHandler
 
     private Cipher createCipher(byte[] key, byte[] iv, boolean decrypt) throws GeneralSecurityException
     {
-        @SuppressWarnings({"squid:S4432"}) // PKCS#5 padding is requested by PDF specification
+        @SuppressWarnings({"squid:S5542"}) // PKCS#5 padding is requested by PDF specification
         Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
         Key keySpec = new SecretKeySpec(key, "AES");
         IvParameterSpec ips = new IvParameterSpec(iv);
@@ -371,7 +396,7 @@ public abstract class SecurityHandler
         {
             // read IV from stream
             int ivSize = (int) IOUtils.populateBuffer(data, iv);
-            if (ivSize == -1)
+            if (ivSize == 0)
             {
                 return false;
             }
@@ -505,6 +530,12 @@ public abstract class SecurityHandler
         {
             encryptData(objNum, genNum, encryptedStream, output, true /* decrypt */);
         }
+        catch (IOException ex)
+        {
+            LOG.error(ex.getClass().getSimpleName() + " thrown when decrypting object " +
+                    objNum + " " + genNum + " obj");
+            throw ex;
+        }
     }
 
     /**
@@ -520,6 +551,11 @@ public abstract class SecurityHandler
      */
     public void encryptStream(COSStream stream, long objNum, int genNum) throws IOException
     {
+        // empty streams don't need to be encrypted
+        if (!stream.hasData())
+        {
+            return;
+        }
         byte[] rawData = IOUtils.toByteArray(stream.createRawInputStream());
         ByteArrayInputStream encryptedStream = new ByteArrayInputStream(rawData);
         try (OutputStream output = stream.createRawOutputStream())
@@ -544,7 +580,7 @@ public abstract class SecurityHandler
             // PDFBOX-2936: avoid orphan /CF dictionaries found in US govt "I-" files
             return;
         }
-        COSBase type = dictionary.getDictionaryObject(COSName.TYPE);
+        COSName type = dictionary.getCOSName(COSName.TYPE);
         boolean isSignature = COSName.SIG.equals(type) || COSName.DOC_TIME_STAMP.equals(type) ||
                 // PDFBOX-4466: /Type is optional, see
                 // https://ec.europa.eu/cefdigital/tracker/browse/DSS-1538
@@ -697,5 +733,74 @@ public abstract class SecurityHandler
      *
      * @return true if a protection policy has been set.
      */
-    public abstract boolean hasProtectionPolicy();
+    public boolean hasProtectionPolicy()
+    {
+        return protectionPolicy != null;
+    }
+
+    /**
+     * Returns the set {@link ProtectionPolicy} or null.
+     *
+     * @return The set {@link ProtectionPolicy}.
+     */
+    protected T_POLICY getProtectionPolicy()
+    {
+        return protectionPolicy;
+    }
+
+    /**
+     * Sets the {@link ProtectionPolicy} to the given value.
+     * @param protectionPolicy The {@link ProtectionPolicy}, that shall be set.
+     */
+    protected void setProtectionPolicy(T_POLICY protectionPolicy)
+    {
+        this.protectionPolicy = protectionPolicy;
+    }
+
+    /**
+     * Returns the current encryption key data.
+     *
+     * @return The current encryption key data.
+     */
+    public byte[] getEncryptionKey()
+    {
+        return encryptionKey;
+    }
+
+    /**
+     * Sets the current encryption key data.
+     *
+     * @param encryptionKey The encryption key data to set.
+     */
+    public void setEncryptionKey(byte[] encryptionKey)
+    {
+        this.encryptionKey = encryptionKey;
+    }
+
+    /**
+     * Computes the version number of the {@link SecurityHandler} based on the encryption key
+     * length. See PDF Spec 1.6 p 93 and
+     * <a href="https://www.adobe.com/content/dam/acom/en/devnet/pdf/adobe_supplement_iso32000.pdf">PDF
+     * 1.7 Supplement ExtensionLevel: 3</a> and
+     * <a href="http://intranet.pdfa.org/wp-content/uploads/2016/08/ISO_DIS_32000-2-DIS4.pdf">PDF
+     * Spec 2.0</a>.
+     *
+     * @return The computed version number.
+     */
+    protected int computeVersionNumber()
+    {
+        if (keyLength == 40)
+        {
+            return 1;
+        }
+        else if (keyLength == 128 && protectionPolicy.isPreferAES())
+        {
+            return 4;
+        }
+        else if (keyLength == 256)
+        {
+            return 5;
+        }
+        return 2;
+    }
 }
