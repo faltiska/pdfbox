@@ -170,26 +170,6 @@ class RandomAccessReadMemoryMappedFileTest
     }
 
     @Test
-    void testUnmapping() throws IOException
-    {
-        // This is a special test case for some unmapping issues limited to windows enviroments
-        // see https://bugs.openjdk.java.net/browse/JDK-4724038
-        Path tempFile = Files.createTempFile("PDFBOX", "txt");
-        try (BufferedWriter bufferedWriter = Files.newBufferedWriter(tempFile, StandardOpenOption.WRITE))
-        {
-            bufferedWriter.write("Apache PDFBox test");
-        }
-
-        try (RandomAccessRead randomAccessSource = new RandomAccessReadMemoryMappedFile(
-                tempFile.toFile()))
-        {
-            assertEquals(65, randomAccessSource.read());
-        }
-
-        Files.delete(tempFile);
-    }
-
-    @Test
     void testView() throws IOException, URISyntaxException
     {
         try (RandomAccessRead randomAccessSource = new RandomAccessReadMemoryMappedFile(
