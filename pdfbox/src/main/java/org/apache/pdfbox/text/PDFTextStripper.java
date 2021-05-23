@@ -1655,9 +1655,9 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
      * a list of regular expressions that match commonly used list item formats, i.e. bullets, numbers, letters, Roman
      * numerals, etc. Not meant to be comprehensive.
      */
-    private static final String[] LIST_ITEM_EXPRESSIONS = { "\\.", "\\d+\\.", "\\[\\d+\\]",
+    private static final String[] LIST_ITEM_EXPRESSIONS = { "\\d+\\.", "\\[\\d+\\]",
             "\\d+\\)", "[A-Z]\\.", "[a-z]\\.", "[A-Z]\\)", "[a-z]\\)", "[IVXL]+\\.",
-            "[ivxl]+\\.", };
+            "[ivxl]+\\.", "[\\u2022|\\u2023|\\u2043|\\u2219|\\u25A0|\\u25CB|\\u25E6|\\u29BE|\\u25BF]"};
 
     private List<Pattern> listOfPatterns = null;
 
@@ -1734,7 +1734,7 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
      * @param line a list with the words of the given line
      * @throws IOException if something went wrong
      */
-    private void writeLine(List<WordWithTextPositions> line)
+    protected void writeLine(List<WordWithTextPositions> line)
             throws IOException
     {
         int numberOfStrings = line.size();
@@ -2053,7 +2053,7 @@ public class PDFTextStripper extends LegacyPDFStreamEngine
      *
      * @author Axel Dörfler
      */
-    private static final class WordWithTextPositions
+    protected static final class WordWithTextPositions
     {
         String text;
         List<TextPosition> textPositions;
