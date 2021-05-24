@@ -175,26 +175,6 @@ public class TestCOSFloat extends TestCOSNumber
         new FloatValueTester().runTests();
     }
 
-    class DoubleValueTester extends BaseTester
-    {
-
-        @Override
-        void runTest(float num)
-        {
-            COSFloat testFloat = new COSFloat(num);
-            // compare the string representation instead of the numeric values 
-            // as the cast from float to double adds some more fraction digits
-            Assert.assertEquals(Float.toString(num), Double.toString(testFloat.doubleValue()));
-        }
-
-    }
-
-    @Override
-    public void testDoubleValue()
-    {
-        new DoubleValueTester().runTests();
-    }
-
     class IntValueTester extends BaseTester
     {
 

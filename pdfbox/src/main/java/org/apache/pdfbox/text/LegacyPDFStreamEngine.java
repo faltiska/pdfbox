@@ -16,6 +16,7 @@
  */
 package org.apache.pdfbox.text;
 
+import java.io.BufferedInputStream;
 import java.io.InputStream;
 import java.io.IOException;
 import java.util.Map;
@@ -116,7 +117,7 @@ class LegacyPDFStreamEngine extends PDFStreamEngine
 
         // load additional glyph list for Unicode mapping
         String path = "/org/apache/pdfbox/resources/glyphlist/additional.txt";
-        InputStream input = GlyphList.class.getResourceAsStream(path);
+        InputStream input = new BufferedInputStream(GlyphList.class.getResourceAsStream(path));
         glyphList = new GlyphList(GlyphList.getAdobeGlyphList(), input);
     }
 

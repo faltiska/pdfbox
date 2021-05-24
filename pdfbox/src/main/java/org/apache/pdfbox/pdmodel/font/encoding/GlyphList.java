@@ -16,6 +16,7 @@
  */
 package org.apache.pdfbox.pdmodel.font.encoding;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -56,7 +57,7 @@ public final class GlyphList
             {
                 throw new IOException("GlyphList '" + path + "' not found");
             }
-            return new GlyphList(resourceAsStream, numberOfEntries);
+            return new GlyphList(new BufferedInputStream(resourceAsStream), numberOfEntries);
         }
         catch (IOException e)
         {
