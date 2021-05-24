@@ -80,6 +80,11 @@ public abstract class COSNumber extends COSBase
         }
         try
         {
+            if (number.charAt(0) == '+')
+            {
+                // PDFBOX-2569: some numbers start with "+"
+                return COSInteger.get(Long.parseLong(number.substring(1)));
+            }
             return COSInteger.get(Long.parseLong(number));
         }
         catch (NumberFormatException e)
@@ -91,7 +96,9 @@ public abstract class COSNumber extends COSBase
             {
                 throw new IOException("Not a number: " + number);
             }
-            return null;
+            // return a limited COSInteger value which is marked as invalid
+            return number.startsWith("-") ? COSInteger.OUT_OF_RANGE_MIN
+                    : COSInteger.OUT_OF_RANGE_MAX;
         }
     }
 

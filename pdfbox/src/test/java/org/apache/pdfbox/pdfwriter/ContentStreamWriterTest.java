@@ -29,10 +29,8 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.common.PDStream;
 import org.apache.pdfbox.rendering.PDFRenderer;
-import org.apache.pdfbox.rendering.TestPDFToImage;
 import org.junit.After;
 import org.junit.AfterClass;
-import static org.junit.Assert.fail;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -104,10 +102,5 @@ public class ContentStreamWriterTest
         }
         doc.save(new File(testDirIn, filename));
         doc.close();
-        TestPDFToImage testPDFToImage = new TestPDFToImage(TestPDFToImage.class.getName());
-        if (!testPDFToImage.doTestFile(new File(testDirIn, filename), testDirIn.getAbsolutePath(), testDirOut.getAbsolutePath()))
-        {
-            fail("Rendering failed or is not identical, see in " + testDirOut);
-        }
     }
 }

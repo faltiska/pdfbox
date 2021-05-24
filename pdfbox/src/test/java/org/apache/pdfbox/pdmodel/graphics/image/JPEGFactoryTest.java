@@ -261,28 +261,6 @@ public class JPEGFactoryTest extends TestCase
         doWritePDF(document, ximage, testResultsDir, "jpeg-ushort555rgb.pdf");
     }
 
-    /**
-     * PDFBOX-5137 and PDFBOX-5196: check that numFrameComponents and not numScanComponents is used
-     * to determine the color space.
-     *
-     * @throws IOException
-     */
-    public void testPDFBox5137() throws IOException
-    {
-        InputStream is = new FileInputStream("target/imgs/PDFBOX-5196-lotus.jpg");
-        byte[] ba = IOUtils.toByteArray(is);
-        is.close();
-
-        PDDocument document = new PDDocument();
-
-        PDImageXObject ximage = JPEGFactory.createFromByteArray(document, ba);
-
-        validate(ximage, 8, 500, 500, "jpg", PDDeviceRGB.INSTANCE.getName());
-
-        doWritePDF(document, ximage, testResultsDir, "PDFBOX-5196-lotus.pdf");
-        checkJpegStream(testResultsDir, "PDFBOX-5196-lotus.pdf", new ByteArrayInputStream(ba));        
-    }
-
     // check whether it is possible to extract the jpeg stream exactly 
     // as it was passed to createFromStream
     private void checkJpegStream(File testResultsDir, String filename, InputStream resourceStream)
