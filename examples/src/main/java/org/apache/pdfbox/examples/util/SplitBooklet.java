@@ -18,6 +18,8 @@ package org.apache.pdfbox.examples.util;
 
 import java.io.File;
 import java.io.IOException;
+
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
@@ -46,7 +48,7 @@ public class SplitBooklet
             usage();
             System.exit(-1);
         }
-        PDDocument document = PDDocument.load(new File(args[0]));
+        PDDocument document = Loader.loadPDF(new File(args[0]));
         PDDocument outdoc = new PDDocument();
         for (PDPage page : document.getPages())
         {

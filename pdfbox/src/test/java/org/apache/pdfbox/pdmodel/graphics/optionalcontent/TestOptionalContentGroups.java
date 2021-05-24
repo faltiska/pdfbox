@@ -32,6 +32,7 @@ import junit.framework.TestCase;
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
 
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDDocumentCatalog;
@@ -168,7 +169,7 @@ public class TestOptionalContentGroups extends TestCase
             testOCGGeneration();
         }
 
-        PDDocument doc = PDDocument.load(pdfFile);
+        PDDocument doc = Loader.loadPDF(pdfFile);
         try
         {
             assertEquals(1.5f, doc.getVersion());
@@ -425,7 +426,7 @@ public class TestOptionalContentGroups extends TestCase
             doc.close();
 
             // render PDF with science disabled and alternatives with same name enabled
-            doc = PDDocument.load(new File(testResultsDir, "ocg-generation-same-name-off.pdf"));
+            doc = Loader.loadPDF(new File(testResultsDir, "ocg-generation-same-name-off.pdf"));
             doc.getDocumentCatalog().getOCProperties().setGroupEnabled("background", false);
             doc.getDocumentCatalog().getOCProperties().setGroupEnabled("science", false);
             doc.getDocumentCatalog().getOCProperties().setGroupEnabled("alternative", true);

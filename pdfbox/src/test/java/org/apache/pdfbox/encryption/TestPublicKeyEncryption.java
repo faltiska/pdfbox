@@ -27,6 +27,7 @@ import java.util.Collection;
 
 import javax.crypto.Cipher;
 
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.io.MemoryUsageSetting;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.encryption.AccessPermission;
@@ -134,7 +135,7 @@ public class TestPublicKeyEncryption
         keyStore1 = "test1.pfx";
         keyStore2 = "test2.pfx";
         
-        document = PDDocument.load(new File(this.getClass().getResource("test.pdf").toURI()));
+        document = Loader.loadPDF(new File(this.getClass().getResource("test.pdf").toURI()));
         text = new PDFTextStripper().getText(document);
         producer = document.getDocumentInformation().getProducer();
         document.setVersion(1.7f);
@@ -290,7 +291,7 @@ public class TestPublicKeyEncryption
     private PDDocument reload(File file, String decryptionPassword, InputStream keyStore)
             throws IOException, NoSuchAlgorithmException
     {
-        PDDocument doc2 = PDDocument.load(file, decryptionPassword,
+        PDDocument doc2 = Loader.loadPDF(file, decryptionPassword,
                 keyStore, null, MemoryUsageSetting.setupMainMemoryOnly());
         Assert.assertEquals("Extracted text is different",
                                 text,
@@ -343,7 +344,7 @@ public class TestPublicKeyEncryption
     public void testReadPubkeyEncryptedAES128() throws IOException
     {
         InputStream is = TestPublicKeyEncryption.class.getResourceAsStream("AESkeylength128.pdf");
-        PDDocument doc = PDDocument.load(is,
+        PDDocument doc = Loader.loadPDF(is,
                 "w!z%C*F-JaNdRgUk",
                 TestPublicKeyEncryption.class.getResourceAsStream("PDFBOX-4421-keystore.pfx"),
                 "testnutzer");
@@ -357,7 +358,7 @@ public class TestPublicKeyEncryption
     public void testReadPubkeyEncryptedAES256() throws IOException
     {
         InputStream is = TestPublicKeyEncryption.class.getResourceAsStream("AESkeylength256.pdf");
-        PDDocument doc = PDDocument.load(is,
+        PDDocument doc = Loader.loadPDF(is,
                 "w!z%C*F-JaNdRgUk",
                 TestPublicKeyEncryption.class.getResourceAsStream("PDFBOX-4421-keystore.pfx"),
                 "testnutzer");

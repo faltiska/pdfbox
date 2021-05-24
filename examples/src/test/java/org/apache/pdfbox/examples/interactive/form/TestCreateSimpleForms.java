@@ -19,6 +19,8 @@ package org.apache.pdfbox.examples.interactive.form;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -59,7 +61,7 @@ public class TestCreateSimpleForms
     public void testCreateSimpleForm() throws IOException
     {
         CreateSimpleForm.main(null);
-        PDDocument doc = PDDocument.load(new File("target/SimpleForm.pdf"));
+        PDDocument doc = Loader.loadPDF(new File("target/SimpleForm.pdf"));
         new PDFRenderer(doc).renderImage(0);
         PDAcroForm acroForm = doc.getDocumentCatalog().getAcroForm();
         PDTextField textBox = (PDTextField) acroForm.getField("SampleField");
@@ -85,7 +87,7 @@ public class TestCreateSimpleForms
     {
         CreateSimpleForm.main(null);
 
-        PDDocument doc = PDDocument.load(new File("target/SimpleForm.pdf"));
+        PDDocument doc = Loader.loadPDF(new File("target/SimpleForm.pdf"));
         PDAcroForm acroForm = doc.getDocumentCatalog().getAcroForm();
         PDTextField textBox = (PDTextField) acroForm.getField("SampleField");
         PDAnnotationWidget widget = textBox.getWidgets().get(0);
@@ -100,7 +102,7 @@ public class TestCreateSimpleForms
 
         AddBorderToField.main(null);
 
-        PDDocument doc2 = PDDocument.load(new File("target/AddBorderToField.pdf"));
+        PDDocument doc2 = Loader.loadPDF(new File("target/AddBorderToField.pdf"));
         new PDFRenderer(doc2).renderImage(0);
         PDAcroForm acroForm2 = doc2.getDocumentCatalog().getAcroForm();
         PDTextField textBox2 = (PDTextField) acroForm2.getField("SampleField");
@@ -122,7 +124,7 @@ public class TestCreateSimpleForms
     public void testCreateSimpleFormWithEmbeddedFont() throws IOException
     {
         CreateSimpleFormWithEmbeddedFont.main(null);
-        PDDocument doc = PDDocument.load(new File("target/SimpleFormWithEmbeddedFont.pdf"));
+        PDDocument doc = Loader.loadPDF(new File("target/SimpleFormWithEmbeddedFont.pdf"));
         new PDFRenderer(doc).renderImage(0);
         PDAcroForm acroForm = doc.getDocumentCatalog().getAcroForm();
         PDTextField textBox = (PDTextField) acroForm.getField("SampleField");
@@ -143,7 +145,7 @@ public class TestCreateSimpleForms
     {
         CreateMultiWidgetsForm.main(null);
 
-        PDDocument doc = PDDocument.load(new File("target/MultiWidgetsForm.pdf"));
+        PDDocument doc = Loader.loadPDF(new File("target/MultiWidgetsForm.pdf"));
         Assert.assertEquals(2, doc.getNumberOfPages());
         new PDFRenderer(doc).renderImage(0);
         new PDFRenderer(doc).renderImage(1);
@@ -183,7 +185,7 @@ public class TestCreateSimpleForms
     public void testCreateCheckBox() throws IOException
     {
         CreateCheckBox.main(null);
-        PDDocument doc1 = PDDocument.load(new File("target/CheckBoxSample.pdf"));
+        PDDocument doc1 = Loader.loadPDF(new File("target/CheckBoxSample.pdf"));
         new PDFRenderer(doc1).renderImage(0);
         PDAcroForm acroForm1 = doc1.getDocumentCatalog().getAcroForm();
         PDCheckBox checkbox1 = (PDCheckBox) acroForm1.getField("MyCheckBox");
@@ -194,7 +196,7 @@ public class TestCreateSimpleForms
         doc1.save("target/CheckBoxSample-modified.pdf");
         doc1.close();
 
-        PDDocument doc2 = PDDocument.load(new File("target/CheckBoxSample-modified.pdf"));
+        PDDocument doc2 = Loader.loadPDF(new File("target/CheckBoxSample-modified.pdf"));
         new PDFRenderer(doc2).renderImage(0);
         PDAcroForm acroForm2 = doc2.getDocumentCatalog().getAcroForm();
         PDCheckBox checkbox2 = (PDCheckBox) acroForm2.getField("MyCheckBox");
@@ -206,7 +208,7 @@ public class TestCreateSimpleForms
     public void testRadioButtons() throws IOException
     {
         CreateRadioButtons.main(null);
-        PDDocument doc1 = PDDocument.load(new File("target/RadioButtonsSample.pdf"));
+        PDDocument doc1 = Loader.loadPDF(new File("target/RadioButtonsSample.pdf"));
         new PDFRenderer(doc1).renderImage(0);
         PDAcroForm acroForm1 = doc1.getDocumentCatalog().getAcroForm();
         PDRadioButton radioButton1 = (PDRadioButton) acroForm1.getField("MyRadioButton");
@@ -222,7 +224,7 @@ public class TestCreateSimpleForms
         doc1.save("target/RadioButtonsSample-modified.pdf");
         doc1.close();
 
-        PDDocument doc2 = PDDocument.load(new File("target/RadioButtonsSample-modified.pdf"));
+        PDDocument doc2 = Loader.loadPDF(new File("target/RadioButtonsSample-modified.pdf"));
         new PDFRenderer(doc2).renderImage(0);
         PDAcroForm acroForm2 = doc2.getDocumentCatalog().getAcroForm();
         PDRadioButton radioButton2 = (PDRadioButton) acroForm2.getField("MyRadioButton");

@@ -23,6 +23,7 @@ import java.io.IOException;
 
 import junit.framework.TestCase;
 
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDDocumentCatalog;
@@ -65,8 +66,8 @@ public class TestLayerUtility extends TestCase
         File overlay1 = createOverlay1();
         File targetFile = new File(testResultsDir, "text-with-form-overlay.pdf");
 
-        PDDocument targetDoc = PDDocument.load(mainPDF);
-        PDDocument overlay1Doc = PDDocument.load(overlay1);
+        PDDocument targetDoc = Loader.loadPDF(mainPDF);
+        PDDocument overlay1Doc = Loader.loadPDF(overlay1);
         try
         {
             LayerUtility layerUtil = new LayerUtility(targetDoc);
@@ -84,7 +85,7 @@ public class TestLayerUtility extends TestCase
             overlay1Doc.close();
         }
 
-        PDDocument doc = PDDocument.load(targetFile);
+        PDDocument doc = Loader.loadPDF(targetFile);
         try
         {
             PDDocumentCatalog catalog = doc.getDocumentCatalog();

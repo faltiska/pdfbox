@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.contentstream.PDFGraphicsStreamEngine;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.cos.COSStream;
@@ -182,7 +183,7 @@ public final class ExtractImages
         PDDocument document = null;
         try
         {
-            document = PDDocument.load(new File(pdfFile), password);
+            document = Loader.loadPDF(new File(pdfFile), password);
             AccessPermission ap = document.getCurrentAccessPermission();
             if (! ap.canExtractContent())
             {

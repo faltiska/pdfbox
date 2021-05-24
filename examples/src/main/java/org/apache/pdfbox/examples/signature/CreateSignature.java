@@ -29,6 +29,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.Calendar;
+
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.io.IOUtils;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -110,7 +112,7 @@ public class CreateSignature extends CreateSignatureBase
         PDDocument doc = null;
         try
         {
-            doc = PDDocument.load(inFile);
+            doc = Loader.loadPDF(inFile);
             signDetached(doc, fos);
         }
         finally

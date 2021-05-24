@@ -22,6 +22,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.junit.Assert;
@@ -41,7 +43,7 @@ public class TestCreateGradientShadingPDF
         CreateGradientShadingPDF creator = new CreateGradientShadingPDF();
         creator.create(filename);
 
-        PDDocument document = PDDocument.load(new File(filename));
+        PDDocument document = Loader.loadPDF(new File(filename));
         Set<Color> set = new HashSet<Color>();
         BufferedImage bim = new PDFRenderer(document).renderImage(0);
         for (int x = 0; x < bim.getWidth(); ++x)

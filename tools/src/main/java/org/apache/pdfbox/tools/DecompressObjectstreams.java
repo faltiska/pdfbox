@@ -18,6 +18,7 @@ package org.apache.pdfbox.tools;
 import java.io.File;
 import java.io.IOException;
 
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.cos.COSObject;
 import org.apache.pdfbox.cos.COSStream;
@@ -80,7 +81,7 @@ public final class DecompressObjectstreams
         PDDocument doc = null;
         try
         {
-            doc = PDDocument.load(new File(inputFilename));
+            doc = Loader.loadPDF(new File(inputFilename));
             for(COSObject objStream : doc.getDocument().getObjectsByType(COSName.OBJ_STM))
             {
                 COSStream stream = (COSStream)objStream.getObject();

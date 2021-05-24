@@ -19,6 +19,7 @@ package org.apache.pdfbox.examples.pdmodel;
 import java.io.File;
 import java.io.IOException;
 
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.interactive.action.PDActionGoTo;
 import org.apache.pdfbox.pdmodel.interactive.documentnavigation.destination.PDNamedDestination;
@@ -53,7 +54,7 @@ public class PrintBookmarks
             PDDocument document = null;
             try
             {
-                document = PDDocument.load( new File(args[0]) );
+                document = Loader.loadPDF( new File(args[0]) );
                 PrintBookmarks meta = new PrintBookmarks();
                 PDDocumentOutline outline =  document.getDocumentCatalog().getDocumentOutline();
                 if( outline != null )

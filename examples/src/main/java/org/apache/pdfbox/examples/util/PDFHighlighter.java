@@ -24,6 +24,7 @@ import java.io.Writer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.text.PDFTextStripper;
@@ -148,7 +149,7 @@ public class PDFHighlighter extends PDFTextStripper
             }
             String[] highlightStrings = new String[ args.length - 1];
             System.arraycopy( args, 1, highlightStrings, 0, highlightStrings.length );
-            doc = PDDocument.load( new File(args[0]) );
+            doc = Loader.loadPDF( new File(args[0]) );
 
             xmlExtractor.generateXMLHighlight(
                 doc,

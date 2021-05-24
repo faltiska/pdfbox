@@ -16,6 +16,7 @@
  */
 package org.apache.pdfbox.examples.pdmodel;
 
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDDocumentCatalog;
 import org.apache.pdfbox.pdmodel.PDDocumentInformation;
@@ -52,7 +53,7 @@ public class PrintDocumentMetaData
             PDDocument document = null;
             try
             {
-                document = PDDocument.load( new File(args[0]));
+                document = Loader.loadPDF( new File(args[0]));
                 PrintDocumentMetaData meta = new PrintDocumentMetaData();
                 meta.printMetadata( document );
             }

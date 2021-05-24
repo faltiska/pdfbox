@@ -69,6 +69,8 @@ import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.tree.TreePath;
+
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSBoolean;
@@ -1298,7 +1300,7 @@ public class PDFDebugger extends JFrame
             @Override
             PDDocument open() throws IOException
             {
-                return PDDocument.load(file, password);
+                return Loader.loadPDF(file, password);
             }
         };
         document = documentOpener.parse();
@@ -1336,7 +1338,7 @@ public class PDFDebugger extends JFrame
             @Override
             PDDocument open() throws IOException
             {
-                return PDDocument.load(new URL(urlString).openStream(), password);
+                return Loader.loadPDF(new URL(urlString).openStream(), password);
             }
         };
         document = documentOpener.parse();

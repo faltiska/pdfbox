@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.List;
+
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.pdfbox.text.TextPosition;
@@ -60,7 +62,7 @@ public class PrintTextLocations extends PDFTextStripper
             PDDocument document = null;
             try
             {
-                document = PDDocument.load( new File(args[0]) );
+                document = Loader.loadPDF( new File(args[0]) );
 
                 PDFTextStripper stripper = new PrintTextLocations();
                 stripper.setSortByPosition( true );

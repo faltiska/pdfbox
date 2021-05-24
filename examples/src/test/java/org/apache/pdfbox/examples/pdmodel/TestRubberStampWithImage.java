@@ -23,6 +23,7 @@ import java.io.IOException;
 
 import javax.imageio.ImageIO;
 
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
@@ -49,7 +50,7 @@ public class TestRubberStampWithImage
 
         new File("target/test-output").mkdirs();
 
-        PDDocument doc1 = PDDocument.load(new File(documentFile));
+        PDDocument doc1 = Loader.loadPDF(new File(documentFile));
         BufferedImage bim1 = new PDFRenderer(doc1).renderImage(0);
         doc1.close();
 
@@ -57,7 +58,7 @@ public class TestRubberStampWithImage
         RubberStampWithImage rubberStamp = new RubberStampWithImage();
         rubberStamp.doIt(args);
 
-        PDDocument doc2 = PDDocument.load(new File(outFile));
+        PDDocument doc2 = Loader.loadPDF(new File(outFile));
         BufferedImage bim2 = new PDFRenderer(doc2).renderImage(0);
         Assert.assertFalse(compareImages(bim1, bim2));
         PDAnnotationRubberStamp rubberStampAnnotation = (PDAnnotationRubberStamp) doc2.getPage(0).getAnnotations().get(0);

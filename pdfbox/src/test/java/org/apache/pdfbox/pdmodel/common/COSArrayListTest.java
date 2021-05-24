@@ -24,8 +24,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import junit.framework.Assert;
 
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -337,7 +337,7 @@ public class COSArrayListTest {
         pdf.save(OUT_DIR + "/removeSingleDirectObjectTest.pdf");
         pdf.close();
 
-        pdf = PDDocument.load(new File(OUT_DIR + "/removeSingleDirectObjectTest.pdf"));
+        pdf = Loader.loadPDF(new File(OUT_DIR + "/removeSingleDirectObjectTest.pdf"));
         page = pdf.getPage(0);
         
         COSArrayList<PDAnnotation> annotations = (COSArrayList<PDAnnotation>) page.getAnnotations();
@@ -377,7 +377,7 @@ public class COSArrayListTest {
         pdf.save(OUT_DIR + "/removeSingleIndirectObjectTest.pdf");
         pdf.close();
 
-        pdf = PDDocument.load(new File(OUT_DIR + "/removeSingleIndirectObjectTest.pdf"));
+        pdf = Loader.loadPDF(new File(OUT_DIR + "/removeSingleIndirectObjectTest.pdf"));
         page = pdf.getPage(0);
         
         COSArrayList<PDAnnotation> annotations = (COSArrayList<PDAnnotation>) page.getAnnotations();
@@ -426,7 +426,7 @@ public class COSArrayListTest {
         pdf.save(OUT_DIR + "/removeDirectObjectTest.pdf");
         pdf.close();
 
-        pdf = PDDocument.load(new File(OUT_DIR + "/removeDirectObjectTest.pdf"));
+        pdf = Loader.loadPDF(new File(OUT_DIR + "/removeDirectObjectTest.pdf"));
         page = pdf.getPage(0);
         
         COSArrayList<PDAnnotation> annotations = (COSArrayList<PDAnnotation>) page.getAnnotations();
@@ -468,7 +468,7 @@ public class COSArrayListTest {
         pdf.save(OUT_DIR + "/removeIndirectObjectTest.pdf");
         pdf.close();
 
-        pdf = PDDocument.load(new File(OUT_DIR + "/removeIndirectObjectTest.pdf"));
+        pdf = Loader.loadPDF(new File(OUT_DIR + "/removeIndirectObjectTest.pdf"));
         page = pdf.getPage(0);
         
         COSArrayList<PDAnnotation> annotations = (COSArrayList<PDAnnotation>) page.getAnnotations();
@@ -518,7 +518,7 @@ public class COSArrayListTest {
         pdf.save(OUT_DIR + "/retainDirectObjectTest.pdf");
         pdf.close();
 
-        pdf = PDDocument.load(new File(OUT_DIR + "/retainDirectObjectTest.pdf"));
+        pdf = Loader.loadPDF(new File(OUT_DIR + "/retainDirectObjectTest.pdf"));
         page = pdf.getPage(0);
         
         COSArrayList<PDAnnotation> annotations = (COSArrayList<PDAnnotation>) page.getAnnotations();
@@ -568,7 +568,7 @@ public class COSArrayListTest {
         pdf.save(OUT_DIR + "/retainIndirectObjectTest.pdf");
         pdf.close();
 
-        pdf = PDDocument.load(new File(OUT_DIR + "/retainIndirectObjectTest.pdf"));
+        pdf = Loader.loadPDF(new File(OUT_DIR + "/retainIndirectObjectTest.pdf"));
         page = pdf.getPage(0);
         
         COSArrayList<PDAnnotation> annotations = (COSArrayList<PDAnnotation>) page.getAnnotations();

@@ -21,6 +21,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import javax.imageio.ImageIO;
+
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.pdfparser.PDFStreamParser;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -81,7 +83,7 @@ public class ContentStreamWriterTest
     {
         String filename = "PDFBOX-4750.pdf";
         File file = new File("target/pdfs", filename);
-        PDDocument doc = PDDocument.load(file);
+        PDDocument doc = Loader.loadPDF(file);
 
         PDFRenderer r = new PDFRenderer(doc);
         for (int i = 0; i < doc.getNumberOfPages(); ++i)

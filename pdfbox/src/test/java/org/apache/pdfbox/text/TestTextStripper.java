@@ -47,6 +47,7 @@ import junit.framework.TestSuite;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.fontbox.util.BoundingBox;
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.TestPDPageTree;
 import org.apache.pdfbox.pdmodel.font.PDFont;
@@ -255,7 +256,7 @@ public class TestTextStripper extends TestCase
             }
         }
 
-        PDDocument document = PDDocument.load(inFile);
+        PDDocument document = Loader.loadPDF(inFile);
         try
         {            
             File outFile;
@@ -457,7 +458,7 @@ public class TestTextStripper extends TestCase
      */
     public void testStripByOutlineItems() throws IOException, URISyntaxException
     {
-        PDDocument doc = PDDocument.load(new File(TestPDPageTree.class.getResource("with_outline.pdf").toURI()));
+        PDDocument doc = Loader.loadPDF(new File(TestPDPageTree.class.getResource("with_outline.pdf").toURI()));
         PDDocumentOutline outline = doc.getDocumentCatalog().getDocumentOutline();
         Iterable<PDOutlineItem> children = outline.children();
         Iterator<PDOutlineItem> it = children.iterator();
@@ -622,7 +623,7 @@ public class TestTextStripper extends TestCase
         File outFile = new File("target/test-output", "eu-001.pdf-tabula.txt");
         File expectedOutFile = new File("src/test/resources/input", "eu-001.pdf-tabula.txt");
         File diffFile = new File("target/test-output", "eu-001.pdf-tabula-diff.txt");
-        PDDocument tabulaDocument = PDDocument.load(pdfFile);
+        PDDocument tabulaDocument = Loader.loadPDF(pdfFile);
         PDFTextStripper tabulaStripper = new PDFTabulaTextStripper();
 
         OutputStream os = new FileOutputStream(outFile);

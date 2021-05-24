@@ -22,6 +22,7 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.contentstream.PDContentStream;
 import org.apache.pdfbox.contentstream.operator.Operator;
 import org.apache.pdfbox.contentstream.operator.OperatorName;
@@ -67,7 +68,7 @@ public final class RemoveAllText
         }
         else
         {
-            PDDocument document = PDDocument.load(new File(args[0]));
+            PDDocument document = Loader.loadPDF(new File(args[0]));
             if (document.isEncrypted())
             {
                 System.err.println(

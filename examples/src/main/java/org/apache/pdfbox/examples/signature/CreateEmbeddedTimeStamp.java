@@ -25,6 +25,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.interactive.digitalsignature.PDSignature;
@@ -83,7 +85,7 @@ public class CreateEmbeddedTimeStamp
         }
 
         // sign
-        PDDocument doc = PDDocument.load(inFile);
+        PDDocument doc = Loader.loadPDF(inFile);
         document = doc;
         processTimeStamping(outFile, inFile.getAbsolutePath());
         doc.close();

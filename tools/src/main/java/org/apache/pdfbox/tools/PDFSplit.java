@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.io.FileOutputStream;
 
 import java.util.List;
+
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.io.IOUtils;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -137,7 +139,7 @@ public final class PDFSplit
             List<PDDocument> documents = null;
             try
             {
-                document = PDDocument.load(new File(pdfFile), password);
+                document = Loader.loadPDF(new File(pdfFile), password);
 
                 int numberOfPages = document.getNumberOfPages();
                 boolean startEndPageSet = false;

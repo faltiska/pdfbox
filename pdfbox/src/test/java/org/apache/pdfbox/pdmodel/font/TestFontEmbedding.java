@@ -30,6 +30,7 @@ import junit.framework.TestCase;
 import org.apache.fontbox.ttf.OS2WindowsMetricsTable;
 import org.apache.fontbox.ttf.TTFParser;
 import org.apache.fontbox.ttf.TrueTypeFont;
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
@@ -258,7 +259,7 @@ public class TestFontEmbedding extends TestCase
 
     private String getUnicodeText(File file) throws IOException
     {
-        PDDocument document = PDDocument.load(file);
+        PDDocument document = Loader.loadPDF(file);
         PDFTextStripper stripper = new PDFTextStripper();
         String text = stripper.getText(document);
         document.close();
@@ -291,7 +292,7 @@ public class TestFontEmbedding extends TestCase
         document.save(baos);
         document.close();
         // Append, while reusing the font subset
-        document = PDDocument.load(baos.toByteArray());
+        document = Loader.loadPDF(baos.toByteArray());
         page = document.getPage(0);
         font = (PDType0Font) page.getResources().getFont(COSName.getPDFName("F1"));
         stream = new PDPageContentStream(document, page, AppendMode.APPEND, true);
@@ -305,7 +306,7 @@ public class TestFontEmbedding extends TestCase
         document.save(baos);
         document.close();
         // Test that both texts are there
-        document = PDDocument.load(baos.toByteArray());
+        document = Loader.loadPDF(baos.toByteArray());
         PDFTextStripper stripper = new PDFTextStripper();
         String extractedText = stripper.getText(document);
         assertEquals(text1 + " " + text2, extractedText.trim());

@@ -24,6 +24,7 @@ import java.io.IOException;
 
 import javax.imageio.ImageIO;
 
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
@@ -209,7 +210,7 @@ public final class PDFToImage
             PDDocument document = null;
             try
             {
-                document = PDDocument.load(new File(pdfFile), password);
+                document = Loader.loadPDF(new File(pdfFile), password);
                 PDAcroForm acroForm = document.getDocumentCatalog().getAcroForm();
                 if (acroForm != null && acroForm.getNeedAppearances())
                 {

@@ -28,6 +28,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.Calendar;
+
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.io.IOUtils;
 
@@ -191,7 +193,7 @@ public class CreateVisibleSignature extends CreateSignatureBase
         FileOutputStream fos = new FileOutputStream(signedFile);
 
         // load document
-        PDDocument doc = PDDocument.load(inputFile);
+        PDDocument doc = Loader.loadPDF(inputFile);
 
         int accessPermissions = SigUtils.getMDPPermission(doc);
         if (accessPermissions == 1)

@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.io.IOUtils;
@@ -215,7 +216,7 @@ public final class ExtractText
                 {
                     outputFile = new File( pdfFile.substring( 0, pdfFile.length() -4 ) + ext ).getAbsolutePath();
                 }
-                document = PDDocument.load(new File( pdfFile ), password);
+                document = Loader.loadPDF(new File( pdfFile ), password);
                 
                 AccessPermission ap = document.getCurrentAccessPermission();
                 if( ! ap.canExtractContent() )
@@ -304,7 +305,7 @@ public final class ExtractText
                                     PDDocument subDoc = null;
                                     try 
                                     {
-                                        subDoc = PDDocument.load(fis);
+                                        subDoc = Loader.loadPDF(fis);
                                         if (toHTML)
                                         {
                                             // will not really work because of HTML header + footer

@@ -29,6 +29,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSDictionary;
@@ -262,7 +264,7 @@ public class Overlay implements Closeable
     
     private PDDocument loadPDF(String pdfName) throws IOException
     {
-        return PDDocument.load(new File(pdfName));
+        return Loader.loadPDF(new File(pdfName));
     }
 
     /**

@@ -31,6 +31,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.io.IOUtils;
@@ -103,7 +104,7 @@ public class PDAcroFormTest
     @Test
     public void testFlatten() throws IOException
     {
-        PDDocument testPdf = PDDocument.load(new File(IN_DIR, "AlignmentTests.pdf"));
+        PDDocument testPdf = Loader.loadPDF(new File(IN_DIR, "AlignmentTests.pdf"));
         testPdf.getDocumentCatalog().getAcroForm().flatten();
         assertTrue(testPdf.getDocumentCatalog().getAcroForm().getFields().isEmpty());
         File file = new File(OUT_DIR, "AlignmentTests-flattened.pdf");
@@ -126,7 +127,7 @@ public class PDAcroFormTest
     @Test
     public void testFlattenWidgetNoRef() throws IOException
     {
-        PDDocument testPdf = PDDocument.load(new File(IN_DIR, "AlignmentTests.pdf"));
+        PDDocument testPdf = Loader.loadPDF(new File(IN_DIR, "AlignmentTests.pdf"));
         PDAcroForm acroForm = testPdf.getDocumentCatalog().getAcroForm();
         for (PDField field : acroForm.getFieldTree()) {
         	for (PDAnnotationWidget widget : field.getWidgets()) {
@@ -160,7 +161,7 @@ public class PDAcroFormTest
         PDDocument testPdf = null;
         try
         {
-            testPdf = PDDocument.load(new File(IN_DIR, "AlignmentTests.pdf"));
+            testPdf = Loader.loadPDF(new File(IN_DIR, "AlignmentTests.pdf"));
             PDAcroForm acroFormToFlatten = testPdf.getDocumentCatalog().getAcroForm();
             int numFieldsBeforeFlatten = acroFormToFlatten.getFields().size();
             int numWidgetsBeforeFlatten = countWidgets(testPdf);
@@ -196,7 +197,7 @@ public class PDAcroFormTest
         try
         {
             byte[] pdfBytes =  createAcroFormWithMissingResourceInformation();
-            PDDocument pdfDocument = PDDocument.load(pdfBytes);
+            PDDocument pdfDocument = Loader.loadPDF(pdfBytes);
             
             // do a low level access to the AcroForm to avoid the generation of missing entries
             PDDocumentCatalog documentCatalog = pdfDocument.getDocumentCatalog();
@@ -227,7 +228,7 @@ public class PDAcroFormTest
         try
         {
             byte[] pdfBytes =  createAcroFormWithMissingResourceInformation();
-            PDDocument pdfDocument = PDDocument.load(pdfBytes);
+            PDDocument pdfDocument = Loader.loadPDF(pdfBytes);
             PDDocumentCatalog documentCatalog = pdfDocument.getDocumentCatalog();
             
             // this call shall trigger the generation of missing information
@@ -266,7 +267,7 @@ public class PDAcroFormTest
         try
         {
             byte[] pdfBytes =  createAcroFormWithMissingResourceInformation();
-            PDDocument pdfDocument = PDDocument.load(pdfBytes);
+            PDDocument pdfDocument = Loader.loadPDF(pdfBytes);
             PDDocumentCatalog documentCatalog = pdfDocument.getDocumentCatalog();
             
             // this call shall skip triggering the generation of missing information
@@ -374,7 +375,7 @@ public class PDAcroFormTest
         doc.save(baos);
         doc.close();
 
-        doc = PDDocument.load(baos.toByteArray());
+        doc = Loader.loadPDF(baos.toByteArray());
         acroForm2 = doc.getDocumentCatalog().getAcroForm();
         defaultResources = acroForm2.getDefaultResources();
         helv = defaultResources.getFont(COSName.HELV);
@@ -400,7 +401,7 @@ public class PDAcroFormTest
         PDDocument testPdf = null;
         try
         {
-            testPdf = PDDocument.load(new URL(sourceUrl).openStream());
+            testPdf = Loader.loadPDF(new URL(sourceUrl).openStream());
             PDDocumentCatalog catalog = testPdf.getDocumentCatalog();
             boolean thrown = false;
             try

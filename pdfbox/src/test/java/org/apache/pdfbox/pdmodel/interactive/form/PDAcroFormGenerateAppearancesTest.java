@@ -22,6 +22,7 @@ import static org.junit.Assert.assertFalse;
 import java.io.IOException;
 import java.net.URL;
 
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDDocumentCatalog;
@@ -43,7 +44,7 @@ public class PDAcroFormGenerateAppearancesTest {
         PDDocument testPdf = null;
         try
         {
-            testPdf = PDDocument.load(new URL(sourceUrl).openStream());
+            testPdf = Loader.loadPDF(new URL(sourceUrl).openStream());
             PDDocumentCatalog catalog = testPdf.getDocumentCatalog();
             boolean thrown = false;
             try
@@ -75,7 +76,7 @@ public class PDAcroFormGenerateAppearancesTest {
         PDDocument testPdf = null;
         try
         {
-            testPdf = PDDocument.load(new URL(sourceUrl).openStream());
+            testPdf = Loader.loadPDF(new URL(sourceUrl).openStream());
             PDDocumentCatalog catalog = testPdf.getDocumentCatalog();
             boolean thrown = false;
             try
@@ -106,7 +107,7 @@ public class PDAcroFormGenerateAppearancesTest {
         PDDocument testPdf = null;
         try
         {
-            testPdf = PDDocument.load(new URL(sourceUrl).openStream());
+            testPdf = Loader.loadPDF(new URL(sourceUrl).openStream());
             PDDocumentCatalog catalog = testPdf.getDocumentCatalog();
             boolean thrown = false;
             try

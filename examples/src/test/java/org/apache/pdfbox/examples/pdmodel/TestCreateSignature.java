@@ -49,6 +49,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
@@ -285,7 +286,7 @@ public class TestCreateSignature
         CreateSignedTimeStamp signing = new CreateSignedTimeStamp(tsa);
         signing.signDetached(new File(inDir + "sign_me.pdf"), new File(outDir + fileName));
 
-        PDDocument doc = PDDocument.load(new File(outDir + fileName));
+        PDDocument doc = Loader.loadPDF(new File(outDir + fileName));
         PDSignature signature = doc.getLastSignatureDictionary();
         byte[] signedFileContent =
                 signature.getSignedContent(new FileInputStream(new File(outDir, fileName)));
@@ -417,7 +418,7 @@ public class TestCreateSignature
 
         checkSignature(new File(filename), new File(filenameSigned1), false);
 
-        PDDocument doc1 = PDDocument.load(new File(filenameSigned1));
+        PDDocument doc1 = Loader.loadPDF(new File(filenameSigned1));
         List<PDSignature> signatureDictionaries = doc1.getSignatureDictionaries();
         Assert.assertEquals(1, signatureDictionaries.size());
         doc1.close();
@@ -433,7 +434,7 @@ public class TestCreateSignature
 
         checkSignature(new File(filenameSigned1), new File(filenameSigned2), false);
 
-        PDDocument doc2 = PDDocument.load(new File(filenameSigned2));
+        PDDocument doc2 = Loader.loadPDF(new File(filenameSigned2));
         signatureDictionaries = doc2.getSignatureDictionaries();
         Assert.assertEquals(2, signatureDictionaries.size());
         doc2.close();
@@ -449,12 +450,12 @@ public class TestCreateSignature
             throws IOException, CMSException, OperatorCreationException, GeneralSecurityException,
             TSPException, CertificateVerificationException
     {
-        PDDocument document = PDDocument.load(origFile);
+        PDDocument document = Loader.loadPDF(origFile);
         // get string representation of pages COSObject
         String origPageKey = document.getDocumentCatalog().getCOSObject().getItem(COSName.PAGES).toString();
         document.close();
 
-        document = PDDocument.load(signedFile);
+        document = Loader.loadPDF(signedFile);
         // PDFBOX-4261: check that object number stays the same 
         Assert.assertEquals(origPageKey, document.getDocumentCatalog().getCOSObject().getItem(COSName.PAGES).toString());
 
@@ -564,7 +565,7 @@ public class TestCreateSignature
         document.save(baos);
         document.close();
         
-        document = PDDocument.load(baos.toByteArray());
+        document = Loader.loadPDF(baos.toByteArray());
         // for stable digest
         document.setDocumentId(12345L);
         
@@ -618,7 +619,7 @@ public class TestCreateSignature
 
         checkSignature(new File("target/SimpleForm.pdf"), new File(outDir, fileNameSigned), false);
 
-        PDDocument doc = PDDocument.load(new File(outDir, fileNameSigned));
+        PDDocument doc = Loader.loadPDF(new File(outDir, fileNameSigned));
 
         oldImage = new PDFRenderer(doc).renderImage(0);
 
@@ -653,7 +654,7 @@ public class TestCreateSignature
         doc.close();
         checkSignature(new File("target/SimpleForm.pdf"), new File(outDir, fileNameResaved1), false);
 
-        doc = PDDocument.load(new File(outDir, fileNameResaved1));
+        doc = Loader.loadPDF(new File(outDir, fileNameResaved1));
 
         field = doc.getDocumentCatalog().getAcroForm().getField("SampleField");
         Assert.assertEquals("New Value 1", field.getValueAsString());
@@ -667,7 +668,7 @@ public class TestCreateSignature
         Assert.assertArrayEquals(expectedData.getData(), actualData.getData());
         doc.close();
 
-        doc = PDDocument.load(new File(outDir, fileNameSigned));
+        doc = Loader.loadPDF(new File(outDir, fileNameSigned));
 
         fileOutputStream = new FileOutputStream(new File(outDir, fileNameResaved2));
         field = doc.getDocumentCatalog().getAcroForm().getField("SampleField");
@@ -692,7 +693,7 @@ public class TestCreateSignature
         doc.close();
 
         checkSignature(new File("target/SimpleForm.pdf"), new File(outDir, fileNameResaved2), false);
-        doc = PDDocument.load(new File(outDir, fileNameResaved2));
+        doc = Loader.loadPDF(new File(outDir, fileNameResaved2));
 
         field = doc.getDocumentCatalog().getAcroForm().getField("SampleField");
         Assert.assertEquals("New Value 2", field.getValueAsString());
@@ -828,7 +829,7 @@ public class TestCreateSignature
             throws IOException, GeneralSecurityException, OCSPException, OperatorCreationException,
             CMSException
     {
-        PDDocument doc = PDDocument.load(outFile);
+        PDDocument doc = Loader.loadPDF(outFile);
         
         PDSignature signature = doc.getLastSignatureDictionary();
         byte[] contents = signature.getContents();
@@ -993,7 +994,7 @@ public class TestCreateSignature
         PDDocument doc = null;
         try
         {
-            doc = PDDocument.load(inFile, " ");
+            doc = Loader.loadPDF(inFile, " ");
 
             if (secureRandom != null)
             {

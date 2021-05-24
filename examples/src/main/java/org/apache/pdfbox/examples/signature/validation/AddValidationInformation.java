@@ -36,6 +36,7 @@ import java.util.Set;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSDictionary;
@@ -116,7 +117,7 @@ public class AddValidationInformation
             throw new FileNotFoundException(err);
         }
 
-        PDDocument doc = PDDocument.load(inFile);
+        PDDocument doc = Loader.loadPDF(inFile);
         FileOutputStream fos = new FileOutputStream(outFile);
         int accessPermissions = SigUtils.getMDPPermission(doc);
         if (accessPermissions == 1)

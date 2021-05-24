@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSString;
 import org.apache.pdfbox.pdfparser.PDFStreamParser;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -66,7 +67,7 @@ public class ControlCharacterTest {
     @Before
     public void setUp() throws IOException
     {
-        document = PDDocument.load(new File(IN_DIR, NAME_OF_PDF));
+        document = Loader.loadPDF(new File(IN_DIR, NAME_OF_PDF));
         acroForm = document.getDocumentCatalog().getAcroForm();
     }
     

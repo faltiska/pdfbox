@@ -20,6 +20,8 @@ import static org.junit.Assert.assertNull;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.junit.Assert;
@@ -43,7 +45,7 @@ public class TestCOSName
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         document.save(baos);
         document.close();
-        document = PDDocument.load(baos.toByteArray());
+        document = Loader.loadPDF(baos.toByteArray());
         COSDictionary catalogDict = document.getDocumentCatalog().getCOSObject();
         Assert.assertTrue(catalogDict.containsKey(special));
         Assert.assertEquals(special, catalogDict.getString(special));

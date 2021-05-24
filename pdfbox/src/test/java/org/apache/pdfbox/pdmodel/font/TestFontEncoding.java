@@ -22,6 +22,7 @@ import java.io.IOException;
 
 import junit.framework.TestCase;
 
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSInteger;
@@ -93,7 +94,7 @@ public class TestFontEncoding extends TestCase
         doc.close();
 
         // verify
-        doc = PDDocument.load(baos.toByteArray());
+        doc = Loader.loadPDF(baos.toByteArray());
         PDFTextStripper stripper = new PDFTextStripper();
         String text = stripper.getText(doc);
         assertEquals("~˜", text.trim());

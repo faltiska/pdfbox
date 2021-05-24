@@ -25,6 +25,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
@@ -74,8 +75,8 @@ public class MergeAcroFormsTest
 
         try
         {
-            compliantDocument = PDDocument.load(new File(IN_DIR,"PDFBoxLegacyMerge-SameMerged.pdf"));
-            toBeCompared = PDDocument.load(new File(OUT_DIR,"PDFBoxLegacyMerge-SameMerged.pdf"));
+            compliantDocument = Loader.loadPDF(new File(IN_DIR,"PDFBoxLegacyMerge-SameMerged.pdf"));
+            toBeCompared = Loader.loadPDF(new File(OUT_DIR,"PDFBoxLegacyMerge-SameMerged.pdf"));
 
 
             PDAcroForm compliantAcroForm = compliantDocument.getDocumentCatalog().getAcroForm();
@@ -127,8 +128,8 @@ public class MergeAcroFormsTest
 
         try
         {
-            compliantDocument = PDDocument.load(new File(IN_DIR,"AcrobatMerge-TextFieldsOnly-SameMerged.pdf"));
-            toBeCompared = PDDocument.load(new File(OUT_DIR,"PDFBoxJoinFieldsMerge-TextFieldsOnly-SameMerged.pdf"));
+            compliantDocument = Loader.loadPDF(new File(IN_DIR,"AcrobatMerge-TextFieldsOnly-SameMerged.pdf"));
+            toBeCompared = Loader.loadPDF(new File(OUT_DIR,"PDFBoxJoinFieldsMerge-TextFieldsOnly-SameMerged.pdf"));
 
 
             PDAcroForm compliantAcroForm = compliantDocument.getDocumentCatalog().getAcroForm();
@@ -210,7 +211,7 @@ public class MergeAcroFormsTest
             merger.mergeDocuments(null);
 
             // Test merge result
-            PDDocument mergedPDF = PDDocument.load(pdfOutput);
+            PDDocument mergedPDF = Loader.loadPDF(pdfOutput);
             assertEquals("There shall be 2 pages", 2, mergedPDF.getNumberOfPages());
 
             assertNotNull("There shall be an /Annots entry for the first page", mergedPDF.getPage(0).getCOSObject().getDictionaryObject(COSName.ANNOTS));
@@ -250,7 +251,7 @@ public class MergeAcroFormsTest
             merger.mergeDocuments(null);
 
             // Test merge result
-            PDDocument mergedPDF = PDDocument.load(pdfOutput);
+            PDDocument mergedPDF = Loader.loadPDF(pdfOutput);
             assertEquals("There shall be 2 pages", 2, mergedPDF.getNumberOfPages());
 
             PDAcroForm acroForm = mergedPDF.getDocumentCatalog().getAcroForm();

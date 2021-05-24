@@ -22,6 +22,8 @@ import java.io.OutputStream;
 import java.text.NumberFormat;
 import java.util.List;
 import java.util.Locale;
+
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -66,7 +68,7 @@ public class RubberStampWithImage
             PDDocument document = null;
             try
             {
-                document = PDDocument.load( new File(args[0]) );
+                document = Loader.loadPDF( new File(args[0]) );
                 if( document.isEncrypted() )
                 {
                     throw new IOException( "Encrypted documents are not supported for this example" );

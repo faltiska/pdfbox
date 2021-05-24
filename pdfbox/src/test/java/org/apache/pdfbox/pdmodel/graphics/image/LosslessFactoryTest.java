@@ -37,6 +37,7 @@ import java.util.Hashtable;
 import java.util.Random;
 import javax.imageio.ImageIO;
 import junit.framework.TestCase;
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
@@ -118,7 +119,7 @@ public class LosslessFactoryTest extends TestCase
         document.save(pdfFile);
         document.close();
         
-        document = PDDocument.load(pdfFile, (String)null);
+        document = Loader.loadPDF(pdfFile, (String)null);
         new PDFRenderer(document).renderImage(0);
         document.close();
     }
@@ -528,7 +529,7 @@ public class LosslessFactoryTest extends TestCase
         File pdfFile = new File(testResultsDir, pdfFilename);
         document.save(pdfFile);
         document.close();
-        document = PDDocument.load(pdfFile, (String)null);
+        document = Loader.loadPDF(pdfFile, (String)null);
         new PDFRenderer(document).renderImage(0);
         document.close();
     }

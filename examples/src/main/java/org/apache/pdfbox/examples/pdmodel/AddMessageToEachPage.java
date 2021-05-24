@@ -20,6 +20,7 @@ import java.awt.Color;
 import java.io.File;
 import java.io.IOException;
 
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
@@ -60,7 +61,7 @@ public class AddMessageToEachPage
         PDDocument doc = null;
         try
         {
-            doc = PDDocument.load( new File(file) );
+            doc = Loader.loadPDF( new File(file) );
 
             PDFont font = PDType1Font.HELVETICA_BOLD;
             float fontSize = 36.0f;

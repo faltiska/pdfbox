@@ -32,6 +32,7 @@ import java.io.Writer;
 import java.util.List;
 import javax.imageio.ImageIO;
 import org.apache.fontbox.util.BoundingBox;
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
@@ -97,7 +98,7 @@ public class DrawPrintTextLocations extends PDFTextStripper
             PDDocument document = null;
             try
             {
-                document = PDDocument.load(new File(args[0]));
+                document = Loader.loadPDF(new File(args[0]));
 
                 DrawPrintTextLocations stripper = new DrawPrintTextLocations(document, args[0]);
                 stripper.setSortByPosition(true);

@@ -34,6 +34,7 @@ import java.util.Set;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSDictionary;
@@ -366,11 +367,11 @@ public class PDFMergerUtility
                 {
                     if (sourceObject instanceof File)
                     {
-                        sourceDoc = PDDocument.load((File) sourceObject, memUsageSetting);
+                        sourceDoc = Loader.loadPDF((File) sourceObject, memUsageSetting);
                     }
                     else
                     {
-                        sourceDoc = PDDocument.load((InputStream) sourceObject, memUsageSetting);
+                        sourceDoc = Loader.loadPDF((InputStream) sourceObject, memUsageSetting);
                     }
 
                     for (PDPage page : sourceDoc.getPages())
@@ -448,11 +449,11 @@ public class PDFMergerUtility
                     PDDocument sourceDoc = null;
                     if (sourceObject instanceof File)
                     {
-                        sourceDoc = PDDocument.load((File) sourceObject, partitionedMemSetting);
+                        sourceDoc = Loader.loadPDF((File) sourceObject, partitionedMemSetting);
                     }
                     else
                     {
-                        sourceDoc = PDDocument.load((InputStream) sourceObject,
+                        sourceDoc = Loader.loadPDF((InputStream) sourceObject,
                                 partitionedMemSetting);
                     }
                     tobeclosed.add(sourceDoc);

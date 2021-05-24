@@ -18,6 +18,8 @@ package org.apache.pdfbox.examples.pdmodel;
 
 import java.io.File;
 import java.io.IOException;
+
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
@@ -52,7 +54,7 @@ public final class SuperimposePage
         try
         {
             // load the source PDF
-            sourceDoc = PDDocument.load(new File(sourcePath));
+            sourceDoc = Loader.loadPDF(new File(sourcePath));
             int sourcePage = 1;
             
             // create a new PDF and add a blank page

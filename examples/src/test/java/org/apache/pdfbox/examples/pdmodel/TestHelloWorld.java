@@ -18,6 +18,8 @@ package org.apache.pdfbox.examples.pdmodel;
 
 import java.io.File;
 import java.io.IOException;
+
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import static org.junit.Assert.assertEquals;
@@ -74,7 +76,7 @@ public class TestHelloWorld
 
     private void checkOutputFile(String outputFile, String message) throws IOException
     {
-        PDDocument doc = PDDocument.load(new File(outputFile));
+        PDDocument doc = Loader.loadPDF(new File(outputFile));
         PDFTextStripper stripper = new PDFTextStripper();
         String extractedText = stripper.getText(doc).trim();
         assertEquals(message, extractedText);

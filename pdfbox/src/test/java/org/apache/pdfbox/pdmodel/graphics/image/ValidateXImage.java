@@ -33,6 +33,8 @@ import javax.imageio.ImageIO;
 import javax.imageio.ImageWriter;
 import javax.imageio.spi.ImageWriterSpi;
 import static junit.framework.TestCase.assertEquals;
+
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.cos.COSStream;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -148,7 +150,7 @@ public class ValidateXImage
         document.save(pdfFile);
         document.close();
 
-        document = PDDocument.load(pdfFile, (String)null);
+        document = Loader.loadPDF(pdfFile, (String)null);
         assertEquals(1, count(document.getPage(0).getResources().getXObjectNames()));
         new PDFRenderer(document).renderImage(0);
         document.close();

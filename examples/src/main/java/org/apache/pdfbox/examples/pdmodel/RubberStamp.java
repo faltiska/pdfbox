@@ -16,6 +16,7 @@
  */
 package org.apache.pdfbox.examples.pdmodel;
 
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
@@ -56,7 +57,7 @@ public final class RubberStamp
             PDDocument document = null;
             try
             {
-                document = PDDocument.load( new File(args[0]) );
+                document = Loader.loadPDF( new File(args[0]) );
                 if( document.isEncrypted() )
                 {
                     throw new IOException( "Encrypted documents are not supported for this example" );

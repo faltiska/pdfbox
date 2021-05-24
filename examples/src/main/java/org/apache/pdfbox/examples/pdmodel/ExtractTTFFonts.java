@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -123,7 +124,7 @@ public final class ExtractTTFFonts
                 PDDocument document = null;
                 try
                 {
-                    document = PDDocument.load(new File(pdfFile), password);
+                    document = Loader.loadPDF(new File(pdfFile), password);
                     for (PDPage page : document.getPages())
                     {
                         PDResources resources = page.getResources();

@@ -19,6 +19,7 @@ package org.apache.pdfbox.examples.pdmodel;
 import java.io.File;
 import java.io.IOException;
 
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PageMode;
@@ -58,7 +59,7 @@ public final class CreateBookmarks
             PDDocument document = null;
             try
             {
-                document = PDDocument.load( new File(args[0]) );
+                document = Loader.loadPDF( new File(args[0]) );
                 if( document.isEncrypted() )
                 {
                     System.err.println( "Error: Cannot add bookmarks to encrypted document." );

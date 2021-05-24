@@ -28,6 +28,8 @@ import javax.print.attribute.HashPrintRequestAttributeSet;
 import javax.print.attribute.PrintRequestAttributeSet;
 import javax.print.attribute.standard.PageRanges;
 import javax.print.attribute.standard.Sides;
+
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.interactive.viewerpreferences.PDViewerPreferences;
 import org.apache.pdfbox.printing.PDFPageable;
@@ -54,7 +56,7 @@ public final class Printing
         }
 
         String filename = args[0];
-        PDDocument document = PDDocument.load(new File(filename));
+        PDDocument document = Loader.loadPDF(new File(filename));
         
         // choose your printing method:
         print(document); 

@@ -20,6 +20,8 @@ import junit.framework.TestCase;
 import java.io.File;
 import java.io.FileInputStream;
 import java.security.KeyStore;
+
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.examples.pdmodel.CreatePDFA;
 import org.apache.pdfbox.examples.signature.CreateSignature;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -82,7 +84,7 @@ public class CreatePDFATest extends TestCase
         preflightDocument.close();
         
         // check the XMP metadata
-        PDDocument document = PDDocument.load(new File(pdfaFilename));
+        PDDocument document = Loader.loadPDF(new File(pdfaFilename));
         PDDocumentCatalog catalog = document.getDocumentCatalog();
         PDMetadata meta = catalog.getMetadata();
         DomXmpParser xmpParser = new DomXmpParser();

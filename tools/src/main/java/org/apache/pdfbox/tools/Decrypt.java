@@ -21,6 +21,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.encryption.AccessPermission;
@@ -140,7 +141,7 @@ public final class Decrypt
             {
                 keyStoreStream = new FileInputStream(keyStore);
             }
-            document = PDDocument.load(new File(infile), password, keyStoreStream, alias);
+            document = Loader.loadPDF(new File(infile), password, keyStoreStream, alias);
             
             if (document.isEncrypted())
             {

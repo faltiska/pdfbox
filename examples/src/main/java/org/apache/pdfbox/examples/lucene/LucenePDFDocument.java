@@ -34,6 +34,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDDocumentInformation;
 import org.apache.pdfbox.pdmodel.encryption.InvalidPasswordException;
@@ -372,7 +373,7 @@ public class LucenePDFDocument
         PDDocument pdfDocument = null;
         try
         {
-            pdfDocument = PDDocument.load(is, "");
+            pdfDocument = Loader.loadPDF(is, "");
 
             // create a writer where to append the text content.
             StringWriter writer = new StringWriter();

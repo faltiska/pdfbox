@@ -19,6 +19,7 @@ package org.apache.pdfbox.tools;
 import java.io.File;
 import java.io.IOException;
 
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDDocumentCatalog;
 import org.apache.pdfbox.pdmodel.fdf.FDFDocument;
@@ -96,7 +97,7 @@ public class ImportFDF
             {
                 ImportFDF importer = new ImportFDF();
 
-                pdf = PDDocument.load( new File(args[0]) );
+                pdf = Loader.loadPDF( new File(args[0]) );
                 fdf = FDFDocument.load( args[1] );
                 importer.importFDF( pdf, fdf );
 

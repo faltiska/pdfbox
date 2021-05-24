@@ -19,6 +19,8 @@ package org.apache.pdfbox.examples.util;
 import java.awt.Color;
 import java.io.File;
 import java.io.IOException;
+
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
@@ -51,7 +53,7 @@ public class AddWatermarkText
             File dstFile = new File(args[1]);
             String text = args[2];
 
-            PDDocument doc = PDDocument.load(srcFile);
+            PDDocument doc = Loader.loadPDF(srcFile);
             for (PDPage page : doc.getPages())
             {
                 PDFont font = PDType1Font.HELVETICA;

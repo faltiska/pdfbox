@@ -16,6 +16,7 @@
  */
 package org.apache.pdfbox.examples.util;
 
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -79,7 +80,7 @@ public class PrintImageLocations extends PDFStreamEngine
             PDDocument document = null;
             try
             {
-                document = PDDocument.load( new File(args[0]) );
+                document = Loader.loadPDF( new File(args[0]) );
                 PrintImageLocations printer = new PrintImageLocations();
                 int pageNum = 0;
                 for( PDPage page : document.getPages() )

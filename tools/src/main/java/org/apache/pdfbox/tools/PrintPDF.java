@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.print.PrintService;
 
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.encryption.AccessPermission;
 import org.apache.pdfbox.printing.Orientation;
@@ -154,7 +155,7 @@ public final class PrintPDF
         PDDocument document = null;
         try
         {
-            document = PDDocument.load(new File(pdfFile), password);
+            document = Loader.loadPDF(new File(pdfFile), password);
 
             AccessPermission ap = document.getCurrentAccessPermission();
             if (!ap.canPrint())

@@ -29,6 +29,7 @@ import java.net.URL;
 
 import javax.imageio.ImageIO;
 
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.apache.pdfbox.rendering.TestPDFToImage;
@@ -312,7 +313,7 @@ public class PDAcroFormFlattenTest
         File inputFile = new File(IN_DIR, targetFileName);
         File outputFile = new File(OUT_DIR, targetFileName);
 
-        PDDocument testPdf = PDDocument.load(inputFile);
+        PDDocument testPdf = Loader.loadPDF(inputFile);
         testPdf.getDocumentCatalog().getAcroForm().flatten();
         testPdf.setAllSecurityToBeRemoved(true);
         assertTrue(testPdf.getDocumentCatalog().getAcroForm().getFields().isEmpty());
@@ -343,7 +344,7 @@ public class PDAcroFormFlattenTest
 
         File file = new File(IN_DIR,targetFile);
 
-        PDDocument document = PDDocument.load(file, (String) null);
+        PDDocument document = Loader.loadPDF(file, (String) null);
         String outputPrefix = IN_DIR.getAbsolutePath() + '/' + file.getName() + "-";
         int numPages = document.getNumberOfPages();
 

@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.util.Arrays;
 import javax.imageio.ImageIO;
 import junit.framework.TestCase;
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -287,7 +288,7 @@ public class JPEGFactoryTest extends TestCase
     private void checkJpegStream(File testResultsDir, String filename, InputStream resourceStream)
             throws IOException
     {
-        PDDocument doc = PDDocument.load(new File(testResultsDir, filename));
+        PDDocument doc = Loader.loadPDF(new File(testResultsDir, filename));
         PDImageXObject img =
                 (PDImageXObject) doc.getPage(0).getResources().getXObject(COSName.getPDFName("Im1"));
         InputStream dctStream = img.createInputStream(Arrays.asList(COSName.DCT_DECODE.getName()));

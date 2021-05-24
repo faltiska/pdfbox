@@ -19,6 +19,8 @@ package org.apache.pdfbox.tools;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.cos.COSObject;
@@ -62,7 +64,7 @@ public class WriteDecodedDoc
         PDDocument doc = null;
         try
         {
-            doc = PDDocument.load(new File(in), password);
+            doc = Loader.loadPDF(new File(in), password);
             doc.setAllSecurityToBeRemoved(true);
             for (COSObject cosObject : doc.getDocument().getObjects())
             {

@@ -27,6 +27,7 @@ import java.io.InputStream;
 
 import javax.imageio.ImageIO;
 
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -168,7 +169,7 @@ public class PDVisibleSignDesigner
     private void calculatePageSizeFromFile(String filename, int page) throws IOException
     {
         // create PD document
-        PDDocument document = PDDocument.load(new File(filename));
+        PDDocument document = Loader.loadPDF(new File(filename));
 
         // calculate height and width of document page
         calculatePageSize(document, page);
@@ -179,7 +180,7 @@ public class PDVisibleSignDesigner
     private void calculatePageSizeFromStream(InputStream documentStream, int page) throws IOException
     {
         // create PD document
-        PDDocument document = PDDocument.load(documentStream);
+        PDDocument document = Loader.loadPDF(documentStream);
 
         // calculate height and width of document page
         calculatePageSize(document, page);

@@ -25,6 +25,7 @@ import static org.junit.Assert.fail;
 import java.io.File;
 import java.io.IOException;
 
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationWidget;
@@ -58,7 +59,7 @@ public class PDButtonTest
         document = new PDDocument();
         acroForm = new PDAcroForm(document);
         
-        acrobatDocument = PDDocument.load(new File(IN_DIR, NAME_OF_PDF));
+        acrobatDocument = Loader.loadPDF(new File(IN_DIR, NAME_OF_PDF));
         acrobatAcroForm = acrobatDocument.getDocumentCatalog().getAcroForm();
     }
 
@@ -146,7 +147,7 @@ public class PDButtonTest
         {
             file = new File(TARGET_PDF_DIR, "PDFBOX-3656.pdf");
             
-            pdfDocument = PDDocument.load(file);
+            pdfDocument = Loader.loadPDF(file);
             
             PDRadioButton radioButton = (PDRadioButton) pdfDocument.getDocumentCatalog().getAcroForm().getField("Checking/Savings");
             radioButton.setValue("Off");
@@ -195,7 +196,7 @@ public class PDButtonTest
         {
             file = new File(TARGET_PDF_DIR, "PDFBOX-3682.pdf");
 
-            pdfDocument = PDDocument.load(file);
+            pdfDocument = Loader.loadPDF(file);
             
             pdfDocument.getDocumentCatalog().getAcroForm().getField("RadioButton").setValue("c");
             PDRadioButton radioButton = (PDRadioButton) pdfDocument.getDocumentCatalog().getAcroForm().getField("RadioButton");
